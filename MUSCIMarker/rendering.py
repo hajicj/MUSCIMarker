@@ -4,7 +4,8 @@ from __future__ import print_function, unicode_literals
 import copy
 import logging
 
-import gc
+# import gc
+
 from kivy.adapters.dictadapter import DictAdapter
 from kivy.adapters.simplelistadapter import SimpleListAdapter
 from kivy.app import App

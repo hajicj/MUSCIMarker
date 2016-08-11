@@ -19,11 +19,14 @@ from kivy.uix.widget import Widget
 from skimage.morphology import convex_hull_image
 
 from editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, LineTracer
+from utils import bbox_to_integer_bounds
 
 import mhr.preprocessing as bb
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
+
+
 
 
 class MUSCIMarkerTool(Widget):
@@ -256,7 +259,7 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
         #  - get bounding box of lasso in model coordinates
         e_lasso_bbox_sel = self.selection_from_points(pos)
         m_lasso_bbox = self.app_ref.generate_model_bbox_from_selection(e_lasso_bbox_sel)
-        m_lasso_int_bbox = bb.bbox_to_integer_bounds(*m_lasso_bbox)
+        m_lasso_int_bbox = bbox_to_integer_bounds(*m_lasso_bbox)
 
         #  - get model coordinates of points
         points = numpy.array([list(p) for i, p in enumerate(zip(pos[:-1], pos[1:]))
@@ -283,11 +286,6 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
         #   of the lasso selection
         mask *= image
         logging.info('T-Lasso: mask: {0} pxs'.format(mask.sum() / 255))
-        # mcc, ml = cv2.connectedComponents(mask)
-        # mbb = bb.connected_components2bboxes(ml)
-        # logging.info('T-Lasso: mask cc bboxes = {0}'.format(mbb))
-        #plt.imshow(mask, cmap='gray', interpolation='nearest')
-        #plt.show()
 
         # - trim the masked image
         out_t, out_b, out_l, out_r = 1000000, 0, 1000000, 0
@@ -375,7 +373,7 @@ class GestureSelectTool(LassoBoundingBoxSelectTool):
         #  - If more vertical than horizontal, record horizontal runs.
         e_sel = self.selection_from_points(pos)
         m_bbox = self.app_ref.generate_model_bbox_from_selection(e_sel)
-        m_int_bbox = bb.bbox_to_integer_bounds(*m_bbox)
+        m_int_bbox = bbox_to_integer_bounds(*m_bbox)
 
         height = m_int_bbox[2] - m_int_bbox[0]
         width = m_int_bbox[3] - m_int_bbox[1]

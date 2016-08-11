@@ -9,7 +9,7 @@ from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
 
-import muscima as mm
+import mhr.muscima as mm
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -137,3 +137,28 @@ class FileSaver(FloatLayout):
 
     def cancel(self):
         self.dismiss_popup()
+
+
+##############################################################################
+
+
+def bbox_to_integer_bounds(ftop, fleft, fbottom, fright, to_integer=True):
+    """Rounds off the CropObject bounds to the nearest integer
+    so that no area is lost (e.g. bottom and right bounds are
+    rounded up, top and left bounds are rounded down).
+
+    WARNING: Possible bug?
+    """
+    top = ftop - (ftop % 1.0)
+    left = fleft - (fleft % 1.0)
+    bottom = fbottom - (fbottom % 1.0)
+    if fbottom % 1.0 != 0:
+        bottom += 1.0
+    right = fright - (fright % 1.0)
+    if fright % 1.0 != 0:
+        right += 1.0
+
+    if to_integer:
+        top, left, bottom, right = int(top), int(left), int(bottom), int(right)
+
+    return top, left, bottom, right

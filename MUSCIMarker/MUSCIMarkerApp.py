@@ -125,6 +125,7 @@ from random import random
 from math import sqrt
 
 import cv2
+
 from kivy._event import EventDispatcher
 from kivy.app import App
 from kivy.config import Config
