@@ -1,0 +1,421 @@
+#:kivy 1.9.1
+#:import os os
+#:import mm mhr.muscima
+
+#############################################################################
+# Action bar style
+
+# Taken from Showcase example:
+<ActionSpinnerOptions@SpinnerOption>
+    background_color: .4, .4, .4, 1
+
+<ActionSpinner@Spinner+ActionItem>
+    canvas.before:
+        Color:
+            rgba: 0.128, 0.128, 0.128, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    border: 27, 20, 12, 12
+    option_cls: Factory.ActionSpinnerOptions
+
+    text_size: self.size
+    valign: 'middle'
+    halign: 'center'
+
+
+##############################################################################
+# For in-app messages
+<MessagePopup@Popup>:
+    title: 'Message'
+    content: app.message
+
+    # size_hint: None, None
+    # pos_hint: 0.5, 0.0
+    # size: 1000, 400
+
+    Button:
+        id: message_ok_button
+        on_release: self.dismiss()
+
+
+
+##############################################################################
+#
+# The tool selection UI element
+#
+
+<ToolSelectionButton@ToggleButton>
+    group: 'tool_selection_button_group'
+    canvas.before:
+        Color:
+            rgba: 0.128, 0.128, 0.128, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    border: 27, 20, 12, 12
+    size_hint: 1.0, 0.1
+
+    name: '_default'
+    on_release: app.process_tool_selection(self)
+
+<ToolSelectionLabel@Label>
+    size_hint: 1.0, 0.1
+
+<ToolSelectionSidebar@BoxLayout>:
+    id: tool_selection_col
+    width: 100
+    size_hint: None, 1.0
+    orientation: 'vertical'
+
+    canvas.before:
+        Color:
+            rgba: 0.4, 0.4, 0.4, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    background_color: 0.4, 0.4, 0.4, 1
+
+    ToolSelectionLabel:
+        text: 'Tools'
+
+    ToolSelectionButton:
+        name: 'viewing_tool'
+        id: viewing_tool
+        text: 'View'
+
+    ToolSelectionButton:
+        name: 'add_symbol_tool'
+        id: add_symbol_tool
+        text: 'Add S.'
+
+    ToolSelectionButton:
+        name: 'lasso_select_tool'
+        id: lasso_select_tool
+        text: 'Lasso'
+
+    ToolSelectionButton:
+        name: 'trimmed_select_tool'
+        id: trimmed_select_tool
+        text: 'Trim'
+
+    ToolSelectionButton:
+        name: 'trimmed_lasso_select_tool'
+        id: trimmed_lasso_select_tool
+        text: 'T-Lasso'
+
+    ToolSelectionButton:
+        name: 'connected_select_tool'
+        id: connected_select_tool
+        text: 'Connected'
+
+    ToolSelectionButton:
+        name: 'gesture_select_tool'
+        id: gesture_select_tool,
+        text: 'Gesture'
+
+    BoxLayout:
+
+
+##############################################################################
+#
+# The mlclasses/cropobjects window UI element
+#
+
+<FileLoadButton@Button>
+    size_hint: 0.8, 0.1
+    canvas.before:
+        Rectangle:
+            size: self.size
+            pos: self.pos
+        Color:
+            rgba: 0.256, 0.256, 0.256, 1.0
+
+
+
+<FileLoadDialog>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: 'vertical'
+
+        FileChooserListView:
+            id: filechooser
+            path: root.default_path
+            on_submit: root.load(filechooser.path, filechooser.selection)
+
+        BoxLayout:
+            size_hint_y: 0.07
+            pos_hint_x: 0.5
+            height: 50
+
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Load"
+                on_release: root.load(filechooser.path, filechooser.selection)
+
+
+<FileSaveButton@Button>
+    size_hint: 0.8, 0.1
+    canvas.before:
+        Rectangle:
+            size: self.size
+            pos: self.pos
+        Color:
+            rgba: 0.256, 0.256, 0.256, 1.0
+
+
+<FileSaveDialog>:
+    BoxLayout:
+        text_input: text_input
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+
+        FileChooserListView:
+            id: filechooser
+            path: root.default_path
+            on_selection: text_input.text = self.selection and self.selection[0] or ''
+
+        TextInput:
+            id: text_input
+            size_hint_y: None
+            height: 50
+            multiline: False
+
+        BoxLayout:
+            size_hint_y: None
+            height: 50
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Save"
+                on_release: root.save(filechooser.path, text_input.text)
+
+
+<CommandSidebar@GridLayout>:
+    id: settings_col
+    width: 500
+    size_hint: None, 1.0
+    # orientation: 'vertical'
+    cols: 1
+
+    canvas.before:
+        Color:
+            rgba: 0.4, 0.4, 0.4, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    background_color: 0.4, 0.4, 0.4, 1
+
+    Label:
+        # width: 400
+        size_hint: 1.0, 0.1
+        text: 'Source files:'
+
+    FileLoadButton:
+        id: mlclass_list_load_button
+        text: 'Select MLClassList file'
+        on_release: app.mlclass_list_loader.show_load(path=app.mlclass_list_loader.filename)
+
+    Label:
+        # width: 400
+        size_hint: 1.0, 0.1
+        text: os.path.basename(app.mlclass_list_loader.filename)
+
+    Label:
+        # width: 400
+        size_hint: 1.0, 0.1
+        text: 'MLClasses: {0}'.format(app.mlclass_list_length)
+
+    Label:
+        # width: 400
+        size_hint: 1.0, 0.1
+        text: 'Select MLClass'
+
+    Spinner:
+        id: mlclass_selection_spinner
+        # width: 400
+        size_hint: 1.0, 0.1
+        text: app.currently_selected_mlclass_name
+        values: sorted(app.annot_model.mlclasses_by_name.keys(), key=lambda x: app.annot_model.mlclasses_by_name[x].clsid)
+        on_text: app.currently_selected_mlclass_name = mlclass_selection_spinner.text
+
+    Label:
+        size_hint: 1.0, 0.1
+        text: '_____________'
+
+    FileLoadButton:
+        id: image_load_button
+        text: 'Select image file'
+        on_release: app.image_loader.show_load(path=os.path.dirname(app.image_loader.filename))
+
+    Label:
+        # width: 400
+        size_hint: 1.0, 0.1
+        text: os.path.basename(app.image_loader.filename)
+
+    Label:
+        size_hint: 1.0, 0.1
+        text: '_____________'
+
+    FileLoadButton:
+        id: cropobject_list_load_button
+        text: 'Import CropObjectList file'
+        on_release: app.cropobject_list_loader.show_load(path=os.path.dirname(app.cropobject_list_loader.filename))
+
+    FileSaveButton:
+        id: cropobject_list_save_button
+        text: 'Export CropObjectList file'
+        on_release: app.cropobject_list_saver.show_save(path=os.path.dirname(app.cropobject_list_saver.last_output_path))
+        on_press: app.cropobject_list_saver.to_save = mm.export_cropobject_list(app.annot_model.cropobjects.values(), mlclasslist_file=app.mlclass_list_loader.filename, image_file=app.image_loader.filename)
+
+    Label:
+        size_hint: 1.0, 0.1
+        text: 'Last import: {0}'.format(os.path.basename(app.cropobject_list_loader.filename))
+
+    Label:
+        size_hint: 1.0, 0.1
+        text: 'Last export dir: {0}'.format(os.path.basename(app.cropobject_list_saver.last_output_path))
+
+    Label:
+        size_hint: 1.0, 0.1
+        text: 'CropObjects: {0}'.format(len(app.annot_model.cropobjects))
+
+    Button:
+        id: cropobject_clear_button
+        size_hint: 1.0, 0.1
+        text: 'Clear CropObjects'
+        on_release: app.annot_model.clear_cropobjects()
+
+    Button:
+        id: cropobject_mask_button
+        size_hint: 1.0, 0.1
+        text: 'Hide CropObjects'
+        on_release: app.cropobject_list_renderer.mask_all()
+
+    Button:
+        id: cropobject_unmask_button
+        size_hint: 1.0, 0.1
+        text: 'Show CropObjects'
+        on_release: app.cropobject_list_renderer.unmask_all()
+
+    Label:
+        size_hint: 1.0, 0.1
+        text: '____________'
+
+    Button:
+        id: plot_annotation_button
+        size_hint: 1.0, 0.1
+        text: 'Plot annotation'
+        on_release: app.annot_model.plot_annotations()
+
+    Label:
+        size_hint: 1.0, 0.1
+        text: '____________'
+
+    BoxLayout:
+        id: command_palette
+        orientation: 'vertical'
+
+    BoxLayout:
+        id: info_panel
+        orientation: 'vertical'
+
+    BoxLayout:
+        id: command_sidebar_filler
+        orientation: 'vertical'
+
+
+
+##############################################################################
+# The editor window UI element
+#
+<EditedImage@Image>:
+    source: app.currently_edited_image_filename
+    size: 1500, 1500 / self.image_ratio
+    allow_stretch: True
+    size_hint: None, None
+    # pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+    # Should move this outside the Image and into the ImageEditorLayout?
+    # How to make them overlap inside a ScatterLayout?
+
+
+<ImageEditorLayout@ScatterLayout>:
+
+    do_rotation: False
+    size_hint: None, None if edited_image is not None else (0.8, 0.8)
+    size: edited_image.size if edited_image is not None else (None, None)
+    #pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+    # width: self.width
+    # height: self.height
+    canvas.before:
+        Color:
+            rgba: 0.2, 0.1, 0.1, 1
+        Rectangle:
+            # self here refers to the widget i.e BoxLayout pos: self.pos
+            size: self.size
+
+    EditedImage:
+        id: edited_image
+
+
+<EditorWindow@RelativeLayout>:
+    id: annotation_col
+    cols: 1
+    size_hint: 1.0, 1.0
+    # orientation: 'vertical'
+
+    ImageEditorLayout:
+        id: editor
+
+##############################################################################
+#
+# The root layout of the application
+#
+
+MUSCIMarkerLayout:
+    cols: 1
+
+    ActionBar:
+        id: actionbar
+        size_hint: 0.1, None
+
+        ActionView:
+            id: av
+
+            ActionPrevious:
+                with_previous: False
+                on_release: pass
+
+            ActionLabel:
+                text: 'MUSCIMarker mockup'
+
+            ActionButton:
+                text: 'Exit'
+                on_release: app.exit()
+
+
+    # GridLayout:
+    FloatLayout:
+        id: main_area
+    #    cols: 3
+
+        ToolSelectionSidebar:
+            id: tool_selection_sidebar
+            pos: 0, 0
+
+        EditorWindow:
+            id: editor_cell
+            pos_hint: {'x_center': 0.5, 'y_center': 0.5}
+
+        CommandSidebar:
+            id: command_sidebar
+            pos: root.width - self.width, 0
