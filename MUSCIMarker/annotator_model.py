@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from kivy.properties import ObjectProperty, DictProperty
 from kivy.uix.widget import Widget
 
-import mhr.muscima as mm
+import muscima as mm
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."

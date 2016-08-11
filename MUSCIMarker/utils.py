@@ -9,7 +9,7 @@ from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
 
-import mhr.muscima as mm
+import muscima as mm
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
