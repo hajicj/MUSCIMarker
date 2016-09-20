@@ -121,8 +121,8 @@ import codecs
 import logging
 import os
 import time
-from random import random
-from math import sqrt
+# from random import random
+# from math import sqrt
 
 import cPickle
 import cv2
@@ -139,7 +139,7 @@ from kivy.uix.image import Image
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.widget import Widget
 
-import muscima as mm
+import muscimarker_io
 
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
@@ -741,7 +741,7 @@ class MUSCIMarkerApp(App):
 
     def import_mlclass_list(self, instance, pos):
         try:
-            mlclass_list = mm.parse_mlclass_list(pos)
+            mlclass_list = muscimarker_io.parse_mlclass_list(pos)
         except:
             logging.info('App: Loading MLClassList from file \'{0}\' failed.'
                          ''.format(pos))
@@ -758,9 +758,9 @@ class MUSCIMarkerApp(App):
         logging.info('App: === Reloading CropObjectList fired with file \'{0}\''
                      ''.format(pos))
         try:
-            cropobject_list, mfile, ifile = mm.parse_cropobject_list(pos,
-                                                                     with_refs=True,
-                                                                     tolerate_ref_absence=True)
+            cropobject_list, mfile, ifile = muscimarker_io.parse_cropobject_list(pos,
+                                                                                 with_refs=True,
+                                                                                 tolerate_ref_absence=True)
 
             # Handling MLClassList and Image conflicts. Currently just warns.
             if mfile is not None:
@@ -894,15 +894,15 @@ class MUSCIMarkerApp(App):
         logging.info('App.scaler: Scaler would generate numpy-world'
                      ' x={0}, y={1}, h={2}, w={3}'.format(mT, mL, mH, mW))
 
-        c = mm.CropObject(objid=new_cropobject_objid,
-                          clsid=new_cropobject_clsid,
-                          # Hah -- here, having the Image as the parent widget
+        c = muscimarker_io.CropObject(objid=new_cropobject_objid,
+                                      clsid=new_cropobject_clsid,
+                                      # Hah -- here, having the Image as the parent widget
                           # of the bbox selection tool is kind of useful...
                           x=x_scaled_inverted,
-                          y=y_scaled,
-                          width=width_scaled,
-                          height=height_scaled,
-                          mask=mask)
+                                      y=y_scaled,
+                                      width=width_scaled,
+                                      height=height_scaled,
+                                      mask=mask)
         if integer_bounds:
             c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
@@ -936,10 +936,10 @@ class MUSCIMarkerApp(App):
         mH = mB - mT
         mW = mR - mL
 
-        c = mm.CropObject(objid=new_cropobject_objid,
-                          clsid=new_cropobject_clsid,
-                          x=mT, y=mL, width=mW, height=mH,
-                          mask=mask)
+        c = muscimarker_io.CropObject(objid=new_cropobject_objid,
+                                      clsid=new_cropobject_clsid,
+                                      x=mT, y=mL, width=mW, height=mH,
+                                      mask=mask)
         if integer_bounds:
             c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'

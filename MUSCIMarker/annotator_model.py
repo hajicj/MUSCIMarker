@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from kivy.properties import ObjectProperty, DictProperty
 from kivy.uix.widget import Widget
 
-import muscima as mm
+import muscimarker_io
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -62,7 +62,7 @@ class CropObjectAnnotatorModel(Widget):
         self.cropobjects = {c.objid: c for c in cropobjects}
 
     def export_cropobjects_string(self, **kwargs):
-        return mm.export_cropobject_list(self.cropobjects.values(), **kwargs)
+        return muscimarker_io.export_cropobject_list(self.cropobjects.values(), **kwargs)
 
     def export_cropobjects(self, output, **kwargs):
         with codecs.open(output, 'w', 'utf-8') as hdl:
@@ -113,9 +113,9 @@ class CropObjectAnnotatorModel(Widget):
     def plot_annotations(self):
         """Plot the current animation using Matplotlib."""
         rgb_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
-        annot_img = mm.render_annotations(rgb_img,
-                                          self.cropobjects.values(),
-                                          self.mlclasses.values())
+        annot_img = muscimarker_io.render_annotations(rgb_img,
+                                                      self.cropobjects.values(),
+                                                      self.mlclasses.values())
 
         logging.info('Plotting annotation, image shape: {0}'.format(annot_img.shape))
         plt.imshow(annot_img)
