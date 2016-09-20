@@ -10,18 +10,15 @@ import time
 from skimage.draw import polygon, line
 
 # DEBUG
-import matplotlib.pyplot as plt
+# simport matplotlib.pyplot as plt
 
 from kivy.core.window import Window
-from kivy.properties import ObjectProperty, DictProperty
+from kivy.properties import ObjectProperty, DictProperty, BooleanProperty
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
-from skimage.morphology import convex_hull_image
 
 from editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, LineTracer
 from utils import bbox_to_integer_bounds
-
-import mhr.preprocessing as bb
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -99,6 +96,17 @@ class MUSCIMarkerTool(Widget):
         # return True
         pass
 
+    def model_to_editor_bbox(self, m_t, m_l, m_b, m_r):
+        """Use this method to convert a bounding box in the model
+        world to the editor world."""
+        ed_t, ed_l, ed_b, ed_r = self.app_ref.image_scaler.bbox_model2widget(m_t, m_l, m_b, m_r)
+        return ed_t, ed_l, ed_b, ed_r
+
+    def editor_to_model_bbox(self, ed_t, ed_l, ed_b, ed_r):
+        """Use this method to convert a bounding box in the editor
+        world to the model world."""
+        m_t, m_l, m_b, m_r = self.app_ref.image_scaler.bbox_widget2model(ed_t, ed_l, ed_b, ed_r)
+        return m_t, m_l, m_b, m_r
 
 ###############################################################################
 
@@ -112,11 +120,16 @@ class ViewingTool(MUSCIMarkerTool):
 class AddSymbolTool(MUSCIMarkerTool):
 
     current_cropobject_selection = ObjectProperty(None)
+    current_cropobject_model_selection = ObjectProperty(None)
+    current_cropobject_mask = ObjectProperty(None)
+
+    automask = BooleanProperty(True)
 
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['bbox_tracer'] = BoundingBoxTracer()
-        editor_widgets['bbox_tracer'].bind(current_finished_bbox=self.current_selection_from_bbox_tracer)
+        editor_widgets['bbox_tracer'].bind(
+            current_finished_bbox=self.current_selection_and_mask_from_bbox_tracer)
         return editor_widgets
 
     def create_command_widgets(self):
@@ -133,7 +146,21 @@ class AddSymbolTool(MUSCIMarkerTool):
         # Ask the app to build CropObject from the bbox.
         logging.info('ManualSelectTool: fired on_current_cropobject_selection with pos={0}'
                      ''.format(pos))
-        self.app_ref.add_cropobject_from_selection(self.current_cropobject_selection)
+        self.app_ref.add_cropobject_from_selection(
+            self.current_cropobject_selection,
+            mask=self.current_cropobject_mask)
+
+        # Automatically clears the bounding box (it gets rendered as the new symbol
+        # gets recorded).
+        self.editor_widgets['bbox_tracer'].clear()
+
+    def on_current_cropobject_model_selection(self, instance, pos):
+        # Ask the app to build CropObject from the bbox.
+        logging.info('AddSymbolTool: fired on_current_cropobject_model_selection with pos={0}'
+                     ''.format(pos))
+        self.app_ref.add_cropobject_from_model_selection(
+            self.current_cropobject_model_selection,
+            mask=self.current_cropobject_mask)
 
         # Automatically clears the bounding box (it gets rendered as the new symbol
         # gets recorded).
@@ -143,6 +170,34 @@ class AddSymbolTool(MUSCIMarkerTool):
         logging.info('ManualSelectTool: fired current_selection_from_bbox_tracer with pos={0}'
                      ''.format(pos))
         self.current_cropobject_selection = pos
+
+    def current_selection_and_mask_from_bbox_tracer(self, instance, pos):
+
+        # Clear the last mask
+        #self.current_cropobject_mask = None
+        # ...should not be necessary
+
+        # Get mask
+        ed_t, ed_l, ed_b, ed_r = pos['top'], pos['left'], \
+                                 pos['bottom'], pos['right']
+        m_t, m_l, m_b, m_r = self.editor_to_model_bbox(ed_t, ed_l, ed_b, ed_r)
+        m_t, m_l, m_b, m_r = bbox_to_integer_bounds(m_t, m_l, m_b, m_r)
+
+        image = self.app_ref.annot_model.image
+
+        crop = image[m_t:m_b, m_l:m_r]
+        mask = numpy.ones(crop.shape, dtype='uint8')
+        mask *= crop
+        mask[mask != 0] = 1
+
+        self.current_cropobject_mask = mask
+
+        # Now create current selection
+        self.current_cropobject_model_selection = {'top': m_t,
+                                                   'left': m_l,
+                                                   'bottom': m_b,
+                                                   'right': m_r}
+        # self.current_selection_from_bbox_tracer(instance=instance, pos=pos)
 
 
 ###############################################################################
@@ -155,7 +210,7 @@ class ConnectedSelectTool(AddSymbolTool):
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['bbox_tracer'] = ConnectedComponentBoundingBoxTracer()
-        editor_widgets['bbox_tracer'].bind(current_finished_bbox=self.current_selection_from_bbox_tracer)
+        editor_widgets['bbox_tracer'].bind(current_finished_bbox=self.current_selection_and_mask_from_bbox_tracer)
         return editor_widgets
 
 ###############################################################################
@@ -176,13 +231,28 @@ class TrimmedSelectTool(AddSymbolTool):
 
 class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
     """Note: cannot currently deal with nonconvex areas. Use the trimmed lasso
-    tool instead (TLasso)."""
+    tool instead (TLasso).
+
+    The Lasso selection tool allows to specify in freehand a region that should
+    be assigned a label. All lasso tools assign a mask as well as a bounding
+    box to the CropObject.
+
+    Bounding box: editor vs. model
+    -------------------------------
+
+    There is an issue with repeated scaling because of rounding errors.
+    Generally, once the model-world bbox is computed, it should propagate
+    all the way to actually adding the CropObject.
+
+    """
     current_cropobject_selection = ObjectProperty(None)
+    current_cropobject_model_selection = ObjectProperty(None)
+    current_cropobject_mask = ObjectProperty(None)
 
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
-        editor_widgets['line_tracer'].bind(points=self.current_selection_from_points)
+        editor_widgets['line_tracer'].bind(points=self.current_selection_and_mask_from_points)
         return editor_widgets
 
     def selection_from_points(self, points):
@@ -202,15 +272,124 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
 
         return selection
 
+    def model_selection_from_points(self, points):
+        e_sel = self.selection_from_points(points)
+        wT, wL, wB, wR = e_sel['top'], e_sel['left'], e_sel['bottom'], e_sel['right']
+        mT, mL, mB, mR = self.app_ref.image_scaler.bbox_widget2model(wT, wL, wB, wR)
+        return {'top': mT, 'left': mL, 'bottom': mB, 'right': mR}
+
+    def mask_uncut_from_points(self, points):
+        point_set_as_tuples = [p for i, p in enumerate(zip(points[:-1], points[1:]))
+                               if i % 2 == 0]
+
+        m_points = [self.app_ref.image_scaler.point_widget2model(wX, wY)
+                    for wX, wY in point_set_as_tuples]
+
+        m_points = [(int(x), int(y)) for x, y in m_points]
+        mask = numpy.zeros((self.app_ref.image_scaler.model_height,
+                            self.app_ref.image_scaler.model_width), dtype='uint8')
+        m_points_x, m_points_y = zip(*m_points)
+        chi = polygon(m_points_x, m_points_y)
+        mask[chi] = 1.0
+
+        return mask
+
+    def cut_mask_to_selection(self, mask, selection):
+        """Given a model-world uncut mask of the whole model image
+        and an editor-world selection, cuts the mask to correspond
+        to the given editor-world selection.
+
+        Given an editor-world selection, however, the model-world
+        coordinates may turn out to be non-integers. We need to mimic
+        the model-world procedure for converting these to integers,
+        to ensure that the mask's shape will exactly mimic the shape
+        of the CropObject's integer bounding box.
+        """
+        wT, wL, wB, wR = selection['top'], selection['left'], selection['bottom'], selection['right']
+        mT, mL, mB, mR = self.app_ref.image_scaler.bbox_widget2model(wT, wL, wB, wR)
+        mT, mL, mB, mR = bbox_to_integer_bounds(mT, mL, mB, mR)
+        logging.info('LassoBoundingBoxTool.cut_mask_to_selection: cutting to {0}, h={1}, w={2}'
+                     ''.format((mT, mL, mB, mR), mB - mT, mR - mL))
+        return mask[mT:mB, mL:mR]
+
+    def cut_mask_to_model_selection(self, mask, selection):
+        """Like cut_mask_to_selection, but operates on model-world selection."""
+        mT, mL, mB, mR = selection['top'], selection['left'], selection['bottom'], selection['right']
+        mT, mL, mB, mR = bbox_to_integer_bounds(mT, mL, mB, mR)
+        logging.info('LassoBoundingBoxTool.cut_mask_to_model_selection: cutting to {0}, h={1}, w={2}'
+                     ''.format((mT, mL, mB, mR), mB - mT, mR - mL))
+        return mask[mT:mB, mL:mR]
+
+    def restrict_mask_to_nonzero(self, mask):
+        """Given a uncut mask, restricts it to be True only for nonzero pixels
+        of the image. Modifies the input mask (doesn't copy)."""
+        # TODO: This does not work properly! See AddSymbolTool.
+        if mask is None:
+            return None
+        img = self.app_ref.annot_model.image
+        mask[img == 0] = 0
+        return mask
+
     def current_selection_from_points(self, instance, pos):
         selection = self.selection_from_points(pos)
-        self.current_cropobject_selection = selection
+        if selection is not None:
+            self.current_cropobject_selection = selection
+
+    def current_mask_from_points(self, instance, pos):
+        """Computes the lasso mask in model coordinates."""
+        mask_uncut = self.mask_uncut_from_points(pos)
+        if self.app_ref.config.get('toolkit', 'cropobject_mask_nonzero_only'):
+            mask_uncut = self.restrict_mask_to_nonzero(mask_uncut)
+        if mask_uncut is not None:
+            selection = self.selection_from_points(pos)
+            mask = self.cut_mask_to_selection(mask_uncut, selection)
+            self.current_cropobject_mask = mask
+
+    def current_selection_and_mask_from_points(self, instance, pos):
+        """Triggers adding a CropObject with both bbox and mask."""
+        if pos is None:
+            logging.info('LassoBoundingBoxSelect: No points, skipping.')
+            return
+
+        # Returns None if it's not possible to create the mask.
+        mask_uncut = self.mask_uncut_from_points(pos)
+        if self.app_ref.config.get('toolkit', 'cropobject_mask_nonzero_only'):
+            mask_uncut = self.restrict_mask_to_nonzero(mask_uncut)
+
+        if mask_uncut is not None:
+            # bbox: stay in the model world once computed & propagate
+            model_selection = self.model_selection_from_points(pos)
+            if model_selection is None:
+                pass
+            else:
+                logging.info('LassoBoundingBoxSelect: Gpt model_selection {0}'
+                             ''.format(model_selection))
+                mask = self.cut_mask_to_model_selection(mask_uncut, model_selection)
+                logging.info('LassoBoundingBoxSelect: uncut mask shape {0},'
+                             ' cut mask shape {1}'.format(mask_uncut.shape, mask.shape))
+                self.current_cropobject_mask = mask
+                logging.info('LassoBoundingBoxSelect: Recording model selection {0}'
+                             ''.format(model_selection))
+                self.current_cropobject_model_selection = model_selection
 
     def on_current_cropobject_selection(self, instance, pos):
         # Ask the app to build CropObject from the bbox.
-        logging.info('ManualSelectTool: fired on_current_cropobject_selection with pos={0}'
+        logging.info('LassoBoundingBoxSelect: fired on_current_cropobject_selection with pos={0}'
                      ''.format(pos))
-        self.app_ref.add_cropobject_from_selection(self.current_cropobject_selection)
+        self.app_ref.add_cropobject_from_selection(self.current_cropobject_selection,
+                                                   mask=self.current_cropobject_mask)
+
+        # Automatically clears the bounding box (it gets rendered as the new symbol
+        # gets recorded).
+        self.editor_widgets['line_tracer'].clear()
+
+    def on_current_cropobject_model_selection(self, instance, pos):
+        # Ask the app to build CropObject from the bbox.
+        logging.info('LassoBoundingBoxSelect: fired on_current_cropobject_model_selection with pos={0}'
+                     ''.format(pos))
+        self.app_ref.add_cropobject_from_model_selection(
+            self.current_cropobject_model_selection,
+            mask=self.current_cropobject_mask)
 
         # Automatically clears the bounding box (it gets rendered as the new symbol
         # gets recorded).
@@ -219,14 +398,17 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
     def model_to_editor_bbox(self, m_t, m_l, m_b, m_r):
         """Use this method to convert the bounding box in the model
         world to the editor world."""
-        renderer = self.app_ref.cropobject_list_renderer
-        # Top, left, height, width
-        m_coords = m_t, m_l, m_b - m_t + 1, m_r - m_l + 1
-        ed_b, ed_l, ed_height, ed_width = \
-            renderer.model_coords_to_editor_coords(*m_coords)
-        ed_t = ed_b + ed_height
-        ed_r = ed_l + ed_width
+        ed_t, ed_l, ed_b, ed_r = self.app_ref.image_scaler.bbox_model2widget(m_t, m_l, m_b, m_r)
         return ed_t, ed_l, ed_b, ed_r
+        #
+        # renderer = self.app_ref.cropobject_list_renderer
+        # # Top, left, height, width
+        # m_coords = m_t, m_l, m_b - m_t, m_r - m_l
+        # ed_b, ed_l, ed_height, ed_width = \
+        #     renderer.model_coords_to_editor_coords(*m_coords)
+        # ed_t = ed_b + ed_height
+        # ed_r = ed_l + ed_width
+        # return ed_t, ed_l, ed_b, ed_r
 
 
 ###############################################################################
@@ -234,8 +416,9 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
 class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
 
     current_cropobject_selection = ObjectProperty(None)
+    current_cropobject_mask = ObjectProperty(None)
 
-    def current_selection_from_points(self, instance, pos):
+    def model_bbox_from_points(self, pos):
         """The trimming differs from the TrimTool because only points
         inside the convex hull of the lasso count towards trimming.
 
@@ -257,34 +440,29 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
         _start_time = time.clock()
 
         #  - get bounding box of lasso in model coordinates
-        e_lasso_bbox_sel = self.selection_from_points(pos)
-        m_lasso_bbox = self.app_ref.generate_model_bbox_from_selection(e_lasso_bbox_sel)
-        m_lasso_int_bbox = bbox_to_integer_bounds(*m_lasso_bbox)
+        #    (we could just get uncut mask, but for trimming, we need
+        #    m_points etc. anyway)
+        point_set_as_tuples = [p for i, p in enumerate(zip(pos[:-1], pos[1:]))
+                               if i % 2 == 0]
 
-        #  - get model coordinates of points
-        points = numpy.array([list(p) for i, p in enumerate(zip(pos[:-1], pos[1:]))
-                              if i % 2 == 0])
-        # logging.info('T-Lasso: Points: {0}'.format(points))
-        m_points = numpy.array(list(set([self.app_ref.map_point_from_editor_to_model(*p)
-                                         for p in points]))).astype('uint16')
-        logging.info('T-Lasso: total M-Points: {0}'.format(len(m_points)))
+        m_points = [self.app_ref.image_scaler.point_widget2model(wX, wY)
+                    for wX, wY in point_set_as_tuples]
 
-        #  - get mask for convex hull of these points
+        m_points = [(int(x), int(y)) for x, y in m_points]
         image = self.app_ref.annot_model.image
-
-        mask = numpy.zeros(image.shape, dtype=image.dtype)
-        mask[m_points[:, 0], m_points[:, 1]] = 1.0
-
-        _pre_convex_hull_time = time.clock()
-        chi = convex_hull_image(mask)
-        _post_convex_hull_time = time.clock()
-        logging.info('T-Lasso: convex hull took {0:.4f} s'
-                     ''.format(_post_convex_hull_time - _pre_convex_hull_time))
+        mask = numpy.zeros((self.app_ref.image_scaler.model_height,
+                            self.app_ref.image_scaler.model_width),
+                           dtype=image.dtype)
+        m_points_x, m_points_y = zip(*m_points)
+        chi = polygon(m_points_x, m_points_y)
         mask[chi] = 1.0
 
-        # - apply mask of convex hull to the bounding box
-        #   of the lasso selection
+        m_lasso_bbox = (min(m_points_x), min(m_points_y),
+                        max(m_points_x), max(m_points_y))
+        m_lasso_int_bbox = bbox_to_integer_bounds(*m_lasso_bbox)
+
         mask *= image
+        mask = mask.astype(image.dtype)
         logging.info('T-Lasso: mask: {0} pxs'.format(mask.sum() / 255))
 
         # - trim the masked image
@@ -311,19 +489,37 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
                 out_r = l
                 break
         _trim_end_time = time.clock()
-        logging.info('Trimming took {0:.4f} s'.format(_trim_end_time - _trim_start_time))
+        logging.info('T-Lasso: Trimming took {0:.4f} s'.format(_trim_end_time - _trim_start_time))
 
-        logging.info('Output: {0}'.format((out_t, out_l, out_b, out_r)))
+        logging.info('T-Lasso: Output={0}'.format((out_t, out_l, out_b, out_r)))
+
+        # Rounding errors when converting m --> w --> m integers!
         #  - Output
         if (out_b > out_t) and (out_r > out_l):
-            ed_t, ed_l, ed_b, ed_r = self.model_to_editor_bbox(out_t, out_l, out_b, out_r)
+            return out_t, out_l, out_b, out_r
 
-            logging.info('CCselect: editor-coord output bbox {0}'
-                         ''.format((ed_t, ed_l, ed_b, ed_r)))
-            self.current_cropobject_selection = {'top': ed_t,
-                                                 'bottom': ed_b,
-                                                 'left': ed_l,
-                                                 'right': ed_r}
+    def model_selection_from_points(self, points):
+        # This should go away anyway.
+        model_bbox = self.model_bbox_from_points(points)
+        if model_bbox is not None:
+            t, l, b, r = model_bbox
+            return {'top': t, 'left': l, 'bottom': b, 'right': r}
+        else:
+            return None
+
+    def selection_from_points(self, points):
+        model_bbox = self.model_bbox_from_points(points)
+        if model_bbox is None:
+            return None
+        ed_t, ed_l, ed_b, ed_r = self.model_to_editor_bbox(*model_bbox)
+
+        logging.info('T-Lasso: editor-coord output bbox {0}'
+                     ''.format((ed_t, ed_l, ed_b, ed_r)))
+        output = {'top': ed_t,
+                  'bottom': ed_b,
+                  'left': ed_l,
+                  'right': ed_r}
+        return output
 
 
 ###############################################################################
@@ -348,6 +544,13 @@ class GestureSelectTool(LassoBoundingBoxSelectTool):
         a stroke region.
     """
     current_cropobject_selection = ObjectProperty(None)
+    current_cropobject_mask = ObjectProperty(None)
+
+    def create_editor_widgets(self):
+        editor_widgets = collections.OrderedDict()
+        editor_widgets['line_tracer'] = LineTracer()
+        editor_widgets['line_tracer'].bind(points=self.current_selection_from_points)
+        return editor_widgets
 
     def current_selection_from_points(self, instance, pos):
 

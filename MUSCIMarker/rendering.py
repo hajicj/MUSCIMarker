@@ -225,6 +225,10 @@ class CropObjectListView(ListView):
         Uses the current MLClass."""
         logging.info('CropObjectListView.merge(): selection {0}'
                      ''.format(self.adapter.selection))
+        if len(self.adapter.selection) == 0:
+            logging.warn('CropObjectListView.merge(): trying to merge empty selection.')
+            return
+
         # Get new bbox coordinates
         top = 0
         bottom = 100000
@@ -295,18 +299,28 @@ class CropObjectRenderer(FloatLayout):
     def __init__(self, annot_model, editor_widget, **kwargs):
         super(CropObjectRenderer, self).__init__(**kwargs)
 
-        # Bindings for model changes
+        # Bindings for model changes.
+        # These bindings are what causes changes in the model to propagate
+        # to the view. However, the DictProperty in the model does not
+        # signal changes to the dicts it contains, only insert/delete states.
+        # This implies that e.g. moving a CropObject does not trigger the
+        # self.update_cropobject_data() binding.
         annot_model.bind(cropobjects=self.update_cropobject_data)
+
+        # This is just a misc operation, to keep the renderer
+        # in a valid state when the user loads a different MLClassList.
         annot_model.bind(mlclasses=self.recompute_mlclasses_color_dict)
 
         # Bindings for view changes
-        # annot_model.bind(image=self.??????)
         editor_widget.bind(height=self.editor_height_changed)
         editor_widget.bind(width=self.editor_width_changed)
 
         self.size = editor_widget.size
         self.pos = editor_widget.pos
 
+        # The self.selectable_cropobjects level of indirection only
+        # handles numpy to kivy world conversion. This can be handled
+        # in the adapter conversion method, maybe?
         self.adapter = DictAdapter(
             data=self.selectable_cropobjects,
             args_converter=self.selectable_cropobject_converter,

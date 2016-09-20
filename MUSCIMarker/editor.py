@@ -14,7 +14,7 @@ from kivy.uix.label import Label
 
 import cv2
 
-import mhr.preprocessing as bb
+from utils import connected_components2bboxes
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -221,8 +221,9 @@ class TrimmedBoundingBoxTracer(BoundingBoxTracer):
             # It is in *model* image coordinates, need to resize this
             # back to *editor* coordinates!!!
             renderer = app.cropobject_list_renderer
-            # Try compensating for potential fencepost?
-            model_coords = out_t, out_l, out_b - out_t + 1, out_r - out_l + 1
+            # Try compensating for potential fencepost? ...nope
+#            model_coords = out_t, out_l, out_b - out_t + 1, out_r - out_l + 1
+            model_coords = out_t, out_l, out_b - out_t, out_r - out_l
             # This part should get superseded by the Scaler that we implemented
             # in MMBrowser utils.
             ed_b, ed_l, ed_height, ed_width = \
@@ -291,7 +292,7 @@ class ConnectedComponentBoundingBoxTracer(BoundingBoxTracer):
             logging.info('CCselect: Recomputing bboxes...')
             if (self._cc < 0) or (self._labels is None):
                 self._cc, self._labels = cv2.connectedComponents(image)
-            self._bboxes = bb.connected_components2bboxes(self._labels)
+            self._bboxes = connected_components2bboxes(self._labels)
 
         # Find components that are inside the selection.
         selected_labels = set(self._labels[img_t:img_b, img_l:img_r].flatten())
@@ -315,8 +316,9 @@ class ConnectedComponentBoundingBoxTracer(BoundingBoxTracer):
             # This is in *model* image coordinates, need to resize this
             # back to *editor* coordinates!!!
             renderer = app.cropobject_list_renderer
-            # Try compensating for potential fencepost?
-            model_coords = out_t, out_l, out_b - out_t + 1, out_r - out_l + 1
+            # Try compensating for potential fencepost? ...Nope
+            # model_coords = out_t, out_l, out_b - out_t + 1, out_r - out_l + 1
+            model_coords = out_t, out_l, out_b - out_t, out_r - out_l
             ed_b, ed_l, ed_height, ed_width = \
                 renderer.model_coords_to_editor_coords(*model_coords)
             ed_t = ed_b + ed_height

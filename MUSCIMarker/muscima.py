@@ -1,9 +1,11 @@
 """This module implements tools for loading the CVC-MUSCIMA and MUSCIMA++
 datasets."""
 from __future__ import print_function, unicode_literals
+import base64
 import logging
 import os
 from os.path import dirname
+
 import cv2
 import numpy
 from lxml import etree
@@ -404,9 +406,72 @@ class MUSCImage(object):
 
 
 class CropObject(object):
-    """One annotated object."""
-    def __init__(self, objid, clsid, x, y, width, height):
-        logging.info('Initializing CropObject with objid {0}'.format(objid))
+    """One annotated object.
+
+    The CropObject represents one instance of an annotation. It implements
+    the following attributes:
+
+    * `objid`: the unique number of the given annotation instance in the set
+      of annotations encoded in the containing `CropObjectList`.
+    * `clsid`: the identifier of the label that was given to the annotation.
+    * `x`: the vertical dimension (row) of the upper left corner pixel.
+    * `y`: the horizontal dimension (column) of the upper left corner pixel.
+    * `width`: the amount of rows that the CropObject spans.
+    * `height`: the amount of columns that the CropObject spans.
+    * `mask`: a binary (0/1) numpy array that denotes the area within the
+      CropObject's bounding box (specified by `x`, `y`, `height` and `width`)
+      that the CropObject actually occupies. If the mask is `None`, the
+      object occupies the entire bounding box.
+
+    To recover the area corresponding to a CropObject `c`, use:
+
+    >>> crop = img[c.top:c.bottom, c.left:c.right] * c.mask if c.mask is not None
+    >>> crop = img[c.top:c.bottom, c.left:c.right] if c.mask is None
+
+    Because this is clunky, we have implemented the following to get the crop:
+
+    >>> crop = c.project_to(img)
+
+    And to get the CropObject projected onto the entire image:
+
+    >>> crop = c.project_on(img)
+
+    Above, note the multiplicative role of the mask: while we typically would
+    expect the mask to be binary, in principle, this is not strictly necessary.
+    You could supply a different mask interpration, such as probabilistic.
+    However, we strongly advise not to misuse this feature unless you have
+    a really good reason; remember that the CropObject is supposed to represent
+    an annotation of a given image. (One possible use for a non-binary mask
+    that we can envision is aggregating multiple annotations of the same
+    image.)
+
+    For visualization, there is a more sophisticated method that renders
+    the CropObject as a colored transparent rectangle over a RGB image.
+    (NOTE: this really changes the input image!)
+
+    >>> c_obj.render(img)
+    >>> plt.imshow(c_obj); plt.show()
+
+    However, `CropObject.render()` currently does not support rendering
+    the mask.
+
+    Implementation notes on the mask
+    --------------------------------
+
+    **DEPRECATED**
+
+    The mask is a numpy array that will be saved as a `base64` string directly.
+    This is not ideal for compatibility, as loading is only possible with
+    python/numpy. Ideally, we would base64-encode the pattern of 1/0: the width
+    and height of the CropObject at the same time give you the dimension
+    of the mask, so we don't need to save the mask shape extra.
+
+    (Also, the numpy array needs to be made C-contiguous for that, which
+    explains the `order='C'` hack in `set_mask()`.)
+    """
+    def __init__(self, objid, clsid, x, y, width, height, mask=None):
+        logging.info('Initializing CropObject with objid {0}, x={1}, '
+                     'y={2}, h={3}, w={4}'.format(objid, x, y, height, width))
         self.objid = objid
         self.clsid = clsid
         self.x = x
@@ -414,10 +479,34 @@ class CropObject(object):
         self.width = width
         self.height = height
 
-        # self.to_integer_bounds()
+        self.to_integer_bounds()
+
+        # The mask presupposes integer bounds.
+        # Applied relative to CropObject bounds, not the whole image.
+        self.mask = None
+        self.set_mask(mask)
 
         self.is_selected = False
         logging.info('...done!')
+
+    def set_mask(self, mask):
+        if mask is None:
+            self.mask = None
+        else:
+            # Check dimension
+            t, l, b, r = self.bbox_to_integer_bounds(self.top,
+                                                     self.left,
+                                                     self.bottom,
+                                                     self.right)#.count()
+            if mask.shape != (b - t, r - l):
+                raise ValueError('Mask shape {0} does not correspond'
+                                 ' to integer shape {1} of CropObject.'
+                                 ''.format(mask.shape, (b - t, r - l)))
+            if str(mask.dtype) != 'uint8':
+                logging.warn('CropObject.set_mask(): Supplied non-integer mask'
+                             ' with dtype={0}'.format(mask.dtype))
+
+            self.mask = mask.astype('uint8')
 
     @property
     def top(self):
@@ -445,8 +534,11 @@ class CropObject(object):
         so that no area is lost (e.g. bottom and right bounds are
         rounded up, top and left bounds are rounded down).
 
-        WARNING: Has some bug?
+        Returns the rounded-off integers (top, left, bottom, right)
+        as `int`s.
         """
+        logging.info('bbox_to_integer_bounds: inputs {0}'.format((ftop, fleft, fbottom, fright)))
+
         top = ftop - (ftop % 1.0)
         left = fleft - (fleft % 1.0)
         bottom = fbottom - (fbottom % 1.0)
@@ -456,7 +548,16 @@ class CropObject(object):
         if fright % 1.0 != 0:
             right += 1.0
 
-        return top, left, bottom, right
+        if top != ftop:
+            logging.info('bbox_to_integer_bounds: rounded top by {0}'.format(top - ftop))
+        if left != fleft:
+            logging.info('bbox_to_integer_bounds: rounded left by {0}'.format(left - fleft))
+        if bottom != fbottom:
+            logging.info('bbox_to_integer_bounds: rounded bottom by {0}'.format(bottom - fbottom))
+        if right != fright:
+            logging.info('bbox_to_integer_bounds: rounded right by {0}'.format(right - fright))
+
+        return int(top), int(left), int(bottom), int(right)
 
     def to_integer_bounds(self):
         bbox = self.bounding_box
@@ -468,6 +569,25 @@ class CropObject(object):
         self.y = l
         self.height = height
         self.width = width
+
+    def project_to(self, img):
+        """This function returns the *crop* of the input image
+        corresponding to the CropObject (incl. masking).
+        Assumes zeros are background."""
+        # Make a copy! We don't want to modify the original image by the mask.
+        crop = img[self.top:self.bottom, self.left:self.right] * 1
+        if self.mask is not None:
+            crop *= self.mask
+        return crop
+
+    def project_on(self, img):
+        """This function returns only those parts of the input image
+        that correspond to the CropObject and masks out everything else
+        with zeros."""
+        output = numpy.zeros(img.shape, img.dtype)
+        crop = self.project_to(img)
+        output[self.top:self.bottom, self.left:self.right] = crop
+        return output
 
     def render(self, img, alpha=0.3, rgb=(1.0, 0.0, 0.0)):
         """Renders itself upon the given image as a rectangle
@@ -500,8 +620,45 @@ class CropObject(object):
         lines.append('\t<Width>{0}</Width>'.format(self.width))
         lines.append('\t<Height>{0}</Height>'.format(self.height))
         lines.append('\t<Selected>false</Selected>')
+
+        mask_string = self.encode_mask(self.mask)
+        lines.append('\t<Mask>{0}</Mask>'.format(mask_string))
+
         lines.append('</CropObject>')
         return '\n'.join(lines)
+
+    @staticmethod
+    def encode_mask(mask, compress=False):
+        """Encodes the mask array in a compact form. Returns 'None' if mask
+        is None. If the mask is not None, uses the following algorithm:
+
+        * Flatten the mask (then use width and height of CropObject for
+          reshaping).
+        * Record as string, with whitespace separator
+        * Compress string using gz2 (if compress=True) NOT IMPLEMENTED
+        * Return resulting string
+        """
+        if mask is None:
+            return 'None'
+        mask_flat = mask.flatten()
+        output = ' '.join(map(str, mask_flat))
+        return output
+
+    @staticmethod
+    def decode_mask(mask_string, shape):
+        """Decodes the mask array from the encoded form to the 2D numpy array."""
+        if mask_string == 'None':
+            return None
+        try:
+            values = map(float, mask_string.split())
+        except ValueError:
+            logging.info('CropObject.decode_mask(): Cannot decode mask values:\n{0}'.format(mask_string))
+            raise
+        mask = numpy.array(values).reshape(shape)
+        #s = base64.decodestring(mask_string)
+        #mask = numpy.frombuffer(s)
+        #logging.info('CropObject.decode_mask(): shape={0}\nmask={1}'.format(mask.shape, mask))
+        return mask
 
 
 class MLClass(object):
@@ -548,6 +705,12 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
                          y=float(cropobject.findall('X')[0].text),
                          width=float(cropobject.findall('Width')[0].text),
                          height=float(cropobject.findall('Height')[0].text))
+        mask = None
+        m = cropobject.findall('Mask')
+        if len(m) > 0:
+            mask = CropObject.decode_mask(cropobject.findall('Mask')[0].text,
+                                          shape=(obj.height, obj.width))
+        obj.set_mask(mask)
         logging.info('Created CropObject with ID {0}'.format(obj.objid))
         if integer_bounds is True:
             obj.to_integer_bounds()

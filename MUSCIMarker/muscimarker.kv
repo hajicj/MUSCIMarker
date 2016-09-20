@@ -353,6 +353,7 @@
     size_hint: None, None if edited_image is not None else (0.8, 0.8)
     size: edited_image.size if edited_image is not None else (None, None)
     #pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+    pos: 0.5, 0.5
 
     # width: self.width
     # height: self.height
@@ -373,6 +374,12 @@
     size_hint: 1.0, 1.0
     # orientation: 'vertical'
 
+    canvas.before:
+        Color:
+            rgba: 0.1, 0.1, 0.1, 1
+        Rectangle:
+            size: self.size
+
     ImageEditorLayout:
         id: editor
 
@@ -383,24 +390,6 @@
 
 MUSCIMarkerLayout:
     cols: 1
-
-    ActionBar:
-        id: actionbar
-        size_hint: 0.1, None
-
-        ActionView:
-            id: av
-
-            ActionPrevious:
-                with_previous: False
-                on_release: pass
-
-            ActionLabel:
-                text: 'MUSCIMarker mockup'
-
-            ActionButton:
-                text: 'Exit'
-                on_release: app.exit()
 
 
     # GridLayout:
@@ -419,3 +408,34 @@ MUSCIMarkerLayout:
         CommandSidebar:
             id: command_sidebar
             pos: root.width - self.width, 0
+
+
+    ActionBar:
+        id: actionbar
+        size_hint: 0.1, None
+
+        ActionView:
+            id: av
+
+            ActionPrevious:
+                with_previous: False
+                on_release: pass
+
+            ActionLabel:
+                text: 'MUSCIMarker'
+
+            ActionButton:
+                text: 'BACKUP'
+                on_release: app.do_save_app_state()
+
+            ActionButton:
+                text: 'RECOVER'
+                on_release: app.do_recovery()
+
+            ActionButton:
+                text: 'SETTINGS'
+                on_release: app.open_settings()
+
+            ActionButton:
+                text: 'EXIT'
+                on_release: app.exit()

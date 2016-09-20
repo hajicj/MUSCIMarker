@@ -124,6 +124,7 @@ import time
 from random import random
 from math import sqrt
 
+import cPickle
 import cv2
 
 from kivy._event import EventDispatcher
@@ -142,7 +143,7 @@ import muscima as mm
 
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
-from utils import FileNameLoader, FileSaver
+from utils import FileNameLoader, FileSaver, ImageToModelScaler
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
 
@@ -358,9 +359,12 @@ class MUSCIMarkerApp(App):
     The coordinates of added CropObjects are therefore always kept in relation
     to the size of the image when it is first displayed.
 
-    This number specificly defines the scaling upon CropOpbject *import*.
+    This number specifically defines the scaling upon CropOpbject *import*.
     For exporting, use 1 / image_height_ratio_in.
     '''
+
+    image_scaler = ObjectProperty()
+    '''Experimental: making scaling more principled. (Taken from MMBrowser.)'''
 
     current_image_width = NumericProperty()
     image_width_ratio_in = NumericProperty()
@@ -391,7 +395,9 @@ class MUSCIMarkerApp(App):
     message = ObjectProperty(None)
 
     #######################################
-    # Keyboard shortcuts
+    # Keyboard shortcuts (at the app level, there are none so far
+    # and keyboard shortcut handling is pretty decentralized & not
+    # great)
     keyboard_dispatch = DictProperty(None)
     '''
     '''
@@ -400,9 +406,6 @@ class MUSCIMarkerApp(App):
     # App build & config methods
 
     def build(self):
-
-        # Define root
-        # self.root = MUSCIMarkerLayout()
 
         # Define bindings for compartmentalized portions of the application
         self.mlclass_list_loader.bind(filename=self.import_mlclass_list)
@@ -468,7 +471,25 @@ class MUSCIMarkerApp(App):
         main_area.add_widget(tool_sidebar)
         logging.info('App: main area children: {0}'.format(main_area.children))
 
-        # logging.info('App: Clock.max_iteration = {0}'.format(Clock.max_iteration))
+        # Attempt recovery
+        attempt_recovery = conf.get('recovery', 'attempt_recovery_on_build')
+        if attempt_recovery:
+            logging.info('App.build: Requested an attempt to recover last application'
+                         ' state at build time.')
+            self.do_recovery()
+
+        recovery_dump_freq = int(conf.get('recovery', 'recovery_dump_frequency_seconds'))
+        if recovery_dump_freq is not None:
+            logging.info('App.build: Got recovery dump frequency {0}'
+                         ''.format(recovery_dump_freq))
+            if recovery_dump_freq < 2:
+                logging.info('Making a recovery dump every less than 2 seconds'
+                             ' is not sensible. Setting to the default 5.')
+                recovery_dump_freq = 5
+            logging.info('App.build: Scheduling recovery every {0} seconds'
+                         ''.format(recovery_dump_freq))
+            Clock.schedule_interval(self.do_save_app_state_clock_event,
+                                    recovery_dump_freq)
 
     def build_config(self, config):
         config.setdefaults('kivy',
@@ -486,7 +507,221 @@ class MUSCIMarkerApp(App):
                 'image_file': os.path.join(os.path.dirname(__file__), 'static',
                                            'OMR-RG_logo_darkbackground.png'),
             })
+        config.setdefaults('recovery',
+            {
+                'recovery_dir': os.path.join(os.path.dirname(__file__), 'recovery'),
+                'recovery_filename': 'MUSCIMarker_state.pkl',
+                'attempt_recovery_on_build': True,
+                'attempt_recovery_dump_on_exit': True,
+                'recovery_dump_frequency_seconds': 5,
+            })
+        config.setdefaults('toolkit',
+            {
+                'cropobject_mask_nonzero_only': True,
+                # If set, will automatically restrict all masks to nonzero
+                # pixels of the input image only.
+            })
         Config.set('kivy', 'exit_on_escape', '0')
+
+    def build_settings(self, settings):
+        with open(os.path.join(os.path.dirname(__file__), 'muscimarker_config.json')) as hdl:
+            jsondata = hdl.read()
+        settings.add_json_panel('MUSCIMarker',
+                                self.config, data=jsondata)
+
+    #######################################
+    # Functions for recovering work from crashes, inadvertent shutdowns, etc.
+    # Don't call these directly!
+
+    # TODO: refactor recovery as a separate class.
+    def _get_recovery_path(self):
+        conf = self.config
+        recovery_dir = conf.get('recovery', 'recovery_dir')
+        recovery_fname = conf.get('recovery', 'recovery_filename')
+        recovery_path = os.path.join(recovery_dir, recovery_fname)
+        return recovery_path
+
+    def _get_app_state(self):
+        state = {
+            # Need the image filename to force reloading, so that all scalers
+            # are set correctly.
+            'image_filename': self.image_loader.filename,
+            # MLClasses are a part of the model, but we need to keep the trigger
+            # properties in a consistent state.
+            'mlclass_list_filename': self.mlclass_list_loader.filename,
+            # Cropobjects are a part of the model, but we need the filename
+            # again for internal consistency (it is used e.g. in suggesting
+            # an export path).
+            'cropobject_list_filename': self.cropobject_list_loader.filename,
+            # We'll use the model to get the list of current CropObjects.
+            # The cropobjects member of annot_model is a kivy Property,
+            # so it fails on pickle -- we must get the data itself
+            # by different means.
+            'cropobjects': self.annot_model.cropobjects.values(),
+        }
+        return state
+
+    def _build_from_app_state(self, state):
+        """This function actually sets the app into a consistent state
+        corresponding to the recovered state.
+
+        In case of failure, it will try to revert any changes made and
+        not kill the application. If there is an exception thrown during
+        reverting, it will kill the application, though, because that means
+        it was in an inconsistent state before recovery even started."""
+        logging.info('App._build_from_state: starting')
+        cropobjects = state['cropobjects']
+        logging.info('Cropobjects {0}'.format(cropobjects))
+        mlclass_list_filename = state['mlclass_list_filename']
+        image_filename = state['image_filename']
+        cropobject_list_filename = state['cropobject_list_filename']
+
+        fail = False
+        if not os.path.isfile(mlclass_list_filename):
+            logging.warn('App._build_from_app_state: MLClassList {0}'
+                         ' does not exist!'.format(mlclass_list_filename))
+            fail = True
+        if not os.path.isfile(cropobject_list_filename):
+            logging.warn('App._build_from_app_state: CropObjectList {0}'
+                         ' does not exist!'.format(cropobject_list_filename))
+            fail = True
+        if not os.path.isfile(image_filename):
+            logging.warn('App._build_from_app_state: Image {0}'
+                         ' does not exist!'.format(image_filename))
+            fail = True
+        if fail:
+            logging.warn('App._build_from_app_state: could not recover'
+                         ' due to missing files.')
+
+        # Trigger MLClass list loading
+        logging.info('App._build_from_app_state: Loading MLClasses: {0}'
+                     ''.format(mlclass_list_filename))
+        # Generically error-resistant loading: ignores errors, tries to revert
+        # (but app state may be damaged, so revert might not be possible)
+        _old_mlclasslist_filename = self.mlclass_list_loader.filename
+        try:
+            self.mlclass_list_loader.filename = mlclass_list_filename
+        except:
+            logging.warn('App._build_from_app_state: Loading MLClasses {0}'
+                         ' failed, reverting to old.'
+                         ''.format(mlclass_list_filename))
+            self.mlclass_list_loader.filename = _old_mlclasslist_filename
+            logging.warn('App._build_from_app_state: Recovery failed.')
+            # Once we reach an error, we need to get out ASAP.
+            return
+
+        # Trigger image loading. Should set all the scaling as well.
+        logging.info('App._build_from_app_state: Loading image: {0}'
+                     ''.format(image_filename))
+        _old_image_filename = self.image_loader.filename
+        try:
+            self.image_loader.filename = image_filename
+        except:
+            logging.warn('App._build_from_app_state: Loading Image {0}'
+                         ' failed, reverting to old.'
+                         ''.format(image_filename))
+            # We don't want to stop recovery and not revert the already
+            # updated MLClasses
+            self.mlclass_list_loader.filename = _old_mlclasslist_filename
+            self.image_loader.filename = _old_image_filename
+            logging.warn('App._build_from_app_state: Recovery failed.')
+            return
+
+        # Trigger CropObjectList loading (but this is irrelevant it's just
+        # going through the motions to make sure that there is a consistent
+        # CropObjectList filename. After loading, we then replace the CropObjects
+        # replace it by the model's CropObjects instead - clear it and replace
+        # with saved CropObjects).
+        logging.info('App._build_from_app_state: Dummy-loading CropObjectList: {0}'
+                     ''.format(cropobject_list_filename))
+        _old_cropobject_list_filename = self.cropobject_list_loader.filename
+        try:
+            self.cropobject_list_loader.filename = cropobject_list_filename
+        except:
+            logging.warn('App._build_from_app_state: Loading CropObjectList {0}'
+                         ' failed, reverting to old.'
+                         ''.format(cropobject_list_filename))
+            # Dtto: reverting changes in case of failure. (This may itself fail,
+            # but if reverting fails, there is a serious problem and it should
+            # all fail.)
+            self.cropobject_list_loader.filename = _old_cropobject_list_filename
+            self.mlclass_list_loader.filename = _old_mlclasslist_filename
+            self.image_loader.filename = _old_image_filename
+            logging.warn('App._build_from_app_state: Recovery failed.')
+            return
+
+        # If we get to this point, there should not be a problem.
+
+        # Building the CropObjects from the model:
+        logging.info('App._build_from_app_state: Replacing file-based CropObjects'
+                     ' with CropObjects loaded from the model in the app state.')
+        logging.info('App._build_from_app_state: no. of CropObjects: from file:'
+                     ' {0}, from state: {1}'.format(len(self.annot_model.cropobjects),
+                                                    len(cropobjects)))
+        self.annot_model.clear_cropobjects()
+        # This should trigger a redraw.
+        self.annot_model.import_cropobjects(cropobjects)
+
+        logging.info('App._build_from_state: Finished successfully.')
+
+    def _save_app_state(self):
+        recovery_path = self._get_recovery_path()
+        logging.info('App.recover: Saving recovery file {0}'.format(recovery_path))
+
+        state = self._get_app_state()
+
+        # Cautious behavior: let's try not to destroy the previous
+        # backup until we are sure the backup has been made correctly.
+        rec_temp_name = recovery_path + '.temp'
+        logging.info('App.save_app_state: Saving to recovery file {0}'
+                     ''.format(recovery_path))
+        try:
+            with open(rec_temp_name, 'wb') as hdl:
+                cPickle.dump(state, hdl, protocol=cPickle.HIGHEST_PROTOCOL)
+        except:
+            logging.warn('App.save_app_state: Saving to recovery file failed.')
+            os.remove(rec_temp_name)
+            return
+
+        if os.path.isfile(recovery_path):
+            os.remove(recovery_path)
+        os.rename(rec_temp_name, recovery_path)
+
+    def _recover(self):
+        recovery_path = self._get_recovery_path()
+        logging.info('App.recover: Loading recovery file {0}'.format(recovery_path))
+        if not os.path.exists(recovery_path):
+            logging.warn('App.recover: Recovery file {0} not found! '
+                         'No recovery will be performed.'.format(recovery_path))
+            return
+
+        try:
+            with open(recovery_path, 'rb') as hdl:
+                state = cPickle.load(hdl)
+        except cPickle.PickleError:
+            logging.warn('App.recover: Recovery failed! Resuming without recovery.')
+            return
+
+        logging.info('App.recover: loaded state, rebuilding from state.')
+        self._build_from_app_state(state=state)
+
+    # These functions are the public interface to the recovery manager.
+    def do_save_app_state(self):
+        """Use this method to invoke recovery state dump.
+        So far, it is trivial, but there may be some more complex
+        logic & validation here later on."""
+        self._save_app_state()
+
+    def do_recovery(self):
+        """Use this method to invoke recovery.
+        So far, it is trivial, but there may be some more complex
+        logic & validation here later on."""
+        self._recover()
+
+    def do_save_app_state_clock_event(self, *args):
+        logging.info('App: making scheduled recovery dump.')
+        self.do_save_app_state()
+        logging.info('App: scheduled recovery dump done.')
 
     #######################################
     # Keyboard control
@@ -541,7 +776,8 @@ class MUSCIMarkerApp(App):
         except:
             logging.info('App: Loading CropObjectList from file \'{0}\' failed.'
                          ''.format(pos))
-            return
+            raise
+            #return
 
         logging.info('App: Imported CropObjectList has {0} items.'
                      ''.format(len(cropobject_list)))
@@ -555,11 +791,13 @@ class MUSCIMarkerApp(App):
             img = cv2.imread(pos)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             # img = bb.load_grayscale(pos)
-            self.annot_model.load_image(img)
         except:
             logging.info('App: Loading image from file \'{0}\' failed.'
                          ''.format(pos))
             return
+
+        self.annot_model.clear_cropobjects()
+        self.annot_model.load_image(img)
 
         # Only change the displayed image after annotation.
         self.currently_edited_image_filename = pos
@@ -572,6 +810,9 @@ class MUSCIMarkerApp(App):
         editor_width = float(editor.width)
         self.image_height_ratio_in = editor_height / self.current_image_height
         self.image_width_ratio_in = editor_width / self.current_image_width
+
+        self.image_scaler = ImageToModelScaler(self._get_editor_widget(),
+                                               self.annot_model.image)
 
     ##########################################################################
     # Resizing
@@ -597,16 +838,24 @@ class MUSCIMarkerApp(App):
 
         return m_vertical, m_horizontal
 
-    def generate_cropobject_from_selection(self, selection, clsid=None):
-        """After a selection is made, create the new CropObject
-        and add it to the model.
+    def generate_cropobject_from_selection(self, selection, clsid=None, mask=None,
+                                           integer_bounds=True):
+        """After a selection is made, create the new CropObject.
+        (To add it to the model, use add_cropobject_from_selection() instead.)
 
         Recomputes the X, Y and sizes back to the Numpy world & original image
         size.
 
         :param selection: A dict with the members `top`, `left`, `bottom` and `right`.
+            These coordinates are assumed to be in the Kivy world.
+
+        :param mask: Model-world mask to apply to the CropObject.
+
+        :param integer_bounds: Whether the created CropObject should be scaled
+            to integer bounds.
+
         """
-        logging.info('App: Adding cropobject from selection {0}'.format(selection))
+        logging.info('App: Generating cropobject from selection {0}'.format(selection))
         # The current CropObject definition is weird this way...
         # x, y is the top-left corner, X is horizontal, Y is vertical.
         # Kivy counts position from bottom left, while CropObjects count them
@@ -635,6 +884,16 @@ class MUSCIMarkerApp(App):
         width_unscaled = float(selection['right'] - selection['left'])
         width_scaled = float(width_unscaled / self.image_width_ratio_in)
 
+        # Try scaler
+        mT, mL, mB, mR = self.image_scaler.bbox_widget2model(selection['top'],
+                                                             selection['left'],
+                                                             selection['bottom'],
+                                                             selection['right'])
+        mH = mB - mT
+        mW = mR - mL
+        logging.info('App.scaler: Scaler would generate numpy-world'
+                     ' x={0}, y={1}, h={2}, w={3}'.format(mT, mL, mH, mW))
+
         c = mm.CropObject(objid=new_cropobject_objid,
                           clsid=new_cropobject_clsid,
                           # Hah -- here, having the Image as the parent widget
@@ -642,7 +901,10 @@ class MUSCIMarkerApp(App):
                           x=x_scaled_inverted,
                           y=y_scaled,
                           width=width_scaled,
-                          height=height_scaled)
+                          height=height_scaled,
+                          mask=mask)
+        if integer_bounds:
+            c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
                      ''.format(selection, {'objid': c.objid,
                                            'clsid': c.clsid,
@@ -651,10 +913,59 @@ class MUSCIMarkerApp(App):
                                            'height': c.height}))
         return c
 
-    def add_cropobject_from_selection(self, selection, clsid=None):
-        c = self.generate_cropobject_from_selection(selection, clsid=clsid)
+    def generate_cropobject_from_model_selection(self, selection, clsid=None, mask=None,
+                                                 integer_bounds=True):
+        """After a selection is made **in the model world**, create the new CropObject.
+        (To add it to the model, use add_cropobject_from_model_selection() instead.)
+
+        :param selection: A dict with the members `top`, `left`, `bottom` and `right`.
+            These coordinates are assumed to be in the model/numpy world.
+
+        :param mask: Model-world mask to apply to the CropObject.
+
+        :param integer_bounds: Whether the created CropObject should be scaled
+            to integer bounds.
+        """
+        logging.info('App: Generating cropobject from model selection {0}'.format(selection))
+        new_cropobject_objid = self.annot_model.get_next_cropobject_id()
+        new_cropobject_clsid = clsid
+        if clsid is None:
+            new_cropobject_clsid = self.annot_model.mlclasses_by_name[self.currently_selected_mlclass_name].clsid
+        mT, mL, mB, mR = selection['top'], selection['left'],\
+                         selection['bottom'], selection['right']
+        mH = mB - mT
+        mW = mR - mL
+
+        c = mm.CropObject(objid=new_cropobject_objid,
+                          clsid=new_cropobject_clsid,
+                          x=mT, y=mL, width=mW, height=mH,
+                          mask=mask)
+        if integer_bounds:
+            c.to_integer_bounds()
+        logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
+                     ''.format(selection, {'objid': c.objid,
+                                           'clsid': c.clsid,
+                                           'x': c.x, 'y': c.y,
+                                           'width': c.width,
+                                           'height': c.height}))
+        return c
+
+    def add_cropobject_from_selection(self, selection, clsid=None, mask=None):
+        logging.info('App: Will add cropobject from selection {0}'.format(selection))
+        c = self.generate_cropobject_from_selection(selection,
+                                                    clsid=clsid,
+                                                    mask=mask)
+        logging.info('App: Adding cropobject from selection {0}'.format(selection))
         self.annot_model.add_cropobject(c)  # This should trigger rendering
         # self.current_n_cropobjects = len(self.annot_model.cropobjects)
+
+    def add_cropobject_from_model_selection(self, selection, clsid=None, mask=None):
+        logging.info('App: Will add cropobject from model_selection {0}'.format(selection))
+        c = self.generate_cropobject_from_model_selection(selection,
+                                                          clsid=clsid,
+                                                          mask=mask)
+        logging.info('App: Adding cropobject from model_selection {0}'.format(selection))
+        self.annot_model.add_cropobject(c)  # This should trigger rendering
 
     def generate_model_bbox_from_selection(self, selection):
         c = self.generate_cropobject_from_selection(selection, clsid=None)
@@ -743,4 +1054,10 @@ class MUSCIMarkerApp(App):
              'image_file': self.image_loader.filename,
              })
         self.config.write()
+
+        attempt_recovery_dump = self.config.get('recovery',
+                                                'attempt_recovery_dump_on_exit')
+        if attempt_recovery_dump:
+            self.do_save_app_state()
+
         self.stop()

@@ -7,8 +7,7 @@ from time import time
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.clock import Clock
-from kivy.graphics.context_instructions import Color
-from kivy.graphics.vertex_instructions import Rectangle
+from kivy.graphics import Mesh
 from kivy.properties import ListProperty, BooleanProperty, NumericProperty
 from kivy.properties import ObjectProperty
 from kivy.uix.behaviors import ButtonBehavior
@@ -118,6 +117,10 @@ class CropObjectView(SelectableView, ToggleButton):
         self.cropobject = selectable_cropobject
         self.is_selected = selectable_cropobject.is_selected
 
+        # If the underlying cropobject has a mask, render that mask
+        if self._model_counterpart.mask is not None:
+            self.render_mask()
+
         self.size = self.cropobject.width, self.cropobject.height
         self.size_hint = (None, None)
         self.pos = self.cropobject.y, self.cropobject.x
@@ -164,6 +167,13 @@ class CropObjectView(SelectableView, ToggleButton):
             self.background_color = self.selected_color
         else:
             self.background_color = self.deselected_color
+
+    def render_mask(self):
+        """NOT IMPLEMENTED
+
+        Rendering a mask in Kivy is difficult. (Can Mesh do nonconvex?)"""
+        pass
+
 
     ##########################################################################
     # Keyboard event processing: the core UI of the CropObjectView
@@ -223,17 +233,17 @@ class CropObjectView(SelectableView, ToggleButton):
 
         # Fine-grained moving around
         elif dispatch_key == '273+alt':  # Up arrow
-            logging.info('CropObjectView: handling move_fine up')
-            self.move_fine(vertical=1)
+            logging.info('CropObjectView: handling move_fine up: DISABLED')
+            #self.move_fine(vertical=1)
         elif dispatch_key == '274+alt':  # Down arrow
-            logging.info('CropObjectView: handling move_fine down')
-            self.move_fine(vertical=-1)
+            logging.info('CropObjectView: handling move_fine down: DISABLED')
+            #self.move_fine(vertical=-1)
         elif dispatch_key == '275+alt':  # Right arrow
-            logging.info('CropObjectView: handling move_fine right')
-            self.move_fine(horizontal=1)
+            logging.info('CropObjectView: handling move_fine right: DISABLED')
+            #self.move_fine(horizontal=1)
         elif dispatch_key == '276+alt':  # Left arrow
-            logging.info('CropObjectView: handling move_fine left')
-            self.move_fine(horizontal=-1)
+            logging.info('CropObjectView: handling move_fine left: DISABLED')
+            #self.move_fine(horizontal=-1)
 
         # Coarse-grained stretching
         elif dispatch_key == '273+shift':  # Up arrow
@@ -251,17 +261,17 @@ class CropObjectView(SelectableView, ToggleButton):
 
         # Fine-grained stretching
         elif dispatch_key == '273+alt,shift':  # Up arrow
-            logging.info('CropObjectView: handling stretch_fine up')
-            self.stretch_fine(vertical=1)
+            logging.info('CropObjectView: handling stretch_fine up: DISABLED')
+            #self.stretch_fine(vertical=1)
         elif dispatch_key == '274+alt,shift':  # Down arrow
-            logging.info('CropObjectView: handling stretch_fine down')
-            self.stretch_fine(vertical=-1)
+            logging.info('CropObjectView: handling stretch_fine down: DISABLED')
+            #self.stretch_fine(vertical=-1)
         elif dispatch_key == '275+alt,shift':  # Right arrow
-            logging.info('CropObjectView: handling stretch_fine right')
-            self.stretch_fine(horizontal=1)
+            logging.info('CropObjectView: handling stretch_fine right: DISABLED')
+            #self.stretch_fine(horizontal=1)
         elif dispatch_key == '276+alt,shift':  # Left arrow
-            logging.info('CropObjectView: handling stretch_fine left')
-            self.stretch_fine(horizontal=-1)
+            logging.info('CropObjectView: handling stretch_fine left: DISABLED')
+            #self.stretch_fine(horizontal=-1)
 
         # Change class
         elif dispatch_key == '99':  # c
@@ -288,7 +298,7 @@ class CropObjectView(SelectableView, ToggleButton):
         # so for example Escape unselects all CropObjects *and* quits the application.
         # Therefore, the CropObjectListView should "block" these signals
         # from propagating further.
-        # Policy: if any CropObjectView captures a key signal, it will not propagate
+        # Current policy: if any CropObjectView captures a key signal, it will propagate
         # past the CropObjectListView.
         self.dispatch('on_key_captured')
         return False
@@ -335,6 +345,7 @@ class CropObjectView(SelectableView, ToggleButton):
             id='mlclass_cropobject_selection_spinner_{0}'.format(self.cropobject.objid),
             pos=self.pos,
             text='{0}'.format(self._model.mlclasses[self.cropobject.clsid].name),
+            font_size=15,
             values=sorted(self._model.mlclasses_by_name.keys(),
                           key=lambda k: self._model.mlclasses_by_name[k].clsid),
             width=300 / self._editor_scale,
@@ -401,6 +412,10 @@ class CropObjectView(SelectableView, ToggleButton):
         output_lines.append('M.w, M.h:      {0:.2f}, {1:.2f}'
                             ''.format(self._model_counterpart.width,
                                       self._model_counterpart.height))
+        if self._model_counterpart.mask is None:
+            output_lines.append('Mask.nnz: None')
+        else:
+            output_lines.append('Mask.nnz: {0}'.format(self._model_counterpart.mask.sum()))
 
         output_lines.append('E.x, E.y:        {0:.2f}, {1:.2f}'.format(self.x, self.y))
         output_lines.append('E.w, E.h:        {0:.2f}, {1:.2f}'.format(self.width,
@@ -449,6 +464,8 @@ class CropObjectView(SelectableView, ToggleButton):
     def move(self, vertical=0, horizontal=0):
         """Move the underlying CropObject.
 
+        NOTE: How to deal with CropObjects that have a mask? Roll it?
+
         In the current implementation, there is no listener inside the model
         for individual CropObjects, so there is no propagation of the change
         to the view. We currently work around this by simply moving the view
@@ -459,8 +476,10 @@ class CropObjectView(SelectableView, ToggleButton):
                      ''.format(self.cropobject.objid, vertical, horizontal))
         c = self._model_counterpart
         # The CropObjects in the model are kept in the Numpy world.
-        c.x += vertical * self._height_scaling_factor
-        c.y += horizontal * self._height_scaling_factor
+        c.x += vertical #* self._height_scaling_factor
+        c.y += horizontal #* self._height_scaling_factor
+        if c.mask is not None:
+            logging.warn('CropObjectView {0}: Moving a CropObject invalidates its mask!')
         self._model.add_cropobject(c)
 
         self.move_view(vertical=vertical, horizontal=horizontal)
@@ -468,8 +487,8 @@ class CropObjectView(SelectableView, ToggleButton):
     def move_view(self, vertical=0, horizontal=0):
         logging.info('CropObjectView {0}: moving view vertical={1}, horizontal={2}'
                      ''.format(self.cropobject.objid, vertical, horizontal))
-        self.pos = (self.pos[0] + horizontal,# / self._width_scaling_factor),
-                    self.pos[1] + vertical)# / self._width_scaling_factor))
+        self.pos = (self.pos[0] + horizontal * self._width_scaling_factor,
+                    self.pos[1] + vertical * self._width_scaling_factor)
 
     def move_fine(self, vertical=0, horizontal=0):
         """Move the underlying CropObject.
@@ -505,9 +524,9 @@ class CropObjectView(SelectableView, ToggleButton):
                      ''.format(self.cropobject.objid, vertical, horizontal))
         c = self._model_counterpart
         if c.width + horizontal > 0:
-            c.width += horizontal * self._width_scaling_factor
+            c.width += horizontal #* self._width_scaling_factor
         if c.height + vertical > 0:
-            c.height += vertical * self._height_scaling_factor
+            c.height += vertical #* self._height_scaling_factor
         self._model.add_cropobject(c)
 
         self.stretch_view(vertical=vertical, horizontal=horizontal)
@@ -516,9 +535,9 @@ class CropObjectView(SelectableView, ToggleButton):
         logging.info('CropObjectView {0}: stretching view vertical={1}, horizontal={2}'
                      ''.format(self.cropobject.objid, vertical, horizontal))
         if self.width + horizontal > 0:
-            self.width += horizontal # / self._width_scaling_factor)
+            self.width += horizontal * self._width_scaling_factor
         if self.height + vertical > 0:
-            self.height += vertical # / self._height_scaling_factor)
+            self.height += vertical * self._height_scaling_factor
 
     def stretch_fine(self, vertical=0, horizontal=0):
         """Stretch the underlying CropObject. Does NOT change its position.

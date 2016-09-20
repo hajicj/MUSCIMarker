@@ -1,0 +1,38 @@
+[
+  { "type": "title",
+    "title": "Annotation"
+  },
+
+  { "type": "bool",
+    "title": "Mask 0s",
+    "desc": "Restrict CropObject masks to nonzero image pixels?",
+    "section": "toolkit",
+    "key": "cropobject_mask_nonzero_only"
+  },
+
+  { "type": "title",
+    "title": "Recovery options"
+  },
+
+  { "type": "bool",
+    "title": "Recover on start",
+    "desc": "MUSCIMarker will attempt to start where you left off.",
+    "section": "recovery",
+    "key": "attempt_recovery_on_build"
+  },
+
+  { "type": "bool",
+    "title": "Save on exit",
+    "desc": "MUSCIMarker will attempt to remember where you are leaving off.",
+    "section": "recovery",
+    "key": "attempt_recovery_dump_on_exit"
+  },
+
+
+  { "type": "numeric",
+    "title": "Recovery dump frequency",
+    "desc": "The app state is backed up every X seconds.",
+    "section": "recovery",
+    "key": "recovery_dump_frequency_seconds"
+  }
+]
