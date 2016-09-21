@@ -124,13 +124,19 @@
 #
 
 <FileLoadButton@Button>
-    size_hint: 0.8, 0.1
-    canvas.before:
-        Rectangle:
-            size: self.size
-            pos: self.pos
-        Color:
-            rgba: 0.256, 0.256, 0.256, 1.0
+    size_hint: 1.0, 0.1
+
+    # Same as the other buttons..? Strange tricks
+    # because of adding & subtracting the active/pressed/etc.
+    # colors in a Button.
+    background_color: 1.0, 1.0, 1.0, 1.0
+
+    #canvas.before:
+    #    Color:
+    #        rgba: 0.656, 0.256, 0.256, 1.0
+    #    Rectangle:
+    #        size: (self.size[0] - 10, self.size[1] - 4)
+    #        pos: (self.pos[0] + 5, self.pos[1] + 2)
 
 
 
@@ -160,13 +166,15 @@
 
 
 <FileSaveButton@Button>
-    size_hint: 0.8, 0.1
-    canvas.before:
-        Rectangle:
-            size: self.size
-            pos: self.pos
-        Color:
-            rgba: 0.256, 0.256, 0.256, 1.0
+    size_hint: 1.0, 0.1
+
+    # The rectangle makes a weird white-ish rim around the button
+    #canvas.before:
+    #    Rectangle:
+    #        size: self.size
+    #        pos: self.pos
+    #    Color:
+    #        rgba: 0.256, 0.256, 0.256, 1.0
 
 
 <FileSaveDialog>:
@@ -198,6 +206,8 @@
                 text: "Save"
                 on_release: root.save(filechooser.path, text_input.text)
 
+
+##############################################################################
 
 <CommandSidebar@GridLayout>:
     id: settings_col
@@ -306,16 +316,6 @@
         size_hint: 1.0, 0.1
         text: 'Show CropObjects'
         on_release: app.cropobject_list_renderer.unmask_all()
-
-    Label:
-        size_hint: 1.0, 0.1
-        text: '____________'
-
-    Button:
-        id: plot_annotation_button
-        size_hint: 1.0, 0.1
-        text: 'Plot annotation'
-        on_release: app.annot_model.plot_annotations()
 
     Label:
         size_hint: 1.0, 0.1
