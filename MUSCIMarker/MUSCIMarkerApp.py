@@ -498,12 +498,19 @@ class MUSCIMarkerApp(App):
             })
         config.setdefaults('graphics',
             {
-                'fullscreen': 'auto',
+                'fullscreen': '1',
             })
         config.setdefaults('current_input_files',
             {
-                'mlclass_list_file': 'None',
-                'cropobject_list_file': 'None',
+                'mlclass_list_file': 'data/mff-muscima-mlclasses-primitives.xml',
+                'cropobject_list_file': 'test_data/empty_cropobject_list.xml',
+                'image_file': os.path.join(os.path.dirname(__file__), 'static',
+                                           'OMR-RG_logo_darkbackground.png'),
+            })
+        config.setdefaults('default_input_files',
+            {
+                'mlclass_list_file': 'data/mff-muscima-mlclasses-primitives.xml',
+                'cropobject_list_file': 'test_data/empty_cropobject_list.xml',
                 'image_file': os.path.join(os.path.dirname(__file__), 'static',
                                            'OMR-RG_logo_darkbackground.png'),
             })
@@ -680,7 +687,8 @@ class MUSCIMarkerApp(App):
                 cPickle.dump(state, hdl, protocol=cPickle.HIGHEST_PROTOCOL)
         except:
             logging.warn('App.save_app_state: Saving to recovery file failed.')
-            os.remove(rec_temp_name)
+            if os.path.isfile(rec_temp_name):
+                os.remove(rec_temp_name)
             return
 
         if os.path.isfile(recovery_path):

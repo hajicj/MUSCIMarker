@@ -1,0 +1,35 @@
+.. ----------------------------------------------------------------------
+.. This file defines some shortcuts that are used throughout
+   MUSCIMarker documentation.
+
+.. |UFAL| replace:: Institute of Formal and Applied Linguistics
+.. _UFAL: https://ufal.mff.cuni.cz
+
+.. |GitHub| replace:: GitHub
+.. _GitHub: https://github.com/hajicj/MUSCIMarker
+
+
+.. ----------------------------------------------------------------------
+.. MUSCIMarker dependencies
+
+.. |Kivy| replace:: Kivy
+.. _Kivy: https://kivy.org/docs/gettingstarted/intro.html
+
+.. |lxml| replace:: lxml
+.. _lxml: http://lxml.de
+
+.. |numpy| replace:: NumPy
+.. _numpy: http://www.numpy.org
+
+.. |scikit-image| replace:: scikit-image
+.. _scikit-image: http://scikit-image.org
+
+.. |opencv| replace:: OpenCV
+.. _opencv: http://opencv.org
+
+
+.. ----------------------------------------------------------------------
+.. Other tools
+
+.. |conda| replace:: conda
+.. _conda: http://conda.pydata.org

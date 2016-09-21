@@ -90,4 +90,4 @@ target/
 *.DS_store
 
 # MUSCIMarker-specific
-MUSCIMarker/recovery/MUSCIMarker_state.pkl
+/MUSCIMarker/recovery/MUSCIMarker_state.pkl
