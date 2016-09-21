@@ -11,6 +11,17 @@
   },
 
   { "type": "title",
+    "title": "Interface"
+  },
+
+  { "type": "bool",
+    "title": "Auto-center",
+    "desc": "Center image automatically when window size changes.",
+    "section": "interface",
+    "key": "center_on_resize"
+  },
+
+  { "type": "title",
     "title": "Recovery options"
   },
 
@@ -31,7 +42,7 @@
 
   { "type": "numeric",
     "title": "Recovery dump frequency",
-    "desc": "The app state is backed up every X seconds.",
+    "desc": "The app state is backed up every X seconds. Set to 0 to turn recovery off.",
     "section": "recovery",
     "key": "recovery_dump_frequency_seconds"
   }

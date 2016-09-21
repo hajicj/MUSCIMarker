@@ -33,6 +33,7 @@ scancode2codepoint = {
 
 ##############################################################################
 
+
 class KeypressBubblingStopperBehavior(object):
     """When mixed into a Widget, will stop Window keypress events
     from bubbling through the given Widget. However, you must provide
@@ -103,6 +104,7 @@ class FileNameLoader(FloatLayout):
 
     def show_load(self, path=None):
         logging.info('FileNameLoader: Asked for file loading...')
+        logging.info('FileNameLoader: Got path: {0}'.format(path))
         if path is not None:
             content = FileLoadDialog(load=self.load,
                                      cancel=self.dismiss_popup,
@@ -118,6 +120,7 @@ class FileNameLoader(FloatLayout):
         self._popup.open()
 
     def load(self, path, filename):
+        logging.info('FileNameLoader.load: Path {0}, selection {1}'.format(path, filename))
         full_filename = os.path.join(path, filename[0])
         if not os.path.exists(full_filename):
             raise ValueError('Selected nonexistent file: {0}'

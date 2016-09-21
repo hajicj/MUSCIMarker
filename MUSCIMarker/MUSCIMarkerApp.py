@@ -402,7 +402,7 @@ class MUSCIMarkerApp(App):
     '''
     '''
 
-    #######################################
+    ##########################################################################
     # App build & config methods
 
     def build(self):
@@ -415,8 +415,9 @@ class MUSCIMarkerApp(App):
         # Resuming annotation from previous state
         conf = self.config
         logging.info('Current configuration: {0}'.format(str(conf)))
-        self.image_loader.filename = conf.get('default_input_files',
-                                              'image_file')
+        _image_abspath = os.path.abspath(conf.get('default_input_files',
+                                                  'image_file'))
+        self.image_loader.filename = _image_abspath
         logging.info('Build: Loaded image fname from config: {0}'
                      ''.format(self.image_loader.filename))
 
@@ -435,14 +436,16 @@ class MUSCIMarkerApp(App):
         e_scatter.bind(scale=self.setter('editor_scale'))
 
         logging.info('Build: Started loading mlclasses from config')
-        self.mlclass_list_loader.filename = conf.get('default_input_files',
-                                                     'mlclass_list_file')
+        _mlclass_list_abspath = os.path.abspath(conf.get('default_input_files',
+                                                         'mlclass_list_file'))
+        self.mlclass_list_loader.filename = _mlclass_list_abspath
         logging.info('Build: Loaded mlclass list fname from config: {0}'
                      ''.format(self.mlclass_list_loader.filename))
 
         logging.info('Build: Started loading cropobjects from config')
-        self.cropobject_list_loader.filename = conf.get('default_input_files',
-                                                        'cropobject_list_file')
+        _cropobject_list_abspath = os.path.abspath(conf.get('default_input_files',
+                                                        'cropobject_list_file'))
+        self.cropobject_list_loader.filename = _cropobject_list_abspath
         logging.info('Build: Finished loading cropobject list fname from config: {0}'
                      ''.format(self.cropobject_list_loader.filename))
 
@@ -473,13 +476,13 @@ class MUSCIMarkerApp(App):
 
         # Attempt recovery
         attempt_recovery = conf.get('recovery', 'attempt_recovery_on_build')
-        if attempt_recovery:
+        if attempt_recovery is True:
             logging.info('App.build: Requested an attempt to recover last application'
                          ' state at build time.')
             self.do_recovery()
 
         recovery_dump_freq = int(conf.get('recovery', 'recovery_dump_frequency_seconds'))
-        if recovery_dump_freq is not None:
+        if (recovery_dump_freq is not None) and (recovery_dump_freq != 0):
             logging.info('App.build: Got recovery dump frequency {0}'
                          ''.format(recovery_dump_freq))
             if recovery_dump_freq < 2:
@@ -490,6 +493,8 @@ class MUSCIMarkerApp(App):
                          ''.format(recovery_dump_freq))
             Clock.schedule_interval(self.do_save_app_state_clock_event,
                                     recovery_dump_freq)
+
+        self.do_center_current_image()
 
     def build_config(self, config):
         config.setdefaults('kivy',
@@ -502,17 +507,15 @@ class MUSCIMarkerApp(App):
             })
         config.setdefaults('current_input_files',
             {
-                'mlclass_list_file': 'data/mff-muscima-mlclasses-primitives.xml',
-                'cropobject_list_file': 'test_data/empty_cropobject_list.xml',
-                'image_file': os.path.join(os.path.dirname(__file__), 'static',
-                                           'OMR-RG_logo_darkbackground.png'),
+                'mlclass_list_file': os.path.abspath('data/mff-muscima-mlclasses-primitives.xml'),
+                'cropobject_list_file': os.path.abspath('test_data/empty_cropobject_list.xml'),
+                'image_file': os.path.abspath('static/OMR-RG_logo_darkbackground.png'),
             })
         config.setdefaults('default_input_files',
             {
-                'mlclass_list_file': 'data/mff-muscima-mlclasses-primitives.xml',
-                'cropobject_list_file': 'test_data/empty_cropobject_list.xml',
-                'image_file': os.path.join(os.path.dirname(__file__), 'static',
-                                           'OMR-RG_logo_darkbackground.png'),
+                'mlclass_list_file': os.path.abspath('data/mff-muscima-mlclasses-primitives.xml'),
+                'cropobject_list_file': os.path.abspath('test_data/empty_cropobject_list.xml'),
+                'image_file': os.path.abspath('static/OMR-RG_logo_darkbackground.png'),
             })
         config.setdefaults('recovery',
             {
@@ -528,6 +531,7 @@ class MUSCIMarkerApp(App):
                 # If set, will automatically restrict all masks to nonzero
                 # pixels of the input image only.
             })
+        config.setdefaults('interface', {'center_on_resize': True})
         Config.set('kivy', 'exit_on_escape', '0')
 
     def build_settings(self, settings):
@@ -536,7 +540,7 @@ class MUSCIMarkerApp(App):
         settings.add_json_panel('MUSCIMarker',
                                 self.config, data=jsondata)
 
-    #######################################
+    ##########################################################################
     # Functions for recovering work from crashes, inadvertent shutdowns, etc.
     # Don't call these directly!
 
@@ -731,7 +735,7 @@ class MUSCIMarkerApp(App):
         self.do_save_app_state()
         logging.info('App: scheduled recovery dump done.')
 
-    #######################################
+    ##########################################################################
     # Keyboard control
     def _keyboard_close(self):
         self._keyboard.unbind(on_key_down=self.on_key_down,
@@ -744,7 +748,7 @@ class MUSCIMarkerApp(App):
     def on_key_up(self, window, key, scancode):
         logging.info('Keyboard: Up {0}'.format((key, scancode)))
 
-    #######################################
+    ##########################################################################
     # Importing methods: interfacing the raw data to the model
 
     def import_mlclass_list(self, instance, pos):
@@ -824,7 +828,24 @@ class MUSCIMarkerApp(App):
                                                self.annot_model.image)
 
         # move image to middle
+        self.do_center_current_image()
+
+    ##########################################################################
+    # Centering the current image (e.g. if you get lost during high-scale work)
+
+    def do_center_current_image(self):
+        Clock.schedule_once(lambda *args: self.center_current_image())
+
+    def do_center_and_rescale_current_image(self):
+        Clock.schedule_once(lambda *args: self.center_and_rescale_current_image())
+
+    def center_and_rescale_current_image(self):
         self.center_current_image()
+        self.rescale_current_image()
+
+    def rescale_current_image(self):
+        scatter = self._get_editor_scatter_container_widget()
+        scatter.scale = 1.0
 
     def center_current_image(self):
         """Centers the current image.
@@ -834,26 +855,45 @@ class MUSCIMarkerApp(App):
             retracts the pos_hint so that the image can be moved around freely
             again.
         """
-        logging.info('App.center_current_image: current image position: {0}'
-                     ''.format(self._get_editor_widget().pos))
-        logging.info('App.center_current_image: current image pos_hint: {0}'
-                     ''.format(self._get_editor_widget().pos_hint))
+        logging.info('App.center_current_image: ====== Centering image ======')
+        scatter = self._get_editor_scatter_container_widget()
 
-        cached_pos_hint = self._get_editor_scatter_container_widget().pos_hint
-        self._get_editor_scatter_container_widget().pos_hint = {'center_y': 0.5, 'center_x': 0.5}
+        logging.info('App.center_current_image: current scatter position: {0}'
+                     ''.format(scatter.pos))
+        logging.info('App.center_current_image: current scatter pos_hint: {0}'
+                     ''.format(scatter.pos_hint))
+
+        cached_pos_hint = scatter.pos_hint
+        scatter.pos_hint = {'center_y': 0.5, 'center_x': 0.5}
         # Hack to read the what the center should be
-        self._get_editor_scatter_container_widget().parent.do_layout()
+        # self.root.do_layout()
+        scatter.parent.do_layout()
         logging.info('App.center_current_image: After redrawing layout with centered'
                      ' pos_hint, scatter position: {0}'
-                     ''.format(self._get_editor_scatter_container_widget().pos))
-        cached_pos = self._get_editor_scatter_container_widget().pos
-        self._get_editor_scatter_container_widget().pos_hint = cached_pos_hint
-        self._get_editor_scatter_container_widget().pos = cached_pos
+                     ''.format(scatter.pos))
+        # Remember the position after centering
+        cached_pos = scatter.pos
+
+        # Unlock moving the ScatterLayout around again...
+        scatter.pos_hint = cached_pos_hint
+
+        # ...but give it the position corresponding to the center.
+        # This involves computing how much space is available
+        # between the sidebars, because the scatter centers w.r.t. the window,
+        # for some reason.
+        _r_margin_size = self.root.ids['command_sidebar'].width
+        _l_margin_size = self.root.ids['tool_selection_sidebar'].width
+        _delta_x = ((_l_margin_size / 2.0) - (_r_margin_size / 2.0))
+
+        center_x = cached_pos[0] + _delta_x
+        center_y = cached_pos[1]
+        center_pos = (center_x, center_y)
+        scatter.pos = center_pos
 
         logging.info('App.center_current_image: end scatter position: {0}'
-                     ''.format(self._get_editor_scatter_container_widget().pos))
+                     ''.format(scatter.pos))
         logging.info('App.center_current_image: end scatter pos_hint: {0}'
-                     ''.format(self._get_editor_scatter_container_widget().pos_hint))
+                     ''.format(scatter.pos_hint))
 
 
     ##########################################################################
@@ -863,6 +903,8 @@ class MUSCIMarkerApp(App):
         e = self._get_editor_widget()
         self.image_height_ratio_in = float(e.height) / self.current_image_height
         self.image_width_ratio_in = float(e.width) / self.current_image_width
+
+        self.do_center_current_image()
 
     ##########################################################################
     # Interfacing editor actions to the model,
@@ -1083,7 +1125,6 @@ class MUSCIMarkerApp(App):
 
     def _get_tool_info_palette(self):
         return self.root.ids['command_sidebar'].ids['info_panel']
-
 
     ##########################################################################
     # Cleanup.

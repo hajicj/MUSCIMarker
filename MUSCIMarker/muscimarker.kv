@@ -90,19 +90,19 @@
         text: 'Add S.'
 
     ToolSelectionButton:
-        name: 'lasso_select_tool'
-        id: lasso_select_tool
-        text: 'Lasso'
-
-    ToolSelectionButton:
         name: 'trimmed_select_tool'
         id: trimmed_select_tool
         text: 'Trim'
 
     ToolSelectionButton:
+        name: 'lasso_select_tool'
+        id: lasso_select_tool
+        text: 'Lasso'
+
+    ToolSelectionButton:
         name: 'trimmed_lasso_select_tool'
         id: trimmed_lasso_select_tool
-        text: 'T-Lasso'
+        text: 'Trim\nLasso'
 
     ToolSelectionButton:
         name: 'connected_select_tool'
@@ -433,6 +433,10 @@ MUSCIMarkerLayout:
 
             ActionLabel:
                 text: 'MUSCIMarker'
+
+            ActionButton:
+                text: 'CENTER'
+                on_release: app.do_center_and_rescale_current_image()
 
             ActionButton:
                 text: 'BACKUP'
