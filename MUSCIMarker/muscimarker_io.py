@@ -360,7 +360,7 @@ class MLClass(object):
         self.folder = folder
         # Parse the string into a RGB spec.
         r, g, b = hex2rgb(color)
-        logging.info('MLClass {0}: color {1}'.format(name, (r, g, b)))
+        logging.debug('MLClass {0}: color {1}'.format(name, (r, g, b)))
         self.color = (r, g, b)
 
 

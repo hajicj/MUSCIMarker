@@ -494,7 +494,20 @@ class MUSCIMarkerApp(App):
             Clock.schedule_interval(self.do_save_app_state_clock_event,
                                     recovery_dump_freq)
 
-        self.do_center_current_image()
+        _scatter = self._get_editor_scatter_container_widget()
+        logging.info('App.build: Scatter parent pos before do_layout:'
+                     ' {0}'.format(_scatter.parent.pos))
+        _scatter.parent.parent.do_layout()
+        logging.info('App.build: Scatter parent position after do_layout:'
+                     ' {0}'.format(_scatter.parent.pos))
+        logging.info('App.build: _scatter.parent.pos={0}'
+                     ''.format(_scatter.parent))
+        logging.info('App.build: _scatter.parent.parent.pos={0}'
+                     ''.format(_scatter.parent.parent.pos))
+        logging.info('App.build: _scatter.parent.parent.parent.pos={0}'
+                     ''.format(_scatter.parent.parent.parent.pos))
+
+        self._enforce_center_current_image_once()
 
     def build_config(self, config):
         config.setdefaults('kivy',
@@ -828,13 +841,13 @@ class MUSCIMarkerApp(App):
                                                self.annot_model.image)
 
         # move image to middle
-        self.do_center_current_image()
+        self.do_center_and_rescale_current_image()
 
     ##########################################################################
     # Centering the current image (e.g. if you get lost during high-scale work)
 
-    def do_center_current_image(self):
-        Clock.schedule_once(lambda *args: self.center_current_image())
+    def do_center_current_image(self, *args, **kwargs):
+        Clock.schedule_once(lambda *anything: self.center_current_image())
 
     def do_center_and_rescale_current_image(self):
         Clock.schedule_once(lambda *args: self.center_and_rescale_current_image())
@@ -894,6 +907,22 @@ class MUSCIMarkerApp(App):
                      ''.format(scatter.pos))
         logging.info('App.center_current_image: end scatter pos_hint: {0}'
                      ''.format(scatter.pos_hint))
+
+    def _enforce_center_current_image_once(self):
+        """We need to enforce the image to be centered at the beginning,
+        but we have to wait until the window is actually drawn in order
+        to know all the sizes, positions, etc.
+        The uncertain period (n. of clock ticks?) between build()
+        and the window being drawn was probably the cause of the
+        unpredictable centering or non-centering of the initial image
+        on application start. This way, we attach a callback to the Window's
+        on_draw event that centers the image and unschedules itself."""
+        Window.bind(on_draw=self._do_center_current_image_and_unenforce)
+
+    def _do_center_current_image_and_unenforce(self, *args, **kwargs):
+        """Second part of the bound trigger."""
+        self.do_center_current_image()
+        Window.unbind(on_draw=self._do_center_current_image_and_unenforce)
 
 
     ##########################################################################

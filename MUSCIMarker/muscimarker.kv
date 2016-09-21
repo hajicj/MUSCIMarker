@@ -348,7 +348,8 @@
 <ImageEditorLayout@ScatterLayout>:
 
     do_rotation: False
-    size_hint: None, None if edited_image is not None else (0.8, 0.8)
+    size_hint: None, None
+    #if edited_image is not None else (0.8, 0.8)
     size: edited_image.size if edited_image is not None else (None, None)
     #pos_hint: {'center_x': 0.5, 'center_y': 0.5}
     #pos: 0.5, 0.5
@@ -357,7 +358,8 @@
     # height: self.height
     canvas.before:
         Color:
-            rgba: 0.2, 0.1, 0.1, 1
+            # rgba: 0.2, 0.1, 0.1, 1   ### Debugging color
+            rgba: 0.0, 0.0, 0.0, 1     ### Production color
         Rectangle:
             # self here refers to the widget i.e BoxLayout pos: self.pos
             size: self.size
@@ -370,11 +372,13 @@
     id: annotation_col
     cols: 1
     size_hint: 1.0, 1.0
+    # pos_hint: {'center_x': 0.5, 'center_y': 0.5}
     # orientation: 'vertical'
 
     canvas.before:
         Color:
-            rgba: 0.0, 0.0, 0.0, 1
+            # rgba: 0.1, 0.2, 0.1, 1  ### Debug color
+            rgba: 0.0, 0.0, 0.0, 1    ### Production color
         Rectangle:
             size: self.size
 
@@ -402,6 +406,7 @@ MUSCIMarkerLayout:
         EditorWindow:
             id: editor_cell
             pos_hint: {'x_center': 0.5, 'y_center': 0.5}
+            size_hint: (1.0, 1.0)
 
         CommandSidebar:
             id: command_sidebar
