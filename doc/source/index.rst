@@ -43,7 +43,7 @@ You will need the following Python packages for MUSCIMarker to run:
 What now?
 ---------
 
-Once you install MUSCIMarker, go through the Tutorial_.
+Once you install MUSCIMarker, go through the :ref:`tutorial`.
 It will teach you how to use MUSCIMarker, and introduce the most
 important concepts.
 
@@ -64,7 +64,10 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
+   :numbered:
+   :titlesonly:
 
+   Tutorial <tutorial>
 
 
 Indices and tables

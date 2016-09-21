@@ -70,11 +70,12 @@
 
     canvas.before:
         Color:
-            rgba: 0.4, 0.4, 0.4, 1
+            rgba: 0.2, 0.2, 0.2, 1
+            #rgba: 0.4, 0.4, 0.4, 1
         Rectangle:
             size: self.size
             pos: self.pos
-    background_color: 0.4, 0.4, 0.4, 1
+    #background_color: 0.4, 0.4, 0.4, 1
 
     ToolSelectionLabel:
         text: 'Tools'
@@ -207,11 +208,12 @@
 
     canvas.before:
         Color:
-            rgba: 0.4, 0.4, 0.4, 1
+            rgba: 0.2, 0.2, 0.2, 1
+            #rgba: 0.4, 0.4, 0.4, 1
         Rectangle:
             size: self.size
             pos: self.pos
-    background_color: 0.4, 0.4, 0.4, 1
+    #background_color: 0.4, 0.4, 0.4, 1
 
     Label:
         # width: 400
@@ -427,17 +429,41 @@ MUSCIMarkerLayout:
                     # self here refers to the widget i.e BoxLayout pos: self.pos
                     size: self.size
                 Color:
-                    rgba: 0.4, 0.4, 0.4, 1
+                    rgba: 0.2, 0.2, 0.2, 1
+                    #rgba: 0.4, 0.4, 0.4, 1
                 Rectangle:
                     # self here refers to the widget i.e BoxLayout pos: self.pos
-                    size: (self.size[0], self.size[1] - 2)
+                    #pos: (self.pos[0] + 5, self.pos[1])
+                    size: (self.size[0], self.size[1] - 8)
 
             ActionPrevious:
                 with_previous: False
                 on_release: pass
+                app_icon: os.path.join('static', 'ufal_logo.png')
+                size_hint: (None, None)
+                width: 20
+                height: 0
+                previous_image_width: 10
+                previous_image_height: 0
 
-            ActionLabel:
-                text: 'MUSCIMarker'
+            ActionSeparator:
+                background_image: os.path.join('static', 'ufal_logo.png')
+                width: 100
+
+            ActionSeparator:
+                width: 20
+                opacity: 0.0
+
+            ActionSeparator:
+                background_image: os.path.join('static', 'OMR-RG_logo_darkbackground.png')
+                width: 200
+
+            ActionSeparator:
+                size_hint: (0.5, None)
+                opacity: 0.0
+
+            #ActionLabel:
+            #    text: 'Commands:'
 
             ActionButton:
                 text: 'CENTER'

@@ -23,5 +23,9 @@ and run::
 
 A window with the app should appear.
 
-.. image:: images/screenshots/startup.png
+.. image:: images/screenshots/first_startup_screen.png
 
+Let's clean up what we call parts of the interface.
+The main part in the middle is occupied by the image that we annotate:
+
+.. image:: images/screenshots/
