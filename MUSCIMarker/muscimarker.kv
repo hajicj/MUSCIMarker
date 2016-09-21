@@ -107,7 +107,7 @@
     ToolSelectionButton:
         name: 'connected_select_tool'
         id: connected_select_tool
-        text: 'Connected'
+        text: 'Conn.\nComp.'
 
     ToolSelectionButton:
         name: 'gesture_select_tool'
@@ -344,8 +344,6 @@
     # pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 
     # Should move this outside the Image and into the ImageEditorLayout?
-    # How to make them overlap inside a ScatterLayout?
-
 
 <ImageEditorLayout@ScatterLayout>:
 
@@ -353,7 +351,7 @@
     size_hint: None, None if edited_image is not None else (0.8, 0.8)
     size: edited_image.size if edited_image is not None else (None, None)
     #pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-    pos: 0.5, 0.5
+    #pos: 0.5, 0.5
 
     # width: self.width
     # height: self.height
@@ -376,7 +374,7 @@
 
     canvas.before:
         Color:
-            rgba: 0.1, 0.1, 0.1, 1
+            rgba: 0.0, 0.0, 0.0, 1
         Rectangle:
             size: self.size
 
@@ -412,10 +410,22 @@ MUSCIMarkerLayout:
 
     ActionBar:
         id: actionbar
-        size_hint: 0.1, None
+        size_hint: 0.5, None
 
         ActionView:
             id: av
+
+            canvas.before:
+                Color:
+                    rgba: 0.0, 0.0, 0.0, 1
+                Rectangle:
+                    # self here refers to the widget i.e BoxLayout pos: self.pos
+                    size: self.size
+                Color:
+                    rgba: 0.4, 0.4, 0.4, 1
+                Rectangle:
+                    # self here refers to the widget i.e BoxLayout pos: self.pos
+                    size: (self.size[0], self.size[1] - 2)
 
             ActionPrevious:
                 with_previous: False

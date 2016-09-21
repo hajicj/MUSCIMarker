@@ -415,7 +415,7 @@ class MUSCIMarkerApp(App):
         # Resuming annotation from previous state
         conf = self.config
         logging.info('Current configuration: {0}'.format(str(conf)))
-        self.image_loader.filename = conf.get('current_input_files',
+        self.image_loader.filename = conf.get('default_input_files',
                                               'image_file')
         logging.info('Build: Loaded image fname from config: {0}'
                      ''.format(self.image_loader.filename))
@@ -435,13 +435,13 @@ class MUSCIMarkerApp(App):
         e_scatter.bind(scale=self.setter('editor_scale'))
 
         logging.info('Build: Started loading mlclasses from config')
-        self.mlclass_list_loader.filename = conf.get('current_input_files',
+        self.mlclass_list_loader.filename = conf.get('default_input_files',
                                                      'mlclass_list_file')
         logging.info('Build: Loaded mlclass list fname from config: {0}'
                      ''.format(self.mlclass_list_loader.filename))
 
         logging.info('Build: Started loading cropobjects from config')
-        self.cropobject_list_loader.filename = conf.get('current_input_files',
+        self.cropobject_list_loader.filename = conf.get('default_input_files',
                                                         'cropobject_list_file')
         logging.info('Build: Finished loading cropobject list fname from config: {0}'
                      ''.format(self.cropobject_list_loader.filename))
@@ -793,6 +793,7 @@ class MUSCIMarkerApp(App):
         self.annot_model.import_cropobjects(cropobject_list)
 
     def import_image(self, instance, pos):
+
         logging.info('App: === Got image file: {0}'.format(pos))
         try:
             # img = bb.load_rgb(pos)
@@ -821,6 +822,39 @@ class MUSCIMarkerApp(App):
 
         self.image_scaler = ImageToModelScaler(self._get_editor_widget(),
                                                self.annot_model.image)
+
+        # move image to middle
+        self.center_current_image()
+
+    def center_current_image(self):
+        """Centers the current image.
+
+        Implementation: gives the centering ``pos_hint`` to the ScatterLayout
+            that is holding the Image, force a redraw of its parent, and then
+            retracts the pos_hint so that the image can be moved around freely
+            again.
+        """
+        logging.info('App.center_current_image: current image position: {0}'
+                     ''.format(self._get_editor_widget().pos))
+        logging.info('App.center_current_image: current image pos_hint: {0}'
+                     ''.format(self._get_editor_widget().pos_hint))
+
+        cached_pos_hint = self._get_editor_scatter_container_widget().pos_hint
+        self._get_editor_scatter_container_widget().pos_hint = {'center_y': 0.5, 'center_x': 0.5}
+        # Hack to read the what the center should be
+        self._get_editor_scatter_container_widget().parent.do_layout()
+        logging.info('App.center_current_image: After redrawing layout with centered'
+                     ' pos_hint, scatter position: {0}'
+                     ''.format(self._get_editor_scatter_container_widget().pos))
+        cached_pos = self._get_editor_scatter_container_widget().pos
+        self._get_editor_scatter_container_widget().pos_hint = cached_pos_hint
+        self._get_editor_scatter_container_widget().pos = cached_pos
+
+        logging.info('App.center_current_image: end scatter position: {0}'
+                     ''.format(self._get_editor_scatter_container_widget().pos))
+        logging.info('App.center_current_image: end scatter pos_hint: {0}'
+                     ''.format(self._get_editor_scatter_container_widget().pos_hint))
+
 
     ##########################################################################
     # Resizing
