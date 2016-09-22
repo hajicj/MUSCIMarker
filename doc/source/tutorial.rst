@@ -60,4 +60,42 @@ and on a smartphone or tablet, but the usage is a little different.
              on mobile platforms!
 
 On a tablet, the image responds to the usual touch commands: drag to move
-and pinch to zoom. On a desktop, however, it's a little more complicated:
+and pinch to zoom. On a desktop, you can drag & drop to move the image around
+as usual. For zooming, we'll need to "simulate" one finger by right-clicking
+anywhere on the image. A red dot should appear:
+
+.. image:: images/screenshots/ui_moving_rightclick.png
+
+Dragging now zooms the image, instead of moving.
+
+.. image:: images/screenshots/ui_moving_clickanddrag.png
+
+...
+
+.. image:: images/screenshots/ui_moving_zoomed.png
+
+The red dot is like having one finger pressed against that point in the image,
+and dragging with the mouse works like the second
+finger in the pinch-to-zoom gesture.
+Play around with the desktop zoom for a bit, you'll get the hang of it soon!
+
+Once you're done zooming, just left-click the red dot -- the "fake finger" --
+to exit zooming mode.
+
+.. image:: images/screenshots/ui_moving_stopzooming.png
+
+If you get lost -- hey, it happens -- or anytime you want to jump
+back to the original scale, use the CENTER command on the bottom pane.
+
+.. image:: images/screenshots/ui_moving_center.png
+
+The annotated image will scale back to its original size and center
+itself in the editor window.
+
+You'll probably be spending most of your time with MUSCIMarker zoomed
+in, so spend a minute getting used to navigating the image before we
+proceed to the next step: annotating.
+
+
+Annotating
+^^^^^^^^^^
