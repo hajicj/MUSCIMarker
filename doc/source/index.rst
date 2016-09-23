@@ -32,7 +32,6 @@ You will need the following Python packages for MUSCIMarker to run:
 * |lxml|_ (Parsing, writing and manipulating XML files)
 * |numpy|_ (Fast math for Python)
 * |scikit-image|_ (Image manipulation and rendering)
-* |OpenCV|_ (Image manipulation, but other things than |scikit-image|)
 
 ..  todo::
    Because installing all these yourself is tedious, we have prepared
