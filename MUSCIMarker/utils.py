@@ -230,7 +230,6 @@ def bbox_to_integer_bounds(ftop, fleft, fbottom, fright, to_integer=True):
     return t, l, b, r
 
 
-
 def connected_components2bboxes(labels):
     """Returns a dictionary of bounding boxes (upper left c., lower right c.)
     for each label.

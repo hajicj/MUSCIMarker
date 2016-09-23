@@ -12,7 +12,7 @@ from kivy.properties import ListProperty, DictProperty, NumericProperty, ObjectP
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 
-import cv2
+# import cv2
 import skimage.measure
 
 from utils import connected_components2bboxes
@@ -292,8 +292,11 @@ class ConnectedComponentBoundingBoxTracer(BoundingBoxTracer):
             image = app.annot_model.image
             logging.info('CCselect: Recomputing bboxes...')
             if (self._cc < 0) or (self._labels is None):
-                self._labels, self._cc = skimage.measure.label(image, background=0)
-                # self._cc, self._labels = cv2.connectedComponents(image)
+                #self._cc, self._labels = cv2.connectedComponents(image)
+                self._labels = skimage.measure.label(image, background=0)
+                logging.warn('CCSelect: found {0} CCs in total. Labels dtype; {1}, cc total type: {2}'
+                             ''.format(self._labels.max(), self._labels.dtype, type(self._cc)))
+                self._cc = int(self._labels.max())
             self._bboxes = connected_components2bboxes(self._labels)
 
         # Find components that are inside the selection.
