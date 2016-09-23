@@ -4,8 +4,8 @@ from __future__ import print_function, unicode_literals
 import codecs
 import logging
 
-import cv2
-import matplotlib.pyplot as plt
+# import cv2
+# import matplotlib.pyplot as plt
 
 from kivy.properties import ObjectProperty, DictProperty
 from kivy.uix.widget import Widget
