@@ -68,6 +68,15 @@ class KeypressBubblingStopperBehavior(object):
 # Implementation derived from example at:
 # https://kivy.org/docs/api-kivy.uix.filechooser.html
 
+# Default paths
+if not 'MFF_MUSCIMA_ROOT' in os.environ:
+    MFF_MUSCIMA_ROOT = os.path.join('~', 'MFF-MUSCIMA')
+else:
+    MFF_MUSCIMA_ROOT = os.environ['MFF_MUSCIMA_ROOT']
+
+MFF_MUSCIMA_SYMBOLIC = os.path.join(MFF_MUSCIMA_ROOT, 'Symbolic')
+MFF_MUSCIMA_XML = os.path.join(MFF_MUSCIMA_ROOT, 'XML')
+
 
 class FileLoadDialog(FloatLayout):
     load = ObjectProperty(None)
