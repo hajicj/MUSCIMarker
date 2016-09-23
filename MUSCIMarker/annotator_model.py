@@ -110,15 +110,15 @@ class CropObjectAnnotatorModel(Widget):
             return False
         return True
 
-    def plot_annotations(self):
-        """Plot the current animation using Matplotlib."""
-        rgb_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
-        annot_img = muscimarker_io.render_annotations(rgb_img,
-                                                      self.cropobjects.values(),
-                                                      self.mlclasses.values())
-
-        logging.info('Plotting annotation, image shape: {0}'.format(annot_img.shape))
-        plt.imshow(annot_img)
-        plt.show()
+    # def plot_annotations(self):
+    #     """Plot the current animation using Matplotlib."""
+    #     rgb_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
+    #     annot_img = muscimarker_io.render_annotations(rgb_img,
+    #                                                   self.cropobjects.values(),
+    #                                                   self.mlclasses.values())
+    #
+    #     logging.info('Plotting annotation, image shape: {0}'.format(annot_img.shape))
+    #     plt.imshow(annot_img)
+    #     plt.show()
 
 

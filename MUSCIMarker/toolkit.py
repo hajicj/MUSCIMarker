@@ -4,7 +4,6 @@ from __future__ import print_function, unicode_literals
 import collections
 import logging
 
-import cv2
 import numpy
 import time
 from skimage.draw import polygon, line

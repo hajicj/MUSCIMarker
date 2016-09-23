@@ -125,7 +125,8 @@ import time
 # from math import sqrt
 
 import cPickle
-import cv2
+# import cv2   -- trying to remove troublesome OpenCV dependency
+import skimage.io
 
 from kivy._event import EventDispatcher
 from kivy.app import App
@@ -814,8 +815,10 @@ class MUSCIMarkerApp(App):
         logging.info('App: === Got image file: {0}'.format(pos))
         try:
             # img = bb.load_rgb(pos)
-            img = cv2.imread(pos)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = skimage.io.imread(pos)
+            #img = cv2.imread(pos)
+            #img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            logging.warn('App: Image dtype: {0}, min: {1}, max: {2}'.format(img.dtype, img.min(), img.max()))
             # img = bb.load_grayscale(pos)
         except:
             logging.info('App: Loading image from file \'{0}\' failed.'
