@@ -126,7 +126,11 @@ import time
 
 import cPickle
 import cv2  # -- trying to remove troublesome OpenCV dependency
-#import skimage.io
+#import skimage
+#from skimage.io import find_available_plugins, imread
+# Importing skimage.io causes strange behavior on loading. Maybe bad interaction with some libraries?
+# skimage by itself is fine.
+import scipy.misc   # This worked!
 
 from kivy._event import EventDispatcher
 from kivy.app import App
@@ -815,9 +819,10 @@ class MUSCIMarkerApp(App):
         logging.info('App: === Got image file: {0}'.format(pos))
         try:
             # img = bb.load_rgb(pos)
-            #img = skimage.io.imread(pos)
-            img = cv2.imread(pos)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            #logging.warn('App: skimage available imread plugins: {0}'.format(find_available_plugins()))
+            img = scipy.misc.imread(pos, mode='L')
+            #img = cv2.imread(pos)
+            #img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             logging.warn('App: Image dtype: {0}, min: {1}, max: {2}'.format(img.dtype, img.min(), img.max()))
             # img = bb.load_grayscale(pos)
         except:
