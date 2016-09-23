@@ -125,7 +125,7 @@ import time
 # from math import sqrt
 
 import cPickle
-import cv2  # -- trying to remove troublesome OpenCV dependency
+# import cv2  # -- trying to remove troublesome OpenCV dependency
 #import skimage
 #from skimage.io import find_available_plugins, imread
 # Importing skimage.io causes strange behavior on loading. Maybe bad interaction with some libraries?
