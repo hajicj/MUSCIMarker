@@ -25,6 +25,7 @@ Features
 
 * Annotate musical scores with symbol locations and types.
 * Automation for making annotation easier.
+* Simple XML-based data formats, with parsing tools
 
 Tutorial
 ========
@@ -113,6 +114,42 @@ Scaling
 
 Another grief-inducing hitch is the relationship between position input
 in the scalable editor widget and the coordinates of the original image.
+
+
+Logging activities
+------------------
+
+.. todo:: Implement this!
+
+Annotator activity can be logged. In general, events that we could log are:
+
+* Model-level activity
+  * cropobject deletion
+  * cropobject creation
+  * cropobject modification
+  * image loading
+  * mlclass list change
+* Interface-level activity
+  * app start
+  * app exit
+  * tool selection
+  * tool deselection
+  * image move
+  * image zoom
+  * centering
+  * backup requests
+  * recovery requests
+  * settings modification
+  * settings request
+  * importing a CropObjectList
+  * exporting a CropObjectList
+
+Each logged event has:
+
+* timestamp
+* type of activity
+* app state
+* model state
 
 """
 from __future__ import print_function, unicode_literals

@@ -65,7 +65,7 @@ target/
 *.aux
 *.glo
 *.idx
-*.log
+#*.log Already done for Django
 *.toc
 *.ist
 *.acn
@@ -90,4 +90,6 @@ target/
 *.DS_store
 
 # MUSCIMarker-specific
-/MUSCIMarker/recovery/MUSCIMarker_state.pkl
+MUSCIMarker/recovery/MUSCIMarker_state.pkl
+doc/source/_static/
+doc/source/_templates/
