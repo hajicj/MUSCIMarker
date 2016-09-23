@@ -38,6 +38,15 @@ You will need the following Python packages for MUSCIMarker to run:
    a virtual environment that you can use with |conda|_. (If you're not
    using |conda| yet, we recommend that you start using it!)
 
+Installing on Windows
+^^^^^^^^^^^^^^^^^^^^^
+
+.. warning:: Proposed; needs testing.
+
+We strongly recommend installing the |Anaconda|_ distribution.
+
+To install Kivy, follow the Windows installation instruction.
+
 
 What now?
 ---------

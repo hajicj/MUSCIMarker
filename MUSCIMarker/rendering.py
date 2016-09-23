@@ -20,6 +20,7 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
 from cropobject_view import CropObjectView
+#from muscimarker_io import merge_cropobjects
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."

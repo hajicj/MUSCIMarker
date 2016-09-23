@@ -567,3 +567,60 @@ def render_annotations(img, cropoboject_list, mlclass_list=None, alpha=1.0,
         obj.render(output, alpha=alpha, rgb=rgb)
 
     return (output + reimg) / 2.0
+
+
+##############################################################################
+
+# Merging CropObjects
+
+def cropobjects_merge_bbox(cropobjects):
+    """Computes the bounding box of a CropObject that would
+    result from merging the given list of CropObjects."""
+    # Find extremes. This will define the output cropobject.
+    t, l, b, r = numpy.inf, numpy.inf, -1, -1
+    for c in cropobjects:
+        t = min(t, c.top)
+        l = min(l, c.left)
+        b = max(b, c.bottom)
+        r = max(r, c.right)
+
+    return t, l, b, r
+
+
+def cropobjects_merge_mask(cropobjects):
+    """Merges the given list of cropobjects into one. Masks are combined
+    by an OR operation.
+
+    >>> c1 = CropObject(0, 1, 10, 10, 20, 5, mask=numpy.ones((20, 5), dtype='uint8'))
+
+    Mask behavior: if at least one of the cropobjects has a mask, then
+    masking behavior is activated. The masks are combined using OR: any
+    pixel of the resulting merged cropobject that corresponds to a True
+    mask pixel in one of the input cropobjects will get a True mask value,
+    all others (ie. including all intermediate areas) will get a False.
+
+    If no input cropobject has a mask, then the resulting cropobject
+    also will not have a mask.
+
+    If some cropobjects have masks and some don't, fails.
+    """
+    # No mask
+    if len([c for c in cropobjects if c.mask is not None]) == 0:
+        return None
+
+    # Some masked, some not
+    for c in cropobjects:
+        if c.mask is None:
+            raise ValueError('Cannot deal with a mix of masked and non-masked cropobjects.')
+
+    # Now we know all have masks.
+    t, l, b, r = cropobjects_merge_bbox(cropobjects)
+    h = b - t
+    w = r - l
+    output_mask = numpy.zeros((h, w), dtype=cropobjects[0].mask.dtype)
+    for c in cropobjects:
+        ct, cl, cb, cr = c.top - t, c.left - l, b - c.bottom, r - c.right
+        output_mask[ct:cb, cl:cr] += c.mask
+
+    output_mask[output_mask > 0] = 1
+    return output_mask
