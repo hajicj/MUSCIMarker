@@ -20,7 +20,7 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
 from cropobject_view import CropObjectView
-#from muscimarker_io import merge_cropobjects
+from muscimarker_io import cropobjects_merge_bbox, cropobjects_merge_mask
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -230,21 +230,9 @@ class CropObjectListView(ListView):
             logging.warn('CropObjectListView.merge(): trying to merge empty selection.')
             return
 
-        # Get new bbox coordinates
-        top = 0
-        bottom = 100000
-        left = 1000000
-        right = 0
-        for s in self.adapter.selection:
-            c = s.cropobject
-            if c.x < bottom:
-                bottom = c.x
-            if c.y < left:
-                left = c.y
-            if c.x + c.height > top:
-                top = c.x + c.height
-            if c.y + c.width > right:
-                right = c.y + c.width
+        model_cropobjects = [c._model_counterpart for c in self.adapter.selection]
+        t, l, b, r = cropobjects_merge_bbox(model_cropobjects)
+        mask = cropobjects_merge_mask(model_cropobjects)
 
         # Remove the merged CropObjects
         logging.info('CropObjectListView.merge(): Removing selection {0}'
@@ -252,16 +240,41 @@ class CropObjectListView(ListView):
         for s in self.adapter.selection:
             s.remove_from_model()
 
+        model_cropobjects = None  # Release refs
+
+        App.get_running_app().add_cropobject_from_model_selection({'top': t,
+                                                                   'left': l,
+                                                                   'bottom': b,
+                                                                   'right': r},
+                                                                  mask=mask)
+
+        # # Get new bbox coordinates
+        # top = 0
+        # bottom = 100000
+        # left = 1000000
+        # right = 0
+        # for s in self.adapter.selection:
+        #     c = s.cropobject
+        #     if c.x < bottom:
+        #         bottom = c.x
+        #     if c.y < left:
+        #         left = c.y
+        #     if c.x + c.height > top:
+        #         top = c.x + c.height
+        #     if c.y + c.width > right:
+        #         right = c.y + c.width
+
+
         # Add the new CropObject.
         # Needs to come after removing, because the redraw on object addition
         # unselects everything (...why?) and the selection then does not
         # get removed.
-        App.get_running_app().add_cropobject_from_selection(
-            {'top': top,
-             'left': left,
-             'bottom': bottom,
-             'right': right}
-        )
+        # App.get_running_app().add_cropobject_from_selection(
+        #     {'top': top,
+        #      'left': left,
+        #      'bottom': bottom,
+        #      'right': right}
+        # )
 
 
 class CropObjectRenderer(FloatLayout):

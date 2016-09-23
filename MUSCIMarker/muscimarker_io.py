@@ -146,6 +146,26 @@ class CropObject(object):
     However, `CropObject.render()` currently does not support rendering
     the mask.
 
+    Merging CropObjects
+    -------------------
+
+    To merge a list of CropObjects into a new one, you need to:
+
+    * Compute the new object's bounding box: ``croobjects_merge_bbox()``
+    * Compute the new object's mask: ``cropobjects_merge_mask()``
+    * Determine the clsid and objid of the new object.
+
+    Since objid and clsid of merges may depend on external settings
+    and generally cannot be reliably determined from the merged
+    objects themselves (e.g. the merge of a notehead and a stem
+    should be a new note symbol), you need to supply them externally.
+    However, the bounding box and mask can be determined. The bounding
+    box is computed simply as the smallest bounding box that
+    encompasses all the CropObjects, and the mask is an OR operation
+    over the individual masks (or None, if the CropObjects don't
+    have masks). Note that the merge cannot deal with a situation
+    where only some of the objects have a mask.
+
     Implementation notes on the mask
     --------------------------------
 
@@ -571,7 +591,7 @@ def render_annotations(img, cropoboject_list, mlclass_list=None, alpha=1.0,
 
 ##############################################################################
 
-# Merging CropObjects
+# Operations on CropObjects: merge
 
 def cropobjects_merge_bbox(cropobjects):
     """Computes the bounding box of a CropObject that would
@@ -591,7 +611,18 @@ def cropobjects_merge_mask(cropobjects):
     """Merges the given list of cropobjects into one. Masks are combined
     by an OR operation.
 
-    >>> c1 = CropObject(0, 1, 10, 10, 20, 5, mask=numpy.ones((20, 5), dtype='uint8'))
+    >>> c1 = CropObject(0, 1, 10, 10, 4, 1, mask=numpy.ones((1, 4), dtype='uint8'))
+    >>> c2 = CropObject(1, 1, 11, 10, 6, 1, mask=numpy.ones((1, 6), dtype='uint8'))
+    >>> c3 = CropObject(2, 1, 9, 14,  2, 4, mask=numpy.ones((4, 2), dtype='uint8'))
+    >>> c = [c1, c2, c3]
+    >>> m1 = cropobjects_merge_mask(c)
+    >>> m1.shape
+    (4, 6)
+    >>> print(m1)
+    [[0 0 0 0 1 1]
+     [1 1 1 1 1 1]
+     [1 1 1 1 1 1]
+     [0 0 0 0 1 1]]
 
     Mask behavior: if at least one of the cropobjects has a mask, then
     masking behavior is activated. The masks are combined using OR: any
@@ -618,8 +649,12 @@ def cropobjects_merge_mask(cropobjects):
     h = b - t
     w = r - l
     output_mask = numpy.zeros((h, w), dtype=cropobjects[0].mask.dtype)
+    logging.warn('Output mask shape: {0}'.format(output_mask.shape))
     for c in cropobjects:
-        ct, cl, cb, cr = c.top - t, c.left - l, b - c.bottom, r - c.right
+        logging.debug('C. shape: {0}'.format(c.bounding_box))
+        logging.debug('TLBR: {0}'.format((t, l, b, r)))
+        ct, cl, cb, cr = c.top - t, c.left - l, h - (b - c.bottom), w - (r - c.right)
+        logging.debug('Mask shape: {0}, curr. shape: {1}'.format(c.mask.shape, (cb - ct, cr - cl)))
         output_mask[ct:cb, cl:cr] += c.mask
 
     output_mask[output_mask > 0] = 1
