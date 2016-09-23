@@ -13,7 +13,8 @@ from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 from kivy.uix.textinput import TextInput
 
-import mhr.muscima as mm
+import muscimarker_io as mmio
+# import mhr.muscima as mm
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -68,11 +69,19 @@ class KeypressBubblingStopperBehavior(object):
 # Implementation derived from example at:
 # https://kivy.org/docs/api-kivy.uix.filechooser.html
 
+# Default paths
+if not 'MFF_MUSCIMA_ROOT' in os.environ:
+    MFF_MUSCIMA_ROOT = os.path.join('~', 'MFF-MUSCIMA')
+else:
+    MFF_MUSCIMA_ROOT = os.environ['MFF_MUSCIMA_ROOT']
+MFF_MUSCIMA_SYMBOLIC = os.path.join(MFF_MUSCIMA_ROOT, 'Symbolic')
+MFF_MUSCIMA_XML = os.path.join(MFF_MUSCIMA_ROOT, 'XML')
+
 
 class FileLoadDialog(FloatLayout):
     load = ObjectProperty(None)
     cancel = ObjectProperty(None)
-    default_path = StringProperty(mm.MFF_MUSCIMA_SYMBOLIC)
+    default_path = StringProperty(MFF_MUSCIMA_SYMBOLIC)
     #
     # def on_key_down(self, window, key, scancode, codepoint, modifier):
     #     return True
@@ -139,7 +148,7 @@ class FileNameLoader(FloatLayout):
 class FileSaveDialog(FloatLayout):
     save = ObjectProperty(None)
     cancel = ObjectProperty(None)
-    default_path = StringProperty(mm.CVC_MUSCIMA_ROOT)
+    default_path = StringProperty(MFF_MUSCIMA_ROOT)
 
     # def on_key_down(self, window, key, scancode, codepoint, modifier):
     #     logging.info('FileSaveDialog: Captured down-key {0}/{1}/{2}'
@@ -214,7 +223,7 @@ def bbox_to_integer_bounds(ftop, fleft, fbottom, fright, to_integer=True):
     Implementation
     --------------
 
-    Calls the `mm.CropObject` implementation of rounding off the bounding
+    Calls the `CropObject` implementation of rounding off the bounding
     box, to avoid duplicity, as the MUSCIMarker implementation of CropObject
     representation of image annotations is used in the MUSCIMarker model.
 
@@ -223,7 +232,7 @@ def bbox_to_integer_bounds(ftop, fleft, fbottom, fright, to_integer=True):
 
     :returns: top, left, bottom, right (4-tuple).
     """
-    t, l, b, r = mm.CropObject.bbox_to_integer_bounds(ftop, fleft, fbottom, fright)
+    t, l, b, r = mmio.CropObject.bbox_to_integer_bounds(ftop, fleft, fbottom, fright)
     if not to_integer:
         t, l, b, r = float(t), float(l), float(b), float(r)
 
