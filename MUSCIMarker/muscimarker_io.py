@@ -24,6 +24,7 @@ else:
 MFF_MUSCIMA_SYMBOLIC = os.path.join(MFF_MUSCIMA_ROOT, 'Symbolic')
 MFF_MUSCIMA_XML = os.path.join(MFF_MUSCIMA_ROOT, 'XML')
 
+CROPOBJECT_MASK_ORDER = 'C'
 
 ##############################################################################
 # Annotations lookup
@@ -330,7 +331,9 @@ class CropObject(object):
         """
         if mask is None:
             return 'None'
-        mask_flat = mask.flatten()
+        # By default works in row-major order.
+        # So we can just prescribe 'C' without losing data.
+        mask_flat = mask.flatten(order=CROPOBJECT_MASK_ORDER)
         output = ' '.join(map(str, mask_flat))
         return output
 

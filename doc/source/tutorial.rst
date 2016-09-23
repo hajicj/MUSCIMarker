@@ -99,3 +99,35 @@ proceed to the next step: annotating.
 
 Annotating
 ^^^^^^^^^^
+
+Annotating means marking regions of the image as objects from a certain set:
+in this tutorial, we'll mark symbols and "primitives" that make up common
+western music notation. The set of possible notation symbols has been
+pre-loaded and we already have an image, so we can get right to it!
+
+First, zoom in the image to a level where you can comfortably see all the details.
+(Don't forget to "unclick" the red spot afterwards.)
+
+.. image:: images/screenshots/ui_annot_zoomednocomment.png
+
+Now, choose an annotation tool from the toolkit. No punches pulled,
+go for the Trimmed Lasso tool -- it's the most powerful one you get,
+and you'll be probably spending most of your precious annotator time
+with that tool. So, let's get used to it right away.
+
+.. image:: images/screenshots/ui_annot_selecttool.png
+
+The selected tool is now highlighted.
+
+To mark a symbol with the trimmed lasso, just draw the lasso around the object.
+Don't worry about where you're going in the black area: this tool ignores
+ignores black parts.
+
+.. image:: images/screenshots/ui_annot_trimmedlasso_black.png
+
+However, when symbols overlap and you need to draw the lasso through a white
+ area, trace the symbol contour that you think is there very accurately.
+
+.. image:: images/screenshots/ui_annot_trimmedlasso_white.png
+
+(This description sounds incredibly racist, but in reverse...)
