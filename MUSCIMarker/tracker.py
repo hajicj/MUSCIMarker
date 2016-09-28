@@ -27,7 +27,7 @@ __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
 
 
-class DefaultTracker(object):
+class DefaultTrackerHandler(object):
     """...
     Tracker is a class. Set the class attribute `output_file`
     to point tracking to the given location. If None, logs to stdout.
@@ -37,6 +37,7 @@ class DefaultTracker(object):
 
     FUNCTION_NAME_KEY = '-fn-'
     COMMENT_KEY = '-comment-'
+    TRACKER_NAME_KEY = '-tracker-'
 
     @classmethod
     def get_initial_message_data(cls):
@@ -108,61 +109,105 @@ class DefaultTracker(object):
         cls._hdl.write(message)
 
 
-def track(the_fn, track_names=None, fn_name=None, comment=None,
-          tclass=DefaultTracker):
-    """Decorator for events that should be tracked.
+class Tracker(object):
+    def __init__(self, track_names=None, fn_name=None, comment=None,
+                 tracker_name=None,
+                 handler=DefaultTrackerHandler):
+        """Decorator for events that should be tracked.
 
-    :type track_names: list
-    :param track_names: The names of arguments to the function
-        that will be included in the tracking message. If this
-        list is None, then all arguments will be tracked. (If
-        you do not want to track any argument, supply an empty list.)
-    """
-    # Unnamed args are a bit tricky.
-    _fn_args, _, _, _ = inspect.getargspec(the_fn)
-    if track_names is None:
-        track_names = _fn_args
+        Make sure that whatever data you track is JSON-serializable.
 
-    def _tracking_wrapper(*args, **kwargs):
-        message_data = collections.OrderedDict()
-        message_data.update(tclass.get_default_message_data())
+        :type track_names: list
+        :param track_names: The names of arguments to the function
+            that will be included in the tracking message. If this
+            list is None, then all arguments will be tracked. (If
+            you do not want to track any argument, supply an empty list.)
 
-        # Add function name to message data
-        fn_key = tclass.FUNCTION_NAME_KEY
-        if fn_name is None:
-            message_data[fn_key] = the_fn.__name__
-        else:
-            message_data[fn_key] = fn_name
+        :type fn_name: str
+        :param fn_name: How the decorated function should be named
+            in the tracking log. Uses the key from
+            `handler.FUNCTION_NAME_KEY`.
 
+        :type comment: str
+        :param comment: Add this value to each call as a comment. Will
+            be the same comment for each decorated function call.
+
+        :type tracker_name: str
+        :param tracker_name: Add this value to each call under the
+            `handler.TRACKER_NAME_KEY` key. Allows differentiating
+            e.g. tool usage trackers from recovery trackers.
+
+        :type handler: class
+        :param class: A TrackerHandler class that is responsible for
+            writing the messages.
+        """
+        self.track_names = track_names
+        self.fn_name = fn_name
+        self.comment = comment
+        self.tracker_name = tracker_name
+        self.handler = handler
+
+    def __call__(self, the_fn):
+        """Construct the actual decorated function.
+        """
         # Unnamed args are a bit tricky.
-        _args, _varargs, _keywords, _defaults = inspect.getargspec(the_fn)
+        _fn_args, _, _, _ = inspect.getargspec(the_fn)
+        if self.track_names is None:
+            track_names = _fn_args
+        else:
+            track_names = self.track_names
 
-        # Defaults are for the last D _args
-        _defaults_argvalues = {a: d
-                               for a, d in zip(_args[-len(_defaults):], _defaults)}
-        # *args automatically gets bound to the first A _args
-        _supplied_argvalues = {a: v for a, v in zip(_args[:len(args)], args)}
-        for key in track_names:
-            # Named args are easy to get
-            if key in kwargs:
-                message_data[key] = kwargs[key]
+        def _tracking_wrapper(*args, **kwargs):
+            message_data = collections.OrderedDict()
+            message_data.update(self.handler.get_default_message_data())
 
-            # Unnamed args are a bit trickier
-            # Maybe we got the arg
-            elif key in _supplied_argvalues:
-                message_data[key] = _supplied_argvalues[key]
-            # There may be a default value
-            elif key in _defaults_argvalues:
-                message_data[key] = _defaults_argvalues[key]
+            # Add function name to message data
+            fn_key = self.handler.FUNCTION_NAME_KEY
+            if self.fn_name is None:
+                message_data[fn_key] = the_fn.__name__
+            else:
+                message_data[fn_key] = self.fn_name
 
-        # Add comment, if applicable
-        if comment is not None:
-            message_data[tclass.COMMENT_KEY] = comment
+            if self.tracker_name is not None:
+                tracker_name_key = self.handler.TRACKER_NAME_KEY
+                message_data[tracker_name_key] = self.tracker_name
 
-        tclass.write_message_data(message_data)
-        retval = the_fn(*args, **kwargs)
-        return retval
+            # Unnamed args are a bit tricky.
+            _args, _varargs, _keywords, _defaults = inspect.getargspec(the_fn)
 
-    return _tracking_wrapper
+            # Defaults are for the last D _args
+            _defaults_argvalues = {}
+            if _defaults is not None:
+                _defaults_argvalues = {a: d
+                                       for a, d in zip(_args[-len(_defaults):], _defaults)}
+            # *args automatically gets bound to the first A _args
+            _supplied_argvalues = {a: v for a, v in zip(_args[:len(args)], args)}
+            for key in track_names:
+
+                # In case we are tracking a method
+                if key == 'self':
+                    continue
+
+                # Named args are easy to get
+                if key in kwargs:
+                    message_data[key] = kwargs[key]
+
+                # Unnamed args are a bit trickier
+                # Maybe we got the arg
+                elif key in _supplied_argvalues:
+                    message_data[key] = _supplied_argvalues[key]
+                # There may be a default value
+                elif key in _defaults_argvalues:
+                    message_data[key] = _defaults_argvalues[key]
+
+            # Add comment, if applicable
+            if self.comment is not None:
+                message_data[self.handler.COMMENT_KEY] = self.comment
+
+            self.handler.write_message_data(message_data)
+            retval = the_fn(*args, **kwargs)
+            return retval
+
+        return _tracking_wrapper
 
 

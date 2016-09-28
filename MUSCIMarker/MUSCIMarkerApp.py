@@ -188,6 +188,7 @@ from rendering import CropObjectRenderer
 from utils import FileNameLoader, FileSaver, ImageToModelScaler
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
+import tracker as tr
 
 import kivy
 
@@ -851,6 +852,7 @@ class MUSCIMarkerApp(App):
         # self.current_n_cropobjects = len(cropobject_list)
         self.annot_model.import_cropobjects(cropobject_list)
 
+    @tr.Tracker(track_names=['pos'], tracker_name='commands')
     def import_image(self, instance, pos):
 
         logging.info('App: === Got image file: {0}'.format(pos))
