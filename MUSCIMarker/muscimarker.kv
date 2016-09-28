@@ -187,13 +187,14 @@
         FileChooserListView:
             id: filechooser
             path: root.default_path
-            on_selection: text_input.text = self.selection and self.selection[0] or ''
+            on_selection: text_input.text = gself.selection and self.selection[0] or ''
 
         TextInput:
             id: text_input
             size_hint_y: None
             height: 50
             multiline: False
+            text: os.path.basename(app.image_loader.filename)[:-3] + u'xml'
 
         BoxLayout:
             size_hint_y: None
