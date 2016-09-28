@@ -187,7 +187,7 @@
         FileChooserListView:
             id: filechooser
             path: root.default_path
-            on_selection: text_input.text = gself.selection and self.selection[0] or ''
+            on_selection: text_input.text = self.selection and self.selection[0] or ''
 
         TextInput:
             id: text_input
