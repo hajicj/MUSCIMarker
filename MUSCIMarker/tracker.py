@@ -4,9 +4,10 @@ for the actions of the app, debugging, etc. -- tracking will
 be cleaner to implement separately.
 
 The basic way of tracking is just to decorate a function or method
-with a ``@track`` decorator:
+with a ``@Tracker`` decorator:
 
->>> @track
+
+>>> @Tracker()
 >>> def my_fun(arg1, arg2, kwarg1='something'):
 ...     print(arg1, arg2, kwarg1)
 >>> my_fun('foo', 'bar', kwarg1='baz')
