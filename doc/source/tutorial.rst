@@ -108,8 +108,6 @@ pre-loaded and we already have an image, so we can get right to it!
 First, zoom in the image to a level where you can comfortably see all the details.
 (Don't forget to "unclick" the red spot afterwards.)
 
-.. image:: images/screenshots/ui_annot_zoomednocomment.png
-
 Now, choose an annotation tool from the toolkit. No punches pulled,
 go for the Trimmed Lasso tool -- it's the most powerful one you get,
 and you'll be probably spending most of your precious annotator time
@@ -119,17 +117,32 @@ with that tool. So, let's get used to it right away.
 
 The selected tool is now highlighted.
 
-Check that you have the right
+Check that the desired symbol type is selected:
+
+.. image:: images/screenshots/ui_annot_symboltype.png
+
+Select a different symbol type to annotate by clicking on the
+current symbol type (it works like a button) and then choose
+from the drop-down. Drag or scroll to move the drop-down around.
+
+.. image:: images/screenshots/ui_annot_selectsymbol.png
 
 To mark a symbol with the trimmed lasso, just draw the lasso around the object.
 Don't worry about where you're going in the black area: this tool ignores
 ignores black parts.
 
-.. image:: images/screenshots/ui_annot_trimmedlasso_black.png
+.. image:: images/screenshots/ui_annot_trimmedlasso_drawline.png
+
+The bounding box of the selected symbol will appear (it's a bit transparent,
+because sometimes they overlap and you need to see what's in the image
+underneath).
+
+.. image:: images/screenshots/ui_annot_trimmedlasso_boxappears.png
 
 However, when symbols overlap and you need to draw the lasso through a white
  area, trace the symbol contour that you think is there very accurately.
 
-.. image:: images/screenshots/ui_annot_trimmedlasso_white.png
+.. image:: images/screenshots/ui_annot_trimmedlasso_careful.png
 
-The
+Zoom in closer if you are not sure that the line is exactly where
+you want it. Accuracy matters!
