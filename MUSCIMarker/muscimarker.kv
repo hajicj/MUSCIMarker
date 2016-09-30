@@ -208,6 +208,48 @@
                 on_release: root.save(filechooser.path, text_input.text)
 
 
+# Taken from https://gist.github.com/kived/742397a80d61e6be225a
+<ConfirmationDialog@Popup>:
+    size_hint: None, None
+    size: app.root.size[0] * 0.5, app.root.size[1] * 0.2
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+	GridLayout:
+		cols: 1
+		padding: '12dp'
+
+		#canvas:
+		#	Color:
+		#		rgba: root.background_color[:3] + [root.background_color[-1] * root._anim_alpha]
+		#	Rectangle:
+		#		size: root._window.size if root._window else (0, 0)
+        #
+		#	Color:
+		#		rgb: 1, 1, 1
+		#	BorderImage:
+		#		source: root.background
+		#		border: root.border
+		#		pos: self.pos
+		#		size: self.size
+
+		Label:
+			text: root.text
+			size_hint_y: None
+			height: self.texture_size[1] + dp(16)
+			text_size: self.width - dp(16), None
+			halign: 'center'
+
+		BoxLayout:
+			size_hint_y: None
+			height: sp(48)
+
+			Button:
+				text: root.cancel_text
+				on_press: root.cancel()
+			Button:
+				text: root.ok_text
+                on_press: root.ok()
+
 ##############################################################################
 
 <CommandSidebar@GridLayout>:
@@ -304,7 +346,7 @@
         id: cropobject_clear_button
         size_hint: 1.0, 0.1
         text: 'Clear CropObjects'
-        on_release: app.annot_model.clear_cropobjects()
+        on_release: app.do_clear_cropobjects(ask=True)
 
     Button:
         id: cropobject_mask_button

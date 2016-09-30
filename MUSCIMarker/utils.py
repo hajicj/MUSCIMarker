@@ -142,6 +142,7 @@ class FileNameLoader(FloatLayout):
     def cancel(self):
         self.dismiss_popup()
 
+
 ##############################################################################
 
 
@@ -214,6 +215,31 @@ class FileSaver(FloatLayout):
 
 ##############################################################################
 
+class ConfirmationDialog(Popup):
+    text = StringProperty('')
+
+    ok_text = StringProperty('OK')
+    cancel_text = StringProperty('Cancel')
+
+    __events__ = ('on_ok', 'on_cancel')
+
+    def ok(self):
+        self.dispatch('on_ok')
+        self.dismiss()
+
+    def cancel(self):
+        self.dispatch('on_cancel')
+        self.dismiss()
+
+    def on_ok(self):
+        pass
+
+    def on_cancel(self):
+        pass
+
+
+##############################################################################
+
 
 def bbox_to_integer_bounds(ftop, fleft, fbottom, fright, to_integer=True):
     """Rounds off the CropObject bounds to the nearest integer
@@ -277,7 +303,6 @@ def connected_components2bboxes(labels):
                 elif y + 1 > box[3]:
                     box[3] = y + 1
     return bboxes
-
 
 
 ##############################################################################

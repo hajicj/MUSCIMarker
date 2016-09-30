@@ -119,6 +119,8 @@ with that tool. So, let's get used to it right away.
 
 The selected tool is now highlighted.
 
+Check that you have the right
+
 To mark a symbol with the trimmed lasso, just draw the lasso around the object.
 Don't worry about where you're going in the black area: this tool ignores
 ignores black parts.
@@ -130,4 +132,4 @@ However, when symbols overlap and you need to draw the lasso through a white
 
 .. image:: images/screenshots/ui_annot_trimmedlasso_white.png
 
-(This description sounds incredibly racist, but in reverse...)
+The

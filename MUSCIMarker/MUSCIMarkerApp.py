@@ -185,7 +185,7 @@ import muscimarker_io
 
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
-from utils import FileNameLoader, FileSaver, ImageToModelScaler
+from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
 
@@ -980,6 +980,7 @@ class MUSCIMarkerApp(App):
 
         self.do_center_current_image()
 
+
     ##########################################################################
     # Interfacing editor actions to the model,
     def map_point_from_editor_to_model(self, editor_x, editor_y):
@@ -1129,6 +1130,17 @@ class MUSCIMarkerApp(App):
         c = self.generate_cropobject_from_selection(selection, clsid=None)
         t, l, b, r = c.bounding_box
         return t, l, b, r
+
+    def do_clear_cropobjects(self, ask=False):
+        confirmation = ConfirmationDialog(text='Do you really want to clear'
+                                               ' all current annotations?')
+        confirmation.bind(on_ok=self.do_clear_cropobjects)
+        if ask is True:
+            confirmation.open()
+        else:
+            self.annot_model.clear_cropobjects()
+            confirmation.unbind(on_ok=self.do_clear_cropobjects)
+
 
     ##########################################################################
     # Tool selection
