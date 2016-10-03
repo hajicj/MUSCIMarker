@@ -11,6 +11,7 @@ from kivy.properties import ObjectProperty, DictProperty
 from kivy.uix.widget import Widget
 
 import muscimarker_io
+from tracker import Tracker
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -49,12 +50,26 @@ class CropObjectAnnotatorModel(Widget):
     def load_image(self, image):
         self.image = image
 
+    @Tracker(track_names=['cropobject'],
+             transformations={'cropobject': [lambda c: ('objid', c.objid),
+                                             lambda c: ('clsid', c.clsid)]},
+             fn_name='model.add_cropobject',
+             tracker_name='model')
     def add_cropobject(self, cropobject):
         self.cropobjects[cropobject.objid] = cropobject
 
+    @Tracker(track_names=['key'],
+             transformations={'key': [lambda key: ('objid', key)]},
+             fn_name='model.remove_cropobject',
+             tracker_name='model')
     def remove_cropobject(self, key):
         del self.cropobjects[key]
 
+    @Tracker(track_names=['cropobjects'],
+             transformations={'cropobjects': [lambda c: ('n_cropobjects', len(c)),
+                                              lambda cs: ('objids', [c.objid for c in cs])]},
+             fn_name='model.import_cropobjects',
+             tracker_name='model')
     def import_cropobjects(self, cropobjects):
         logging.info('Model: Importing {0} cropobjects.'.format(len(cropobjects)))
         # Batch processing is more efficient, since rendering the CropObjectList
@@ -64,11 +79,17 @@ class CropObjectAnnotatorModel(Widget):
     def export_cropobjects_string(self, **kwargs):
         return muscimarker_io.export_cropobject_list(self.cropobjects.values(), **kwargs)
 
+    @Tracker(track_names=['output'],
+             fn_name='model.export_cropobjects',
+             tracker_name='model')
     def export_cropobjects(self, output, **kwargs):
         with codecs.open(output, 'w', 'utf-8') as hdl:
             hdl.write(self.export_cropobjects_string(**kwargs))
             hdl.write('\n')
 
+    @Tracker(track_names=[],
+             fn_name='model.clear_cropobjects',
+             tracker_name='model')
     def clear_cropobjects(self):
         logging.info('Model: Clearing all {0} cropobjects.'.format(len(self.cropobjects)))
         self.cropobjects = {}
