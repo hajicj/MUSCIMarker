@@ -39,11 +39,21 @@
     "key": "attempt_recovery_dump_on_exit"
   },
 
-
   { "type": "numeric",
     "title": "Recovery dump frequency",
     "desc": "The app state is backed up every X seconds. Set to 0 to turn recovery off.",
     "section": "recovery",
     "key": "recovery_dump_frequency_seconds"
+  },
+
+  { "type": "title",
+    "title": "Tracking"
+  },
+
+  { "type": "string",
+    "title": "Tracking root",
+    "desc": "Root directory where tracking files go (into day-based folders)",
+    "section": "tracking",
+    "key": "tracking_dir"
   }
 ]
