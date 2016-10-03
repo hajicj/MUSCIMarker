@@ -21,6 +21,8 @@ from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.spinner import Spinner
 from kivy.uix.togglebutton import ToggleButton
 
+import tracker as tr
+
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
 
@@ -173,7 +175,6 @@ class CropObjectView(SelectableView, ToggleButton):
 
         Rendering a mask in Kivy is difficult. (Can Mesh do nonconvex?)"""
         pass
-
 
     ##########################################################################
     # Keyboard event processing: the core UI of the CropObjectView
@@ -332,6 +333,11 @@ class CropObjectView(SelectableView, ToggleButton):
 
     ##########################################################################
     # Class selection
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                fn_name='CropObjectView.toggle_class_selection',
+                tracker_name='editing')
     def toggle_class_selection(self):
         if self._mlclass_selection_spinner_shown:
             self.destroy_mlclass_selection_spinner()
@@ -358,6 +364,11 @@ class CropObjectView(SelectableView, ToggleButton):
         self.add_widget(self.mlclass_selection_spinner)
         self._mlclass_selection_spinner_shown = True
 
+    @tr.Tracker(track_names=['self', 'text'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                fn_name='CropObjectView.do_class_selection',
+                tracker_name='editing')
     def do_class_selection(self, spinner_widget, text):
         logging.info('CropObjectView\t{0}: do_class_selection() fired.'
                      ''.format(self.cropobject.objid))
@@ -461,6 +472,11 @@ class CropObjectView(SelectableView, ToggleButton):
     ##########################################################################
     # Movement & scaling
 
+    @tr.Tracker(track_names=['self', 'vertical', 'horizontal'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                fn_name='CropObjectView.move',
+                tracker_name='editing')
     def move(self, vertical=0, horizontal=0):
         """Move the underlying CropObject.
 
@@ -515,6 +531,11 @@ class CropObjectView(SelectableView, ToggleButton):
         self.pos = (self.pos[0] + horizontal / self._editor_scale,# / self._width_scaling_factor),
                     self.pos[1] + vertical / self._editor_scale)# / self._width_scaling_factor))
 
+    @tr.Tracker(track_names=['self', 'vertical', 'horizontal'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                fn_name='CropObjectView.stretch',
+                tracker_name='editing')
     def stretch(self, vertical=0, horizontal=0):
         """Stretch the underlying CropObject. Does NOT change its position.
         Cannot make the CropObject smaller than 1 in either dimension.
@@ -565,6 +586,11 @@ class CropObjectView(SelectableView, ToggleButton):
 
     ##########################################################################
     # Split
+    @tr.Tracker(track_names=['self', 'ratio'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                fn_name='CropObjectView.split',
+                tracker_name='editing')
     def split(self, ratio=0.5):
         """Split the CropObject into two. If it is taller than wide, the split
         will lead horizontally (so the new CropObjects will be one above the
@@ -606,6 +632,11 @@ class CropObjectView(SelectableView, ToggleButton):
 
     ##########################################################################
     # Copied over from ListItemButton
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                fn_name='CropObjectView.select',
+                tracker_name='editing')
     def select(self, *args):
         self.background_color = self.selected_color
         if not self._info_label_shown:
@@ -615,6 +646,11 @@ class CropObjectView(SelectableView, ToggleButton):
             self.parent.select_from_child(self, *args)
         super(CropObjectView, self).select(*args)
 
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                fn_name='CropObjectView.deselect',
+                tracker_name='editing')
     def deselect(self, *args):
         logging.info('CropObjectView\t{0}: called deselection with args {1}'
                      ''.format(self.cropobject.objid, args))

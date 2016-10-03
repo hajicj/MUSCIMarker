@@ -490,6 +490,8 @@ class MUSCIMarkerApp(App):
 
     def build(self):
 
+        self.init_tracking()
+
         # Define bindings for compartmentalized portions of the application
         self.mlclass_list_loader.bind(filename=self.import_mlclass_list)
         self.image_loader.bind(filename=self.import_image)
@@ -592,6 +594,7 @@ class MUSCIMarkerApp(App):
 
         self._enforce_center_current_image_once()
 
+
     def build_config(self, config):
         config.setdefaults('kivy',
             {
@@ -629,7 +632,7 @@ class MUSCIMarkerApp(App):
             })
         config.setdefaults('tracking',
             {
-                'tracking_dir': self._default_tracking_dir(),
+                'tracking_dir': self._get_default_tracking_dir(),
             })
         config.setdefaults('interface', {'center_on_resize': True})
         Config.set('kivy', 'exit_on_escape', '0')
@@ -639,6 +642,12 @@ class MUSCIMarkerApp(App):
             jsondata = hdl.read()
         settings.add_json_panel('MUSCIMarker',
                                 self.config, data=jsondata)
+
+    @tr.Tracker(track_names=[],
+                tracker_name='app',
+                comment='User accessed the settings.')
+    def open_settings(self, *largs):
+        super(MUSCIMarkerApp, self).open_settings(*largs)
 
     ##########################################################################
     # Functions for recovering work from crashes, inadvertent shutdowns, etc.
@@ -1197,7 +1206,7 @@ class MUSCIMarkerApp(App):
             self.currently_selected_tool_name = tool_selection_button.name
 
     @tr.Tracker(track_names=['pos'],
-                transformations={'pos': lambda t: ('tool', t)},
+                transformations={'pos': [lambda t: ('tool', t)]},
                 tracker_name='toolkit')
     def on_currently_selected_tool_name(self, instance, pos):
         """This does the "heavy lifting" of deactivating the old tool
@@ -1302,13 +1311,13 @@ class MUSCIMarkerApp(App):
         if t.output_file is not None:
             return t.output_file
         else:
-            return self.generate_tracking_filename()
+            return self._generate_tracking_filename()
 
-    def generate_tracking_filename(self):
+    def _generate_tracking_filename(self):
         # The tracking filename contains a timestamp
         t = time.time()
         now = datetime.datetime.fromtimestamp(t)
-        timestamp_string = '{:%Y-%m-%d__%H:%M:%S}'.format(now)
+        timestamp_string = '{:%Y-%m-%d__%H-%M-%S}'.format(now)
         filename = 'muscimarker-tracking.{0}.json'.format(timestamp_string)
         path = self.config.get('tracking', 'tracking_dir')
         return os.path.join(path, filename)

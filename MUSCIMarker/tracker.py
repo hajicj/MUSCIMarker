@@ -72,12 +72,15 @@ class DefaultTrackerHandler(object):
 
 
     @staticmethod
-    def format_message_data(message_data):
+    def format_message_data(message_data, final=False):
         """Converts the given dictionary into a string representation
         that will get written into the tracker file."""
         _unicode_message_data = {unicode(k): unicode(v)
                                  for k, v in message_data.iteritems()}
-        return json.dumps(_unicode_message_data) + '\n'
+        if final is True:
+            return json.dumps(_unicode_message_data) + '\n'
+        else:
+            return json.dumps(_unicode_message_data) + ',\n'
 
     @classmethod
     def is_open(cls):
@@ -89,6 +92,7 @@ class DefaultTrackerHandler(object):
             cls._hdl = codecs.open(cls.output_file, 'a', 'utf-8')
         else:
             cls._hdl = sys.stdout
+        cls._hdl.write('[\n')  # List of events
         cls.write_message_data(cls.get_initial_message_data())
 
     @classmethod
@@ -98,7 +102,8 @@ class DefaultTrackerHandler(object):
 
     @classmethod
     def close(cls):
-        cls.write_message_data(cls.get_final_message_data())
+        cls.write_message_data(cls.get_final_message_data(), final=True)
+        cls._hdl.write(']\n')
         cls._hdl.close()
 
     @classmethod
@@ -107,11 +112,11 @@ class DefaultTrackerHandler(object):
             cls.close()
 
     @classmethod
-    def write_message_data(cls, message_data):
+    def write_message_data(cls, message_data, final=False):
         # msg_string = cls.format_message_data(message_data)
         cls.ensure_open()
-        message = cls.format_message_data(message_data=message_data)
-        cls._hdl.write(message)
+        message = cls.format_message_data(message_data=message_data, final=final)
+        cls._hdl.write('\t' + message)
 
 
 class Tracker(object):
@@ -127,6 +132,11 @@ class Tracker(object):
             that will be included in the tracking message. If this
             list is None, then all arguments will be tracked. (If
             you do not want to track any argument, supply an empty list.)
+
+            Ignores `self` by default unless you add it explicitly. However,
+            in Kivy, no Widget or anything derived from an EventDispatcher
+            is serializable, so you should really provide a transformer
+            for `self`.
 
         :type transformations: dict
         :param transformations: A dict of lists of callables. Keys are
@@ -178,7 +188,9 @@ class Tracker(object):
         # Unnamed args are a bit tricky.
         _fn_args, _, _, _ = inspect.getargspec(the_fn)
         if self.track_names is None:
-            track_names = _fn_args
+            # We need to keep 'self' away from tracked names unless
+            # the tracker is explicitly asked to track self.
+            track_names = [a for a in _fn_args if a != 'self']
         else:
             track_names = self.track_names
 
@@ -213,7 +225,10 @@ class Tracker(object):
 
                 # In case we are tracking a method
                 if key == 'self':
-                    continue
+                    if 'self' in track_names:
+                        value = _supplied_argvalues[key]
+                    else:
+                        continue
 
                 # Named args are easy to get
                 if key in kwargs:
