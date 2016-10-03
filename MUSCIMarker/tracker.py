@@ -40,6 +40,8 @@ class DefaultTrackerHandler(object):
     COMMENT_KEY = '-comment-'
     TRACKER_NAME_KEY = '-tracker-'
 
+    MISSING_VALUE = '=MISSING='
+
     @classmethod
     def get_initial_message_data(cls):
         d = cls.get_default_message_data()
@@ -73,7 +75,9 @@ class DefaultTrackerHandler(object):
     def format_message_data(message_data):
         """Converts the given dictionary into a string representation
         that will get written into the tracker file."""
-        return json.dumps(message_data) + '\n'
+        _unicode_message_data = {unicode(k): unicode(v)
+                                 for k, v in message_data.iteritems()}
+        return json.dumps(_unicode_message_data) + '\n'
 
     @classmethod
     def is_open(cls):
@@ -111,8 +115,8 @@ class DefaultTrackerHandler(object):
 
 
 class Tracker(object):
-    def __init__(self, track_names=None, fn_name=None, comment=None,
-                 tracker_name=None,
+    def __init__(self, track_names=None, transformations=None,
+                 fn_name=None, comment=None, tracker_name=None,
                  handler=DefaultTrackerHandler):
         """Decorator for events that should be tracked.
 
@@ -123,6 +127,21 @@ class Tracker(object):
             that will be included in the tracking message. If this
             list is None, then all arguments will be tracked. (If
             you do not want to track any argument, supply an empty list.)
+
+        :type transformations: dict
+        :param transformations: A dict of lists of callables. Keys are
+            names (present in track_names), values are lists of callables
+            that get called with the given tracked entity as the first
+            argument. (Use functools.partial for fancier input.)
+            This serves to enable things like extracting a property
+            of an object. The transformer is expected to return
+            a `(key, value)` pair that gets then used in the message
+            data. For example, you can make an `add_cropobject` Tracker with
+            `transformations={'cropobject': lambda c: ('objid', c.objid)}`.
+
+            If transformations are supplied for an argument to the tracked
+            function, the argument itself is *not* logged. To do that,
+            supply a `lambda x: ('name', x)` transform.
 
         :type fn_name: str
         :param fn_name: How the decorated function should be named
@@ -143,9 +162,14 @@ class Tracker(object):
             writing the messages.
         """
         self.track_names = track_names
+        self.transformations = dict()
+        if transformations is not None:
+            self.transformations = transformations
+
         self.fn_name = fn_name
         self.comment = comment
         self.tracker_name = tracker_name
+
         self.handler = handler
 
     def __call__(self, the_fn):
@@ -169,9 +193,9 @@ class Tracker(object):
             else:
                 message_data[fn_key] = self.fn_name
 
-            if self.tracker_name is not None:
-                tracker_name_key = self.handler.TRACKER_NAME_KEY
-                message_data[tracker_name_key] = self.tracker_name
+            # if self.tracker_name is not None:
+            tracker_name_key = self.handler.TRACKER_NAME_KEY
+            message_data[tracker_name_key] = self.tracker_name
 
             # Unnamed args are a bit tricky.
             _args, _varargs, _keywords, _defaults = inspect.getargspec(the_fn)
@@ -185,21 +209,30 @@ class Tracker(object):
             _supplied_argvalues = {a: v for a, v in zip(_args[:len(args)], args)}
             for key in track_names:
 
+                value = self.handler.MISSING_VALUE
+
                 # In case we are tracking a method
                 if key == 'self':
                     continue
 
                 # Named args are easy to get
                 if key in kwargs:
-                    message_data[key] = kwargs[key]
+                    value = kwargs[key]
 
                 # Unnamed args are a bit trickier
                 # Maybe we got the arg
                 elif key in _supplied_argvalues:
-                    message_data[key] = _supplied_argvalues[key]
+                    value = _supplied_argvalues[key]
                 # There may be a default value
                 elif key in _defaults_argvalues:
-                    message_data[key] = _defaults_argvalues[key]
+                    value = _defaults_argvalues[key]
+
+                if (key in self.transformations) and (value != self.handler.MISSING_VALUE):
+                    for transform in self.transformations[key]:
+                        t_key, t_value = transform(value)
+                        message_data[t_key] = t_value
+                else:
+                    message_data[key] = value
 
             # Add comment, if applicable
             if self.comment is not None:

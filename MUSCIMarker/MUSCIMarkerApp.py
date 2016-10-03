@@ -116,12 +116,12 @@ Another grief-inducing hitch is the relationship between position input
 in the scalable editor widget and the coordinates of the original image.
 
 
-Logging activities
-------------------
+Tracking activities
+==================
 
 .. todo:: Implement this!
 
-Annotator activity can be logged. In general, events that we could log are:
+Annotator activity can be tracked. In general, events that we could track are:
 
 * Model-level activity
   * cropobject deletion
@@ -151,6 +151,45 @@ Each logged event has:
 * app state
 * model state
 
+How to use tracking
+-------------------
+
+Tracking is implemented through decorators in the `tracker.py` module::
+
+>>> import MUSCIMarker.tracker as tr
+>>> @tr.Tracker(track_names=['foo', 'bar'])
+>>> def do_something(foo='foo', bar='bar', baz='baz'): print(foo, bar, baz)
+
+Now, calling `do_something` will produce a tracking event that captures
+the values of the `foo` and `bar` arguments.
+
+The tracker writes all its output as JSON strings to a file.
+The default tracking dir is in `$HOME/.muscimarker-tracking`. It is
+further organized into directories by day. Each launch of MUSCIMarker
+generates one tracking file, named `muscimarker-tracking.YYYY-mm-dd_hh:mm:ss`.
+
+Each tracked event generates one JSON dictionary. All events have:
+
+* `time` (timestamp from `time.time()`)
+* `human_time` (equivalent to `time` in YYYY-mm-dd_hh:mm:ss format)
+* `-tracker-` (label for the event: meant for grouping events into
+  categories such as navigation, toolkit usage, import/export, etc.)
+* `-fn-` (name of the function whose call produces a tracking event)
+* `-comment-` (optional string explaining what the event is)
+
+The arguments with which the tracked function was called can also be
+captured. The tracker also allows for some simple transformations for
+the tracked arguments: for instance, cropobject creation tracking
+logs just the `objid` and `clsid` attributes instead of the entire CropObject.
+
+Tracking implementation
+-----------------------
+
+Two kinds of objects are involved in tracking: trackers and handlers.
+The `Tracker` object decorates the event-producing callable and produces
+the tracking event. Then, it hands the event off to the handler object,
+which is responsible for writing the event data into the tracking file.
+
 """
 from __future__ import print_function, unicode_literals
 import argparse
@@ -167,6 +206,7 @@ import cPickle
 #from skimage.io import find_available_plugins, imread
 # Importing skimage.io causes strange behavior on loading. Maybe bad interaction with some libraries?
 # skimage by itself is fine.
+import datetime
 import scipy.misc   # This worked!
 
 from kivy._event import EventDispatcher
@@ -587,6 +627,10 @@ class MUSCIMarkerApp(App):
                 # If set, will automatically restrict all masks to nonzero
                 # pixels of the input image only.
             })
+        config.setdefaults('tracking',
+            {
+                'tracking_dir': self._default_tracking_dir(),
+            })
         config.setdefaults('interface', {'center_on_resize': True})
         Config.set('kivy', 'exit_on_escape', '0')
 
@@ -907,6 +951,7 @@ class MUSCIMarkerApp(App):
         scatter = self._get_editor_scatter_container_widget()
         scatter.scale = 1.0
 
+    @tr.Tracker(tracker_name='view')
     def center_current_image(self):
         """Centers the current image.
 
@@ -974,6 +1019,8 @@ class MUSCIMarkerApp(App):
 
     ##########################################################################
     # Resizing
+    @tr.Tracker(track_names=['width', 'height'],
+                tracker_name='app')
     def window_resized(self, instance, width, height):
         logging.info('App: Window resize to: {0}'.format((width, height)))
         e = self._get_editor_widget()
@@ -1149,6 +1196,9 @@ class MUSCIMarkerApp(App):
         else:
             self.currently_selected_tool_name = tool_selection_button.name
 
+    @tr.Tracker(track_names=['pos'],
+                transformations={'pos': lambda t: ('tool', t)},
+                tracker_name='toolkit')
     def on_currently_selected_tool_name(self, instance, pos):
         """This does the "heavy lifting" of deactivating the old tool
         and activating the new one."""
@@ -1204,6 +1254,9 @@ class MUSCIMarkerApp(App):
 
     ##########################################################################
     # Cleanup.
+    @tr.Tracker(track_names=[],
+                tracker_name='app',
+                comment='Application exited.')
     def exit(self):
         # Record current state
         self.config.setall(
@@ -1219,4 +1272,54 @@ class MUSCIMarkerApp(App):
         if attempt_recovery_dump:
             self.do_save_app_state()
 
+        # Stop tracking
+        handler = self.get_tracking_handler()
+        handler.ensure_closed()
+
         self.stop()
+
+    ##########################################################################
+    # Tracking
+    def init_tracking(self):
+        # First make sure the directory for tracking exists.
+        path = self.config.get('tracking', 'tracking_dir')
+        logging.info('App: Initializing tracking into dir {0}'.format(path))
+        if not os.path.isdir(path):
+            logging.info('App: tracking dir needs to be created: {0}'.format(path))
+            os.makedirs(path)
+
+        # Now initialize the handler's file to that output.
+        handler = tr.DefaultTrackerHandler
+        tracking_file = self.get_tracking_filename()
+
+        logging.info('App: Tracking will be logged into file {0}'
+                     ''.format(tracking_file))
+        handler.output_file = tracking_file
+
+    def get_tracking_filename(self):
+        """Generates the tracking filename used for the given session."""
+        t = self.get_tracking_handler()
+        if t.output_file is not None:
+            return t.output_file
+        else:
+            return self.generate_tracking_filename()
+
+    def generate_tracking_filename(self):
+        # The tracking filename contains a timestamp
+        t = time.time()
+        now = datetime.datetime.fromtimestamp(t)
+        timestamp_string = '{:%Y-%m-%d__%H:%M:%S}'.format(now)
+        filename = 'muscimarker-tracking.{0}.json'.format(timestamp_string)
+        path = self.config.get('tracking', 'tracking_dir')
+        return os.path.join(path, filename)
+
+    def get_tracking_handler(self):
+        return tr.DefaultTrackerHandler
+
+    def _get_default_tracking_dir(self):
+        home = os.environ['HOME']
+        muscimarker_tracking_user_dir = '.muscimarker-tracking'
+        t = time.time()
+        now = datetime.datetime.fromtimestamp(t)
+        day_tag = '{:%Y-%m-%d}'.format(now)
+        return os.path.join(home, muscimarker_tracking_user_dir, day_tag)
