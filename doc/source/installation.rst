@@ -57,10 +57,12 @@ Install Kivy
 
 Installation instructions for Kivy for your platform are on the Kivy website:
 
-|Kivy-install|_
+|KivyInstall|_
 
+Follow the instructions for your operating system.
 Don't be scared, it should actually go pretty well. MUSCIMarker does
-not require ``gstreamer``,
+not require ``gstreamer``, so you can skip that part of the requirements
+(as applicable to your platform).
 
 Install git
 -----------

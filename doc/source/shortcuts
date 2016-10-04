@@ -16,7 +16,8 @@
 
 .. |Kivy| replace:: Kivy
 .. _Kivy: https://kivy.org/docs/gettingstarted/intro.html
-.. _Kivy-install: https://kivy.org/docs/gettingstarted/installation.html
+.. |KivyInstall| replace:: KivyInstall
+.. _KivyInstall: https://kivy.org/docs/gettingstarted/installation.html
 
 .. |lxml| replace:: lxml
 .. _lxml: http://lxml.de
