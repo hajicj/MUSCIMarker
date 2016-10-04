@@ -95,7 +95,7 @@ You can verify the installation by running::
   $ cd MUSCIMarker/MUSCIMarker
   $ python main.py
 
-Right here, you should be able to continue with the Tutorial.
+Right here, you should be able to continue with the :ref:`tutorial`.
 
 (For the curious: the ``cd`` command means "(c)hange (d)irectory".
 Typing a name goes down into the directory (or more: ``cd MUSCIMarker/MUSCIMarker``
