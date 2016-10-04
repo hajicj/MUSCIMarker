@@ -1352,7 +1352,7 @@ class MUSCIMarkerApp(App):
         return os.path.join(self._tracking_root, day_tag)
 
     def _get_default_tracking_root_dir(self):
-        home = os.environ['HOME']
+        home = os.path.expanduser('~') #os.environ['HOME']
         muscimarker_tracking_user_dir = '.muscimarker-tracking'
         return os.path.join(home, muscimarker_tracking_user_dir)
 
