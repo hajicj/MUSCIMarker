@@ -54,6 +54,6 @@
     "title": "Tracking root",
     "desc": "Root directory where tracking files go (into day-based folders)",
     "section": "tracking",
-    "key": "tracking_dir"
+    "key": "tracking_root_dir"
   }
 ]

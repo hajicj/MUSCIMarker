@@ -163,7 +163,7 @@ Tracking is implemented through decorators in the `tracker.py` module::
 Now, calling `do_something` will produce a tracking event that captures
 the values of the `foo` and `bar` arguments.
 
-The tracker writes all its output as JSON strings to a file.
+The tracker writes all its output as a JSON list of the event dicts to a file.
 The default tracking dir is in `$HOME/.muscimarker-tracking`. It is
 further organized into directories by day. Each launch of MUSCIMarker
 generates one tracking file, named `muscimarker-tracking.YYYY-mm-dd_hh:mm:ss`.
@@ -171,7 +171,7 @@ generates one tracking file, named `muscimarker-tracking.YYYY-mm-dd_hh:mm:ss`.
 Each tracked event generates one JSON dictionary. All events have:
 
 * `time` (timestamp from `time.time()`)
-* `human_time` (equivalent to `time` in YYYY-mm-dd_hh:mm:ss format)
+* `time_human` (equivalent to `time` in YYYY-mm-dd_hh:mm:ss format)
 * `-tracker-` (label for the event: meant for grouping events into
   categories such as navigation, toolkit usage, import/export, etc.)
 * `-fn-` (name of the function whose call produces a tracking event)
@@ -632,7 +632,7 @@ class MUSCIMarkerApp(App):
             })
         config.setdefaults('tracking',
             {
-                'tracking_dir': self._get_default_tracking_dir(),
+                'tracking_root_dir': self._get_default_tracking_root_dir(),
             })
         config.setdefaults('interface', {'center_on_resize': True})
         Config.set('kivy', 'exit_on_escape', '0')
@@ -1303,7 +1303,8 @@ class MUSCIMarkerApp(App):
     # Tracking
     def init_tracking(self):
         # First make sure the directory for tracking exists.
-        path = self.config.get('tracking', 'tracking_dir')
+        path = self._tracking_path
+        # path = self._get_default_tracking_dir()
         logging.info('App: Initializing tracking into dir {0}'.format(path))
         if not os.path.isdir(path):
             logging.info('App: tracking dir needs to be created: {0}'.format(path))
@@ -1331,16 +1332,33 @@ class MUSCIMarkerApp(App):
         now = datetime.datetime.fromtimestamp(t)
         timestamp_string = '{:%Y-%m-%d__%H-%M-%S}'.format(now)
         filename = 'muscimarker-tracking.{0}.json'.format(timestamp_string)
-        path = self.config.get('tracking', 'tracking_dir')
-        return os.path.join(path, filename)
+        return os.path.join(self._tracking_path, filename)
 
     def get_tracking_handler(self):
         return tr.DefaultTrackerHandler
 
-    def _get_default_tracking_dir(self):
-        home = os.environ['HOME']
-        muscimarker_tracking_user_dir = '.muscimarker-tracking'
+    @property
+    def _tracking_root(self):
+        p = self.config.get('tracking', 'tracking_root_dir')
+        if not p:
+            p = self._get_default_tracking_root_dir()
+        return p
+
+    @property
+    def _tracking_path(self):
         t = time.time()
         now = datetime.datetime.fromtimestamp(t)
         day_tag = '{:%Y-%m-%d}'.format(now)
-        return os.path.join(home, muscimarker_tracking_user_dir, day_tag)
+        return os.path.join(self._tracking_root, day_tag)
+
+    def _get_default_tracking_root_dir(self):
+        home = os.environ['HOME']
+        muscimarker_tracking_user_dir = '.muscimarker-tracking'
+        return os.path.join(home, muscimarker_tracking_user_dir)
+
+    def _get_default_tracking_dir(self):
+        root_dir = self._get_default_tracking_root_dir()
+        t = time.time()
+        now = datetime.datetime.fromtimestamp(t)
+        day_tag = '{:%Y-%m-%d}'.format(now)
+        return os.path.join(root_dir, day_tag)

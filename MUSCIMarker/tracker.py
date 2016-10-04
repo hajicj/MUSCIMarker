@@ -36,6 +36,8 @@ class DefaultTrackerHandler(object):
     output_file = None
     _hdl = None
 
+    TIME_KEY = '-time-'
+    TIME_HUMAN_KEY = '-time-human-'
     FUNCTION_NAME_KEY = '-fn-'
     COMMENT_KEY = '-comment-'
     TRACKER_NAME_KEY = '-tracker-'
@@ -62,8 +64,8 @@ class DefaultTrackerHandler(object):
         dt = datetime.datetime.fromtimestamp(t)
         human_time = cls.format_timestamp(dt)
         d = collections.OrderedDict()
-        d['time'] = t,
-        d['human_time'] = human_time
+        d[cls.TIME_KEY] = t
+        d[cls.TIME_HUMAN_KEY] = human_time
         return d
 
     @staticmethod
