@@ -5,6 +5,7 @@
 
 .. include:: shortcuts
 
+.. _index:
 
 MUSCIMarker
 ===========
@@ -19,6 +20,8 @@ any kind of 2-D object marking.)
 
 Installation
 ------------
+
+The instructions are here: :ref:`installation`.
 
 .. note:: As it stands now, we don't have installation packages that would
           work for people who don't have Python. We're working on it, though.
@@ -75,6 +78,7 @@ Contents:
    :numbered:
    :titlesonly:
 
+   Installation <installation>
    Tutorial <tutorial>
 
 

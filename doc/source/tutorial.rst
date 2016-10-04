@@ -1,6 +1,6 @@
-.. _tutorial:
-
 .. include:: shortcuts
+
+.. _tutorial:
 
 Tutorial
 --------
