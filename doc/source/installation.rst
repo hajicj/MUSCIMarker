@@ -106,7 +106,7 @@ Running MUSCIMarker
 When you want to run MUSCIMarker again:
 
 #. Open the command line.
-   #. If you made the special Python 2 conda environment: run ``activate py27``
+#. Only if you made the special Python 2 conda environment: run ``activate py27``
 #. ``cd MUSCIMarker``
 #. ``git pull`` to update to the latest version.
 #. ``cd MUSCIMarker`` again (there are two directories called

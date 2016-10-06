@@ -288,22 +288,27 @@ class ConnectedComponentBoundingBoxTracer(BoundingBoxTracer):
                          'Img box {0}'.format(img_box))
 
         # Compute bboxes from the image (unless cached already).
-        if self._bboxes is None:
-            image = app.annot_model.image
-            logging.info('CCselect: Recomputing bboxes...')
-            if (self._cc < 0) or (self._labels is None):
-                #self._cc, self._labels = cv2.connectedComponents(image)
-                self._labels = skimage.measure.label(image, background=0)
-                logging.warn('CCSelect: found {0} CCs in total. Labels dtype; {1}, cc total type: {2}'
-                             ''.format(self._labels.max(), self._labels.dtype, type(self._cc)))
-                self._cc = int(self._labels.max())
-            self._bboxes = connected_components2bboxes(self._labels)
+        #if self._bboxes is None:
+        self._cc = app.annot_model.cc
+        self._labels = app.annot_model.labels
+        self._bboxes = app.annot_model.bboxes
+            # image = app.annot_model.image
+            # logging.info('CCselect: Recomputing bboxes...')
+            # if (self._cc < 0) or (self._labels is None):
+            #     #self._cc, self._labels = cv2.connectedComponents(image)
+            #     self._labels = skimage.measure.label(image, background=0)
+            #     logging.warn('CCSelect: found {0} CCs in total. Labels dtype; {1}, cc total type: {2}'
+            #                  ''.format(self._labels.max(), self._labels.dtype, type(self._cc)))
+            #     self._cc = int(self._labels.max())
+            # self._bboxes = connected_components2bboxes(self._labels)
 
         # Find components that are inside the selection.
         selected_labels = set(self._labels[img_t:img_b, img_l:img_r].flatten())
         logging.info('CCSelect: Selected labels: {0}'.format(selected_labels))
+        logging.info('CCSelect: bboxes: {0}'.format(self._bboxes))
         selected_label_bboxes = numpy.array([self._bboxes[l] for l in selected_labels
                                              if l != 0])  # Exclude background CC
+        logging.info('CCSelect: Selected bboxes: {0}'.format(selected_label_bboxes))
 
         out_t, out_b, out_l, out_r = 10000000, 0, 10000000, 0
         # Merge their bounding boxes.

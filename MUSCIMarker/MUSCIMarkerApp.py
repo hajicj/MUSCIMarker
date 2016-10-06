@@ -1274,6 +1274,10 @@ class MUSCIMarkerApp(App):
         return self.root.ids['command_sidebar'].ids['info_panel']
 
     ##########################################################################
+    # Connected Component caching
+
+
+    ##########################################################################
     # Cleanup.
     @tr.Tracker(track_names=[],
                 tracker_name='app',

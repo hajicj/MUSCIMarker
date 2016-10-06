@@ -5,6 +5,8 @@ import codecs
 import logging
 import os
 
+import skimage.measure
+
 from kivy.core.window import Window
 from kivy.properties import ObjectProperty, StringProperty, BooleanProperty, NumericProperty
 from kivy.uix.behaviors import FocusBehavior
@@ -15,6 +17,7 @@ from kivy.uix.textinput import TextInput
 
 import muscimarker_io as mmio
 # import mhr.muscima as mm
+
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -303,6 +306,13 @@ def connected_components2bboxes(labels):
                 elif y + 1 > box[3]:
                     box[3] = y + 1
     return bboxes
+
+
+def compute_connected_components(image):
+    labels = skimage.measure.label(image, background=0)
+    cc = int(labels.max())
+    bboxes = connected_components2bboxes(labels)
+    return cc, labels, bboxes
 
 
 ##############################################################################

@@ -7,10 +7,11 @@ import logging
 # import cv2
 # import matplotlib.pyplot as plt
 
-from kivy.properties import ObjectProperty, DictProperty
+from kivy.properties import ObjectProperty, DictProperty, NumericProperty
 from kivy.uix.widget import Widget
 
 import muscimarker_io
+from utils import compute_connected_components
 from tracker import Tracker
 
 __version__ = "0.0.1"
@@ -31,6 +32,12 @@ class CropObjectAnnotatorModel(Widget):
 
     """
     image = ObjectProperty()
+
+    # Connected component precomputing
+    _cc = NumericProperty(-1)
+    _labels = ObjectProperty(None, allownone=True)
+    _bboxes = ObjectProperty(None, allownone=True)
+
     cropobjects = DictProperty()
     mlclasses = DictProperty()
     mlclasses_by_name = DictProperty()
@@ -47,8 +54,11 @@ class CropObjectAnnotatorModel(Widget):
         if mlclasses:
             self.import_classes_definition(mlclasses)
 
-    def load_image(self, image):
+    def load_image(self, image, compute_cc=False):
+        self._invalidate_cc_cache()
         self.image = image
+        if compute_cc:
+            self._compute_cc_cache()
 
     @Tracker(track_names=['cropobject'],
              transformations={'cropobject': [lambda c: ('objid', c.objid),
@@ -131,6 +141,43 @@ class CropObjectAnnotatorModel(Widget):
             return False
         return True
 
+    ##########################################################################
+    # Connected components: a useful thing to have
+    def _compute_cc_cache(self):
+        logging.info('AnnotModel: Computing connected components...')
+        cc, labels, bboxes = compute_connected_components(self.image)
+        logging.info('AnnotModel: Got cc: {0}, labels: {1}, bboxes: {2}'
+                     ''.format(cc, labels.shape, len(bboxes)))
+        self._cc, self._labels, self._bboxes = cc, labels, bboxes
+        logging.info('AnnotModel: ...done, there are {0} labels.'.format(cc))
+
+    def _invalidate_cc_cache(self):
+        self._cc = -1
+        self._labels = None
+        self._bboxes = None
+
+    def _ensure_cc_cache(self):
+        if self._cc_cache_is_empty:
+            self._compute_cc_cache()
+
+    @property
+    def _cc_cache_is_empty(self):
+        return self._cc < 0
+
+    @property
+    def cc(self):
+        self._ensure_cc_cache()
+        return self._cc
+
+    @property
+    def labels(self):
+        self._ensure_cc_cache()
+        return self._labels
+
+    @property
+    def bboxes(self):
+        self._ensure_cc_cache()
+        return self._bboxes
     # def plot_annotations(self):
     #     """Plot the current animation using Matplotlib."""
     #     rgb_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
