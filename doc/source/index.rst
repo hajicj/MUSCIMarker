@@ -29,27 +29,6 @@ The instructions are here: :ref:`installation`.
 .. note:: You need Python 2.7 -- although most of MUSCIMarker should
           be compatible with Python 3, we haven't yet tested this.
 
-You will need the following Python packages for MUSCIMarker to run:
-
-* |Kivy|_ (The GUI toolkit that MUSCIMarker was built with)
-* |lxml|_ (Parsing, writing and manipulating XML files)
-* |numpy|_ (Fast math for Python)
-* |scikit-image|_ (Image manipulation and rendering)
-
-..  todo::
-   Because installing all these yourself is tedious, we have prepared
-   a virtual environment that you can use with |conda|_. (If you're not
-   using |conda| yet, we recommend that you start using it!)
-
-Installing on Windows
-^^^^^^^^^^^^^^^^^^^^^
-
-.. warning:: Proposed; needs testing.
-
-We strongly recommend installing the |Anaconda|_ distribution.
-
-To install Kivy, follow the Windows installation instruction.
-
 
 What now?
 ---------

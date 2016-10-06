@@ -6,8 +6,11 @@ Installing MUSCIMarker
 ======================
 
 The installation instructions should work regardless of platform,
-thanks to the magic of Anaconda. The OS-dependent part is covered
-in Kivy's installation instruction (see below).
+thanks to the magic of Anaconda. The operating system-dependent part
+is covered in Kivy's installation instruction (see below).
+
+These instructions are written so that you don't need admin access
+and don't even need to be any kind of IT person.
 
 .. note::
 
@@ -100,13 +103,14 @@ Typing a name goes down into the directory (or more: ``cd MUSCIMarker/MUSCIMarke
 goes down two levels, both named ``MUSCIMarker``).
 Two dots (``cd ..``) means going one level up in the directory tree.)
 
+
 Running MUSCIMarker
 -------------------
 
 When you want to run MUSCIMarker again:
 
 #. Open the command line.
-#. Only if you made the special Python 2 conda environment: run ``activate py27``
+#. Only if you made the special Python 2 conda environment: ``source activate py27``
 #. ``cd MUSCIMarker``
 #. ``git pull`` to update to the latest version.
 #. ``cd MUSCIMarker`` again (there are two directories called
@@ -117,3 +121,44 @@ If you are not sure that the ``git pull`` step finished successfully,
 try running ``git pull`` again. If your MUSCIMarker is correctly
 updated, it should tell you that it is ``already up to date``.
 
+
+What could go wrong?
+--------------------
+
+On some systems, we have encountered problems during
+installation. We list these problems and give solutions whenever we have them.
+
+OpenGL version requirements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Kivy requires OpenGL 2.0 and above. If you run MUSCIMarker and encounter
+an error message saying that only OpenGL 1.1 can be found, it could
+be caused by (a) outdated graphics drivers, (b) the ``multisample`` kivy
+configuration parameter. The solution to (a) is to update your drivers.
+The solution to (b) means opening ``.kivy/config.ini``, find the ``multisamples``
+line in the ``[graphics]`` section and set it to ``multisamples = 0``.
+
+
+No valuable window provider
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In one case, kivy couldn't get SDL2 to open a window. In this case, the solution
+was to install the ``gstreamer`` dependency (see |KivyInstall|_) and add the
+``gstreamer`` directory to the ``PATH`` variable. It's a problem probably
+ caused by conflicting versions of ``libpng16_16.dll``.
+
+Old version of MKL in system DLL path
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If ``numpy`` import fails on ``multiarray.so``, one potential cause
+may be a version conflict with Intel's MKL library: if there is MKL on
+the system DLL path (like: ``C:\Windows\system32\mkl_intel_thread.dll``),
+Windows finds it first and there is no way to tell it to ignore it and
+go find Anaconda's MKL. On Linux and OS X, you can use the ``nomkl``
+conda package, but there is no math library other than MKL for Anaconda's
+``numpy`` binaries to link to on Windows.
+
+We haven't been able to solve this problem yet. A possible solution is
+to track down whichever application felt the need to install MKL into
+the system path and move the DLLs there. However, this may easily result
+in system breakage: create arecovery point first!
