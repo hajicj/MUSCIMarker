@@ -59,6 +59,7 @@ Contents:
 
    Installation <installation>
    Tutorial <tutorial>
+   Starting MUSCIMarker <running>
 
 
 Indices and tables

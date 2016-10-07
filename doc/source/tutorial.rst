@@ -50,8 +50,8 @@ And that includes the all-important Exit button!
 .. image:: images/screenshots/ui_overview_exit.png
 
 
-Exploring the image
-^^^^^^^^^^^^^^^^^^^
+Explore the image
+^^^^^^^^^^^^^^^^^
 
 You can zoom and move the image around. MUSCIMarker works both on a desktop
 and on a smartphone or tablet, but the usage is a little different.
@@ -97,8 +97,8 @@ in, so spend a minute getting used to navigating the image before we
 proceed to the next step: annotating.
 
 
-Annotating
-^^^^^^^^^^
+Annotate
+^^^^^^^^
 
 Annotating means marking regions of the image as objects from a certain set:
 in this tutorial, we'll mark symbols and "primitives" that make up common
@@ -117,7 +117,7 @@ with that tool. So, let's get used to it right away.
 
 The selected tool is now highlighted.
 
-Check that the desired symbol type is selected:
+Check which symbol type is selected:
 
 .. image:: images/screenshots/ui_annot_symboltype.png
 
@@ -146,3 +146,79 @@ However, when symbols overlap and you need to draw the lasso through a white
 
 Zoom in closer if you are not sure that the line is exactly where
 you want it. Accuracy matters!
+
+
+Delete an annotation
+^^^^^^^^^^^^^^^^^^^^
+
+If you make a mistake, don't panic! The symbols can be removed.
+Unselect any tool you're using and left-click on the symbol.
+This will mark the symbol as *selected*.
+On the screen, it will become highlighted, and some information about the
+symbol will be shown on the bottom of the right-hand panel.
+
+.. image:: images/screenshots/ui_delete_selectedsymbol.png
+
+Now, press backspace (not delete, backspace). The object will disappear
+and the CropObject counter on the right will go down by 1.
+
+.. note::
+
+   Whenver a tool is selected, all mouse activity inside the image
+   is handled by the tool. So if you hadn't deactivated the tool before
+   selecting the object, the click would be caught and interpreted as
+   a very small lasso. This behavior ensures that when you want to annotate
+   a symbol, nothing you have previously done will get in the way.
+
+
+
+Annotate things that don't fit on the screen
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes you need to zoom in a lot to annotate overlapping symbols
+accurately, but then the symbol does not fit on the screen. (This mostly
+happens with barlines and ties/slurs.) What now?
+
+The symbols support a *merge* operation: you can mark it in parts and then
+join them into one. Marking the parts is exactly the same as marking anything
+else: for the time being, the program will think there are, let's say,
+three barlines. However, we then select the parts and press ``m``. Voila:
+they merge! Make sure the parts overlap, though: otherwise, the merged symbol
+would have gaps.
+
+
+Save and load your work
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Once you have annotated something, use the ``Export CropObject List``
+button.
+
+.. image:: images/screenshots/ui_saveload_exportbutton.png
+
+Navigate to the folder where you want to save the file.
+The proposed filename (ending with ``xml``) is derived from the current
+image file.
+
+.. image:: images/screenshots/ui_saveload_dialogue.png
+
+Save often (every, let's say, 3-5 minutes) - there is no ``Undo`` button.
+
+You can then load the exported annotations in the same way, using
+the ``Import CropObject List`` button, right above the ``Export`` button.
+
+.. image:: images/screenshots/ui_saveload_importbutton.png
+
+
+Load a different image
+^^^^^^^^^^^^^^^^^^^^^^
+
+It's analogous to how saving works, just use the ``Select image file``
+button on the right.
+
+.. image:: images/screenshots/ui_saveload_image.png
+
+Again, just navigate to the desired image, click it and click ``Load``.
+Quite simple, eh? Remember to export your annotations before you load
+a new image, though: once an image is loaded, all the annotations are
+cleared (they referred to the previous image, so it doesn't make any
+sense to leave them with the new image).
