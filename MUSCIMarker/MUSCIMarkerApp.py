@@ -963,6 +963,9 @@ class MUSCIMarkerApp(App):
         Clock.schedule_once(lambda *anything: self.center_current_image())
 
     @tr.Tracker(tracker_name='commands')
+    def do_center_and_rescale_currnet_image_user(self):
+        self.do_center_and_rescale_current_image()
+
     def do_center_and_rescale_current_image(self):
         Clock.schedule_once(lambda *args: self.center_and_rescale_current_image())
 
@@ -1069,7 +1072,7 @@ class MUSCIMarkerApp(App):
 
 
     ##########################################################################
-    # Interfacing editor actions to the model,
+    # Interfacing editor actions to the model.
     def map_point_from_editor_to_model(self, editor_x, editor_y):
         """Recomputes coordinates of an (Xe, Ye) point from editor coords
         (where X is horizontal from left, Y is vertical from bottom) to model
@@ -1218,6 +1221,8 @@ class MUSCIMarkerApp(App):
         t, l, b, r = c.bounding_box
         return t, l, b, r
 
+    @tr.Tracker(track_names=['ask'],
+                tracker_name='commands')
     def do_clear_cropobjects(self, ask=False):
         confirmation = ConfirmationDialog(text='Do you really want to clear'
                                                ' all current annotations?')
@@ -1228,6 +1233,29 @@ class MUSCIMarkerApp(App):
             self.annot_model.clear_cropobjects()
             confirmation.unbind(on_ok=self.do_clear_cropobjects)
 
+    ##########################################################################
+    # MLClass selection tracking
+    @tr.Tracker(track_names=['pos'],
+                transformations={'pos': [lambda p: ('mlclass_name', p)]},
+                tracker_name='commands')
+    def on_currently_selected_mlclass_name(self, instance, pos):
+        pass
+
+    def _mlclass_selection_spinner_state_change(self, is_open):
+        if is_open:
+            self._mlclass_selection_spinner_opened()
+        else:
+            self._mlclass_selection_spinner_closed()
+
+    @tr.Tracker(track_names=[],
+                tracker_name='commands')
+    def _mlclass_selection_spinner_opened(self):
+        pass
+
+    @tr.Tracker(track_names=[],
+                tracker_name='commands')
+    def _mlclass_selection_spinner_closed(self):
+        pass
 
     ##########################################################################
     # Tool selection

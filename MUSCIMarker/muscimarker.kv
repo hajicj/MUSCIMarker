@@ -301,6 +301,8 @@
         values: sorted(app.annot_model.mlclasses_by_name.keys(), key=lambda x: app.annot_model.mlclasses_by_name[x].clsid)
         on_text: app.currently_selected_mlclass_name = mlclass_selection_spinner.text
 
+        on_is_open: app._mlclass_selection_spinner_state_change(self.is_open)
+
     Label:
         size_hint: 1.0, 0.1
         text: '_____________'
@@ -517,7 +519,7 @@ MUSCIMarkerLayout:
 
             ActionButton:
                 text: 'CENTER'
-                on_release: app.do_center_and_rescale_current_image()
+                on_release: app.do_center_and_rescale_current_image_user()
 
             ActionButton:
                 text: 'BACKUP'
