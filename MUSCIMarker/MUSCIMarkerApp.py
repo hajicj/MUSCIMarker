@@ -176,6 +176,7 @@ Each tracked event generates one JSON dictionary. All events have:
   categories such as navigation, toolkit usage, import/export, etc.)
 * `-fn-` (name of the function whose call produces a tracking event)
 * `-comment-` (optional string explaining what the event is)
+* `-count-` (optional, how many times has the event occurred in the given session)
 
 The arguments with which the tracked function was called can also be
 captured. The tracker also allows for some simple transformations for
@@ -219,6 +220,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.relativelayout import RelativeLayout
+from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.widget import Widget
 
 import muscimarker_io
@@ -594,7 +596,6 @@ class MUSCIMarkerApp(App):
 
         self._enforce_center_current_image_once()
 
-
     def build_config(self, config):
         config.setdefaults('kivy',
             {
@@ -875,6 +876,9 @@ class MUSCIMarkerApp(App):
 
         self.currently_selected_mlclass_name = self.annot_model.mlclasses.values()[0].name
 
+    @tr.Tracker(track_names=['pos'],
+                transformations={'pos': [lambda x: ('cropobjects_file', x)]},
+                tracker_name='commands')
     def import_cropobject_list(self, instance, pos):
         logging.info('App: === Reloading CropObjectList fired with file \'{0}\''
                      ''.format(pos))
@@ -905,7 +909,9 @@ class MUSCIMarkerApp(App):
         # self.current_n_cropobjects = len(cropobject_list)
         self.annot_model.import_cropobjects(cropobject_list)
 
-    @tr.Tracker(track_names=['pos'], tracker_name='commands')
+    @tr.Tracker(track_names=['pos'],
+                transformations={'pos': [lambda x: ('image_file', x)]},
+                tracker_name='commands')
     def import_image(self, instance, pos):
 
         logging.info('App: === Got image file: {0}'.format(pos))
@@ -1024,6 +1030,21 @@ class MUSCIMarkerApp(App):
         """Second part of the bound trigger."""
         self.do_center_current_image()
         Window.unbind(on_draw=self._do_center_current_image_and_unenforce)
+
+    # Proxies for tracking image movement
+    #def _image_moved(self, *args, **kwargs):
+    #    logging.info('App: image moved')
+
+    #def _image_scaled(self, *args, **kwargs):
+    #    logging.info('App: image scaled')
+
+    def _image_touch_up(self, *args, **kwargs):
+        logging.info('App: image_touch_up, pos={0}, scale={1}'
+                     ''.format(self._get_editor_scatter_container_widget().pos,
+                               self._get_editor_scatter_container_widget().scale))
+
+    def _image_touch_down(self, *args, **kwargs):
+        logging.info('App: image_touch_down')
 
 
     ##########################################################################

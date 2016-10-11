@@ -347,7 +347,8 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
     def current_selection_and_mask_from_points(self, instance, pos):
         """Triggers adding a CropObject with both bbox and mask."""
         if pos is None:
-            logging.info('LassoBoundingBoxSelect: No points, skipping.')
+            logging.info('LassoBoundingBoxSelect: No points, clearing & skipping.')
+            self.editor_widgets['line_tracer'].clear()
             return
 
         # Returns None if it's not possible to create the mask.
@@ -359,6 +360,9 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
             # bbox: stay in the model world once computed & propagate
             model_selection = self.model_selection_from_points(pos)
             if model_selection is None:
+                logging.info('LassoBoundingBoxSelect: model selection not generated,'
+                             ' clearing & skipping')
+                self.editor_widgets['line_tracer'].clear()
                 pass
             else:
                 logging.info('LassoBoundingBoxSelect: Gpt model_selection {0}'

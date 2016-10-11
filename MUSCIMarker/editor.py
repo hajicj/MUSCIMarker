@@ -1,6 +1,8 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
 
+import time
+
 import logging
 from math import sqrt
 from random import random
@@ -16,6 +18,8 @@ from kivy.uix.label import Label
 import skimage.measure
 
 from utils import connected_components2bboxes
+
+import tracker as tr
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -377,6 +381,13 @@ class LineTracer(FloatLayout):
     """Used for tracing a line."""
     points = ObjectProperty()
 
+    @tr.Tracker(track_names=['touch'],
+                transformations={'touch': [
+                    lambda t: ('x', t.x),
+                    lambda t: ('y', t.y),
+                ]},
+                fn_name='LineTracer.on_touch_down',
+                tracker_name='LineTracer')
     def on_touch_down(self, touch):
         ud = touch.ud
         ud['group'] = g = str(touch.uid)
@@ -384,6 +395,9 @@ class LineTracer(FloatLayout):
 
         ud['start'] = (touch.x, touch.y)
         ud['stop'] = (touch.x, touch.y)
+
+        ud['start_time'] = time.time()
+
         with self.canvas:
             ud['line'] = Line(points=(touch.x, touch.y))
 
@@ -395,6 +409,13 @@ class LineTracer(FloatLayout):
         ud['stop'] = (touch.x, touch.y)
         ud['line'].points += [touch.x, touch.y]
 
+    @tr.Tracker(track_names=['touch'],
+                transformations={'touch': [
+                    lambda t: ('time_taken', time.time() - t.ud['start_time']),
+                    lambda t: ('n_points', len(t.ud['points']))
+                ]},
+                fn_name='LineTracer.on_touch_up',
+                tracker_name='LineTracer')
     def on_touch_up(self, touch):
         if touch.grab_current is not self:
             return
@@ -405,6 +426,7 @@ class LineTracer(FloatLayout):
         ud['line'].points += [touch.x, touch.y]
 
         self.points = ud['line'].points
+        return True  # ??
 
     def clear(self, *args, **kwargs):
         self.canvas.clear()

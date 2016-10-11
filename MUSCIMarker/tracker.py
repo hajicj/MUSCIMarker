@@ -41,19 +41,24 @@ class DefaultTrackerHandler(object):
     FUNCTION_NAME_KEY = '-fn-'
     COMMENT_KEY = '-comment-'
     TRACKER_NAME_KEY = '-tracker-'
+    TRACKER_COUNTER_KEY = '-count-'
 
     MISSING_VALUE = '=MISSING='
 
     @classmethod
     def get_initial_message_data(cls):
         d = cls.get_default_message_data()
-        d['is_start'] = True
+        d[cls.FUNCTION_NAME_KEY] = '__is_tracking_start__'
+        d[cls.TRACKER_NAME_KEY] = unicode(cls)
+        d[cls.COMMENT_KEY] = 'Tracker started.'.format(unicode(cls))
         return d
 
     @classmethod
     def get_final_message_data(cls):
         d = cls.get_default_message_data()
-        d['is_end'] = True
+        d[cls.FUNCTION_NAME_KEY] = '__is_tracking_end__'
+        d[cls.TRACKER_NAME_KEY] = unicode(cls)
+        d[cls.COMMENT_KEY] = 'Tracker stopped.'
         return d
 
     @classmethod
@@ -124,6 +129,7 @@ class DefaultTrackerHandler(object):
 class Tracker(object):
     def __init__(self, track_names=None, transformations=None,
                  fn_name=None, comment=None, tracker_name=None,
+                 record_count=False,
                  handler=DefaultTrackerHandler):
         """Decorator for events that should be tracked.
 
@@ -169,6 +175,10 @@ class Tracker(object):
             `handler.TRACKER_NAME_KEY` key. Allows differentiating
             e.g. tool usage trackers from recovery trackers.
 
+        :type record_count: bool
+        :param record_count: If True, will record how many times the event
+            has occurred under the ``handler.TRACKER_COUNTER_KEY`` key.
+
         :type handler: class
         :param class: A TrackerHandler class that is responsible for
             writing the messages.
@@ -181,6 +191,9 @@ class Tracker(object):
         self.fn_name = fn_name
         self.comment = comment
         self.tracker_name = tracker_name
+
+        self.record_count = record_count
+        self._counter = 0
 
         self.handler = handler
 
@@ -207,9 +220,14 @@ class Tracker(object):
             else:
                 message_data[fn_key] = self.fn_name
 
-            # if self.tracker_name is not None:
+            # Tracker name is required
             tracker_name_key = self.handler.TRACKER_NAME_KEY
             message_data[tracker_name_key] = self.tracker_name
+
+            # Tracker counter
+            if self.record_count:
+                message_data[self.handler.TRACKER_COUNTER_KEY] = self._counter
+                self._counter += 1
 
             # Unnamed args are a bit tricky.
             _args, _varargs, _keywords, _defaults = inspect.getargspec(the_fn)

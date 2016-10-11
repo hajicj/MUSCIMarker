@@ -399,6 +399,12 @@
     #pos_hint: {'center_x': 0.5, 'center_y': 0.5}
     #pos: 0.5, 0.5
 
+    # Capturing editor motion/scaling
+    #on_pos: app._image_moved()
+    #on_scale: app._image_scaled()
+    on_touch_down: app._image_touch_down()
+    on_touch_up: app._image_touch_up()
+
     # width: self.width
     # height: self.height
     canvas.before:
@@ -411,6 +417,7 @@
 
     EditedImage:
         id: edited_image
+
 
 
 <EditorWindow@RelativeLayout>:
