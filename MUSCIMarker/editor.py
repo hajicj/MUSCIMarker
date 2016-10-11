@@ -409,16 +409,21 @@ class LineTracer(FloatLayout):
         ud['stop'] = (touch.x, touch.y)
         ud['line'].points += [touch.x, touch.y]
 
-    @tr.Tracker(track_names=['touch'],
-                transformations={'touch': [
-                    lambda t: ('time_taken', time.time() - t.ud['start_time']),
-                    lambda t: ('n_points', len(t.ud['points']))
-                ]},
-                fn_name='LineTracer.on_touch_up',
-                tracker_name='LineTracer')
     def on_touch_up(self, touch):
         if touch.grab_current is not self:
             return
+
+        # We only want to track valid touches
+        self.process_touch_up(touch)
+
+    @tr.Tracker(track_names=['touch'],
+                transformations={'touch': [
+                    lambda t: ('time_taken', time.time() - t.ud['start_time']),
+                    lambda t: ('n_points', len(t.ud['line'].points))
+                ]},
+                fn_name='LineTracer.process_touch_up',
+                tracker_name='LineTracer')
+    def process_touch_up(self, touch):
         touch.ungrab(self)
 
         ud = touch.ud

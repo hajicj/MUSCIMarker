@@ -840,6 +840,13 @@ class MUSCIMarkerApp(App):
         logic & validation here later on."""
         self._recover()
 
+    @tr.Tracker(track_names=[],
+                tracker_name='commands')
+    def do_recovery_user(self):
+        """Link user-requested recovery to this method. Separate from
+        ``do_recovery()`` because of tracking."""
+        self.do_recovery()
+
     def do_save_app_state_clock_event(self, *args):
         logging.info('App: making scheduled recovery dump.')
         self.do_save_app_state()
@@ -955,6 +962,7 @@ class MUSCIMarkerApp(App):
     def do_center_current_image(self, *args, **kwargs):
         Clock.schedule_once(lambda *anything: self.center_current_image())
 
+    @tr.Tracker(tracker_name='commands')
     def do_center_and_rescale_current_image(self):
         Clock.schedule_once(lambda *args: self.center_and_rescale_current_image())
 
@@ -966,7 +974,7 @@ class MUSCIMarkerApp(App):
         scatter = self._get_editor_scatter_container_widget()
         scatter.scale = 1.0
 
-    @tr.Tracker(tracker_name='view')
+    #@tr.Tracker(tracker_name='view')
     def center_current_image(self):
         """Centers the current image.
 
@@ -1293,9 +1301,6 @@ class MUSCIMarkerApp(App):
 
     def _get_tool_info_palette(self):
         return self.root.ids['command_sidebar'].ids['info_panel']
-
-    ##########################################################################
-    # Connected Component caching
 
 
     ##########################################################################

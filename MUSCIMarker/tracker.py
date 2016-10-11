@@ -85,9 +85,9 @@ class DefaultTrackerHandler(object):
         _unicode_message_data = {unicode(k): unicode(v)
                                  for k, v in message_data.iteritems()}
         if final is True:
-            return json.dumps(_unicode_message_data) + '\n'
+            return json.dumps(_unicode_message_data, sort_keys=True) + '\n'
         else:
-            return json.dumps(_unicode_message_data) + ',\n'
+            return json.dumps(_unicode_message_data, sort_keys=True) + ',\n'
 
     @classmethod
     def is_open(cls):
