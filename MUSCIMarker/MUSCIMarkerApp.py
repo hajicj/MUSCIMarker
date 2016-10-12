@@ -963,7 +963,7 @@ class MUSCIMarkerApp(App):
         Clock.schedule_once(lambda *anything: self.center_current_image())
 
     @tr.Tracker(tracker_name='commands')
-    def do_center_and_rescale_currnet_image_user(self):
+    def do_center_and_rescale_current_image_user(self):
         self.do_center_and_rescale_current_image()
 
     def do_center_and_rescale_current_image(self):
@@ -1042,20 +1042,112 @@ class MUSCIMarkerApp(App):
         self.do_center_current_image()
         Window.unbind(on_draw=self._do_center_current_image_and_unenforce)
 
-    # Proxies for tracking image movement
-    #def _image_moved(self, *args, **kwargs):
-    #    logging.info('App: image moved')
+    ##########################################################################
+    # Tracking image movement
 
-    #def _image_scaled(self, *args, **kwargs):
-    #    logging.info('App: image scaled')
+    @tr.Tracker(track_names=['touch', 'editor'],
+                transformations={'touch': [lambda t: ('x', t.x),
+                                           lambda t: ('y', t.y),
+                                           lambda t: ('orig_scale', t.ud['editor_start_scale']),
+                                           lambda t: ('orig_pos', t.ud['editor_start_pos'])],
+                                 'editor': [lambda e: ('new_scale', e.scale),
+                                            lambda e: ('new_pos', e.pos)]},
+                tracker_name='view')
+    def image_was_moved_with_touch(self, touch, editor):
+        pass
 
-    def _image_touch_up(self, *args, **kwargs):
-        logging.info('App: image_touch_up, pos={0}, scale={1}'
-                     ''.format(self._get_editor_scatter_container_widget().pos,
-                               self._get_editor_scatter_container_widget().scale))
+    @tr.Tracker(track_names=['touch', 'editor'],
+                transformations={'touch': [lambda t: ('x', t.x),
+                                           lambda t: ('y', t.y),
+                                           lambda t: ('orig_scale', t.ud['editor_start_scale']),
+                                           lambda t: ('orig_pos', t.ud['editor_start_pos'])],
+                                 'editor': [lambda e: ('new_scale', e.scale),
+                                            lambda e: ('new_pos', e.pos)]},
+                tracker_name='view')
+    def image_was_scaled_with_touch(self, touch, editor):
+        pass
 
-    def _image_touch_down(self, *args, **kwargs):
-        logging.info('App: image_touch_down')
+    def is_image_moved_with_touch(self, touch):
+        ud = touch.ud
+        image = self._get_editor_widget()
+        editor = self._get_editor_scatter_container_widget()
+
+        out = False
+        if len(editor._touches) > 1: # Ignore touches unless we're sure we are translating.
+            pass
+        elif 'multitouch_sim' in touch.profile:
+            pass
+        elif 'editor_start_pos' in ud:
+            if editor.pos != ud['editor_start_pos']:
+                out = True
+        logging.info('App: Was image moved with touch {0}? {1}'
+                     ''.format(touch, out))
+        return out
+
+    def is_image_scaled_with_touch(self, touch):
+        ud = touch.ud
+        image = self._get_editor_widget()
+        editor = self._get_editor_scatter_container_widget()
+
+        out = False
+
+        if len(editor._touches) < 2:  # Check that there was the second scaling touch
+            pass
+        elif 'editor_start_scale' in ud:
+            if editor.scale != ud['editor_start_scale']:
+                out = True
+        logging.info('App: Was image scaled with touch {0}? {1}'
+                     ''.format(touch, out))
+        return out
+
+    def _image_touch_up(self, touch):
+        editor = self._get_editor_scatter_container_widget()
+
+        # Problem with multi-touches for scaling:
+        # the double-click touch got grabbed as well, so it passes thorough
+        # the grab contition, but it still remembers the original scale.
+        # So it gets logged a second time, when the red circle is un-clicked.
+
+        # This is the important check that determines whether the touch
+        # that just went up is actually a touch that the editor Scatter
+        # could have processed.
+        #
+        # Workaround (assuming there is only one editor!!!):
+        # There is some problem with ``touch.grab_current is not editor``,
+        # the id() result for the two is somehow different (maybe grab_current is a weakref?)
+        if not isinstance(touch.grab_current, editor.__class__):
+            logging.info('App: image on_touch_up, but editor did not grab it.'
+                         ' Touch {0} grabbed by: {1}, editor: {2}'.format(touch, touch.grab_current, editor))
+            return
+
+        logging.info('App: image on_touch_up, touch {0} grabbed by editor.'
+                     ' Determining whether the image was actually moved.'.format(touch))
+
+        # Scaling changes pos, but moving does not change scale.
+        # Maybe this could be rewritten as events?
+        if self.is_image_scaled_with_touch(touch):
+            self.image_was_scaled_with_touch(touch, editor)
+        elif self.is_image_moved_with_touch(touch):
+            self.image_was_moved_with_touch(touch, editor)
+
+    def _image_touch_down(self, touch):
+        editor = self._get_editor_scatter_container_widget()
+        #if touch.grab_current is not editor:
+        #    #logging.info('App: image on_touch_down, but editor did not grab it.'
+        #    #             ' Grabbed by: {0}'.format(touch.grab_current))
+        #    #return  # ...editor does not grab before this is called?
+
+        ud = touch.ud
+        ud['editor_start_pos'] = editor.pos
+        ud['editor_start_scale'] = editor.scale
+        # image = self._get_editor_widget()
+        # ud['image_start_pos'] = image.pos
+        # ud['image_start_size'] = image.size
+        # x, y = touch.x, touch.y
+        # ud['touch_start_x'] = x
+        # ud['touch_start_y'] = y
+        logging.info('App: image touched, recording data for tracking'
+                     ' user navigation around the image.')
 
 
     ##########################################################################

@@ -402,10 +402,11 @@
     #pos: 0.5, 0.5
 
     # Capturing editor motion/scaling
+    #on_transform_with_touch: app.image_transformed_with_touch(touch=args[1])
     #on_pos: app._image_moved()
     #on_scale: app._image_scaled()
-    on_touch_down: app._image_touch_down()
-    on_touch_up: app._image_touch_up()
+    on_touch_down: app._image_touch_down(args[1])
+    on_touch_up: app._image_touch_up(args[1])
 
     # width: self.width
     # height: self.height
