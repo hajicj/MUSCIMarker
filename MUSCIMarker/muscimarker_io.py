@@ -611,7 +611,8 @@ def position_cropobject_list_by_muscimage(cropobject_list, muscimage):
         if muscimage.contains_bbox(*c.bounding_box):
             new_x = c.x - muscimage.bounding_box[0]
             new_y = c.y - muscimage.bounding_box[1]
-            c_out = CropObject(objid=c.objid, clsid=c.clsid,
+            c_out = CropObject(objid=c.objid,
+                               clsid=c.clsid, clsname=c.clsname,
                                x=new_x, y=new_y,
                                width=c.width, height=c.height)
             output.append(c_out)
@@ -710,9 +711,9 @@ def cropobjects_merge_mask(cropobjects):
     """Merges the given list of cropobjects into one. Masks are combined
     by an OR operation.
 
-    >>> c1 = CropObject(0, 1, 10, 10, 4, 1, mask=numpy.ones((1, 4), dtype='uint8'))
-    >>> c2 = CropObject(1, 1, 11, 10, 6, 1, mask=numpy.ones((1, 6), dtype='uint8'))
-    >>> c3 = CropObject(2, 1, 9, 14,  2, 4, mask=numpy.ones((4, 2), dtype='uint8'))
+    >>> c1 = CropObject(0, 1, 'name', 10, 10, 4, 1, mask=numpy.ones((1, 4), dtype='uint8'))
+    >>> c2 = CropObject(1, 1, 'name', 11, 10, 6, 1, mask=numpy.ones((1, 6), dtype='uint8'))
+    >>> c3 = CropObject(2, 1, 'name', 9, 14,  2, 4, mask=numpy.ones((4, 2), dtype='uint8'))
     >>> c = [c1, c2, c3]
     >>> m1 = cropobjects_merge_mask(c)
     >>> m1.shape
