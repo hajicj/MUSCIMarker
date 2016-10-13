@@ -105,6 +105,8 @@ class CropObject(object):
     * `objid`: the unique number of the given annotation instance in the set
       of annotations encoded in the containing `CropObjectList`.
     * `clsid`: the identifier of the label that was given to the annotation.
+    * `clsname`: the name of the label that was given to the annotation
+      (this is the human-readable string such as ``notehead-full``).
     * `x`: the vertical dimension (row) of the upper left corner pixel.
     * `y`: the horizontal dimension (column) of the upper left corner pixel.
     * `width`: the amount of rows that the CropObject spans.
@@ -180,11 +182,12 @@ class CropObject(object):
     (Also, the numpy array needs to be made C-contiguous for that, which
     explains the `order='C'` hack in `set_mask()`.)
     """
-    def __init__(self, objid, clsid, x, y, width, height, mask=None):
+    def __init__(self, objid, clsid, clsname, x, y, width, height, mask=None):
         logging.info('Initializing CropObject with objid {0}, x={1}, '
                      'y={2}, h={3}, w={4}'.format(objid, x, y, height, width))
         self.objid = objid
         self.clsid = clsid
+        self.clsname = clsname
         self.x = x
         self.y = y
         self.width = width
@@ -326,6 +329,7 @@ class CropObject(object):
         lines.append('<CropObject>')
         lines.append('\t<Id>{0}</Id>'.format(self.objid))
         lines.append('\t<MLClassId>{0}</MLClassId>'.format(self.clsid))
+        lines.append('\t<MLClassName>{0}</MLClassName>'.format(self.clsname))
         lines.append('\t<X>{0}</X>'.format(self.y))
         lines.append('\t<Y>{0}</Y>'.format(self.x))
         lines.append('\t<Width>{0}</Width>'.format(self.width))
@@ -393,7 +397,9 @@ class MLClass(object):
 
 
 def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
-                          integer_bounds=False):
+                          integer_bounds=False,
+                          fill_mlclass_names=False,
+                          mlclass_dict={}):
     """From a xml file with a CropObjectList as the top element, parse
     a list of CropObjects.
 
@@ -408,6 +414,17 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
     :param integer_bounds: If set, will round the CropObject bounding box
         to the nearest integer bounding box that covers the entire area (i.e.
         top and left gets rounded down, bottom and right gets rounded up).
+
+    :param fill_mlclass_names: If True, will attempt to fill in the ``clsname``
+        attribute by looking it up in the ``mlclasslist`` when it is missing
+        from the ``CropObject``s. This is a feature for transitioning from
+        old CropObjects that did not include symbol names to new CropObjects
+        that do include this, so that old files aren't lost.
+
+    :param mlclass_dict: If ``fill_mlclass_names`` is requested, you have to
+        also supply the dict of MLClasses that have names for the ``clsid``s
+        in the parsed CropObjectList. Keys are ``clsid``s, values are the
+        MLClass objects.
     """
     logging.info('Parsing CropObjectList, with_refs={0}, tolerate={1}.'
                  ''.format(with_refs, tolerate_ref_absence))
@@ -415,14 +432,41 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
     root = tree.getroot()
     logging.info('XML parsed.')
     cropobject_list = []
+
     for i, cropobject in enumerate(root.iter('CropObject')):
         logging.info('Parsing CropObject {0}'.format(i))
-        obj = CropObject(objid=int(float(cropobject.findall('Id')[0].text)),
-                         clsid=int(float(cropobject.findall('MLClassId')[0].text)),
-                         x=float(cropobject.findall('Y')[0].text),
-                         y=float(cropobject.findall('X')[0].text),
-                         width=float(cropobject.findall('Width')[0].text),
-                         height=float(cropobject.findall('Height')[0].text))
+
+        objid = int(float(cropobject.findall('Id')[0].text))
+
+        # Class ID
+        clsid = int(float(cropobject.findall('MLClassId')[0].text))
+
+        # Dealing with clsname transition
+        clsname=None
+        _has_clsname = False
+        if len(cropobject.findall('MLClassName')) > 0:
+            clsname = int(cropobject.findall('MLClassName')[0].text)
+        elif fill_mlclass_names:
+            if clsid in mlclass_dict:
+                clsname = mlclass_dict[clsid].name
+            else:
+                raise ValueError('Requested MLClass names filled in from'
+                                 ' MLClassList, but the list does not contain'
+                                 ' id {0}'.format(clsid))
+
+        # NOTE THE SWAP of coordinates
+        x = float(cropobject.findall('Y')[0].text)
+        y = float(cropobject.findall('X')[0].text)
+        width = float(cropobject.findall('Width')[0].text)
+        height = float(cropobject.findall('Height')[0].text)
+
+        obj = CropObject(objid=objid,
+                         clsid=clsid,
+                         clsname=clsname,
+                         x=x,
+                         y=y,
+                         width=width,
+                         height=height)
         mask = None
         m = cropobject.findall('Mask')
         if len(m) > 0:
@@ -464,7 +508,9 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
 
 
 def export_cropobject_list(cropobjects, mlclasslist_file=None, image_file=None, ref_root=None):
+    # This is the data string, the rest is formalities
     cropobj_string = '\n'.join([str(c) for c in cropobjects])
+
     lines = []
     lines.append('<?xml version="1.0" encoding="utf-8"?>')
 

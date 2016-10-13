@@ -78,7 +78,7 @@ means in the ecosystem of MUSCIMarker.
 This causes much wailing and gnashing of teeth.
 
 Upon loading the CropObjects from the XML, the parsing function
-``mhr.muscima.parse_cropobject_list()`` automatically swaps X and Y around
+``muscima_io.parse_cropobject_list()`` automatically swaps X and Y around
 from the XML schema world into the Numpy world. Upon export, the
 ``CropObject.__str__()`` method again automatically swaps X and Y to export
 the CropObject back to the XML schema world.
@@ -892,7 +892,9 @@ class MUSCIMarkerApp(App):
         try:
             cropobject_list, mfile, ifile = muscimarker_io.parse_cropobject_list(pos,
                                                                                  with_refs=True,
-                                                                                 tolerate_ref_absence=True)
+                                                                                 tolerate_ref_absence=True,
+                                                                                 fill_mlclass_names=True,
+                                                                                 mlclass_dict=self.annot_model.mlclasses)
 
             # Handling MLClassList and Image conflicts. Currently just warns.
             if mfile is not None:

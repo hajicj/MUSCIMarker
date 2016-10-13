@@ -416,7 +416,8 @@ class CropObjectView(SelectableView, ToggleButton):
         e_cropobject = self.cropobject
         output_lines = list()
         output_lines.append('objid:            {0}'.format(e_cropobject.objid))
-        output_lines.append('cls:                {0}'.format(self._model.mlclasses[e_cropobject.clsid].name))
+        output_lines.append('cls:                {0}'.format(e_cropobject.clsname))
+        #output_lines.append('cls:                {0}'.format(self._model.mlclasses[e_cropobject.clsid].name))
         output_lines.append('M.x, M.y:      {0:.2f}, {1:.2f}'
                             ''.format(self._model_counterpart.x,
                                       self._model_counterpart.y))

@@ -32,6 +32,15 @@ by pictures of the problematic area) and generally communicating
 with us will never be discouraged. The e-mail address to direct
 questions to is ``hajicj@ufal.mff.cuni.cz``
 
+.. note::
+
+    The following changes have been made to the original instructions,
+    based on the testing round:
+
+    **New symbols for articulation.** Turns out we missed symbols like
+    *tenuto*, accents, etc. -- they have now been added to the class
+    list.
+
 
 Guiding principles
 ------------------
@@ -42,7 +51,8 @@ the specifics.
 **Pixels matter.** Although you only see rectangles on the screen
 when you annotate objects, in the background, the exact objects
 are recorded: each pixel within the colored rectangle that you see
-has a Belongs/Doesn't Belong label.
+has a Belongs/Doesn't Belong label, based on how you traced the
+edges of the symbol.
 
 **Background does not matter.** In black-and-white images, only
 the white pixels are ever recorded as belonging to a symbol.
@@ -114,3 +124,9 @@ to deal with "composite primitives" such as the F-clef.
 (This is contrary to the original instructions we had in mind, but
 nevertheless, we have determined that a more detailed annotation
 is better than a less detailed one, no excuses.)
+
+**Beams and beamed groups.** A beam is just one line connecting the stems
+to give note type information. A group of four 16th notes with beams will
+consist of four ``notehead_full`` symbols, four ``stem`` symbols and two
+``beam`` symbols. With a dotted note in a beamed group, the very short
+beam "hook" on the shorter note of the dotted pair is also a ``beam``.
