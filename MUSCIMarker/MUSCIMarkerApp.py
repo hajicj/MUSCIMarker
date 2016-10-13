@@ -1211,6 +1211,8 @@ class MUSCIMarkerApp(App):
         if clsid is None:
             new_cropobject_clsid = self.annot_model.mlclasses_by_name[self.currently_selected_mlclass_name].clsid
 
+        new_cropobject_clsname = self.annot_model.mlclasses[new_cropobject_clsid].name
+
         # (The scaling from model-world to editor should be refactored out:
         #  working on utils/ImageToModelScaler)
         # Another problem: CropObjects that get recorded in the model should have
@@ -1239,9 +1241,10 @@ class MUSCIMarkerApp(App):
 
         c = muscimarker_io.CropObject(objid=new_cropobject_objid,
                                       clsid=new_cropobject_clsid,
+                                      clsname=new_cropobject_clsname,
                                       # Hah -- here, having the Image as the parent widget
                           # of the bbox selection tool is kind of useful...
-                          x=x_scaled_inverted,
+                                      x=x_scaled_inverted,
                                       y=y_scaled,
                                       width=width_scaled,
                                       height=height_scaled,
@@ -1251,6 +1254,7 @@ class MUSCIMarkerApp(App):
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
                      ''.format(selection, {'objid': c.objid,
                                            'clsid': c.clsid,
+                                           'clsname': c.clsname,
                                            'x': c.x, 'y': c.y,
                                            'width': c.width,
                                            'height': c.height}))
@@ -1274,6 +1278,9 @@ class MUSCIMarkerApp(App):
         new_cropobject_clsid = clsid
         if clsid is None:
             new_cropobject_clsid = self.annot_model.mlclasses_by_name[self.currently_selected_mlclass_name].clsid
+
+        new_cropobject_clsname = self.annot_model.mlclasses[new_cropobject_clsid].name
+
         mT, mL, mB, mR = selection['top'], selection['left'],\
                          selection['bottom'], selection['right']
         mH = mB - mT
@@ -1281,6 +1288,7 @@ class MUSCIMarkerApp(App):
 
         c = muscimarker_io.CropObject(objid=new_cropobject_objid,
                                       clsid=new_cropobject_clsid,
+                                      clsname=new_cropobject_clsname,
                                       x=mT, y=mL, width=mW, height=mH,
                                       mask=mask)
         if integer_bounds:
@@ -1288,6 +1296,7 @@ class MUSCIMarkerApp(App):
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
                      ''.format(selection, {'objid': c.objid,
                                            'clsid': c.clsid,
+                                           'clsname': c.clsname,
                                            'x': c.x, 'y': c.y,
                                            'width': c.width,
                                            'height': c.height}))
