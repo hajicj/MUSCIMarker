@@ -498,7 +498,7 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         clsname=None
         _has_clsname = False
         if len(cropobject.findall('MLClassName')) > 0:
-            clsname = int(cropobject.findall('MLClassName')[0].text)
+            clsname = cropobject.findall('MLClassName')[0].text
         elif fill_mlclass_names:
             if clsid in mlclass_dict:
                 clsname = mlclass_dict[clsid].name
