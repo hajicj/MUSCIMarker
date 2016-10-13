@@ -178,6 +178,7 @@ class CropObjectListView(ListView):
     #  - Then, when the CropObjectViews have finished handling the
     #    on_key_down event and it bubbles up to the ListView, if the trap
     #    is set, the event is captured and doesn't bubble further up.
+    # This strategy means one keystroke applies to all selected CropObjects.
     def handle_key_trap(self, *args):
         logging.info('CropObjectListView: handling key trap in state {0}'
                      ''.format(self._trap_key))
@@ -206,8 +207,12 @@ class CropObjectListView(ListView):
         # M for merge
         if dispatch_key == '109':
             logging.info('CropObjectListView: handling merge')
-            self.merge_current_selection()
-        # X for split
+            self.merge_current_selection(destructive=True)
+        if dispatch_key == '109+shift':
+            logging.info('CropObjectListView: hanling non-destructive merge')
+            self.merge_current_selection(destructive=False)
+
+        # X for split (handled in CropObject)
 
         else:
             return False
@@ -221,7 +226,7 @@ class CropObjectListView(ListView):
         if self.handle_key_trap(window, key, scancode):
             return True
 
-    def merge_current_selection(self):
+    def merge_current_selection(self, destructive=True):
         """Take all the selected items and merge them into one.
         Uses the current MLClass."""
         logging.info('CropObjectListView.merge(): selection {0}'
@@ -237,8 +242,9 @@ class CropObjectListView(ListView):
         # Remove the merged CropObjects
         logging.info('CropObjectListView.merge(): Removing selection {0}'
                      ''.format(self.adapter.selection))
-        for s in self.adapter.selection:
-            s.remove_from_model()
+        if destructive:
+            for s in self.adapter.selection:
+                s.remove_from_model()
 
         model_cropobjects = None  # Release refs
 

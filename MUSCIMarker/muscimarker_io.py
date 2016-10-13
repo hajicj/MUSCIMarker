@@ -148,6 +148,59 @@ class CropObject(object):
     However, `CropObject.render()` currently does not support rendering
     the mask.
 
+    XML representation
+    ------------------
+
+    The ``CropObject`` string representation is a XML object::
+
+        <CropObject>
+          <Id>25</Id>
+          <MLClassId>7</MLClassId>
+          <MLClassName>PRIM__beam</MLClassName>
+          <X>413</X>
+          <Y>119</Y>
+          <Width>16</Width>
+          <Height>6</Height>
+          <Selected>false</Selected>
+          <Mask>1 1 1 1 1 0 0 0 0 0 0 (...) 0 0 0 0 0 0 1 1 1 1 1 1 0</Mask>
+        </CropObject>
+
+    The CropObjects are themselves kept as a list::
+
+        <CropObjectList>
+          <Classes>
+            <URL> ... </URL>
+            <md5> ... <md5>
+          </Classes>
+          <CropObjects>
+            <CropObject> ... </CropObject>
+            <CropObject> ... </CropObject>
+          </CropObjects>
+        </CropObjectList>
+
+    The ``<Classes>`` element keeps a reference to the list of classes
+    that were used to label the CropObjects. The CropObjects themselves
+    are inside the ``<CropObjects>`` element.
+
+    The ``<Classes>`` element might not be present. In that case,
+    it is necessary to match the list of classes document to the
+    CropObjects manually. However, since the class names are present
+    through the ``clsname`` attribute (``<MLClassName>`` element),
+    matching the list is no longer necessary for general understanding
+    of the file. The MLClassList file serves as a disambiguation tool:
+    there may be multiple annotation projects that use the same names
+    but maybe define them differently and use different guidelines,
+    and their respective MLClassLists allow you to interpret the symbol
+    names correctly, in light of the corresponding set of definitions.
+
+    .. note::
+
+        In MUSCIMarker, the MLClassList is currently necessary to define
+        how CropObjects are displayed: their color. (All noteheads are red,
+        all barlines are green, etc.) The other function, matching names
+        to ``clsid``s, has been superseeded by the ``clsname`` CropObject
+        attribute.
+
     Merging CropObjects
     -------------------
 
