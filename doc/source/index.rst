@@ -37,7 +37,10 @@ Once you install MUSCIMarker, go through the :ref:`tutorial`.
 It will teach you how to use MUSCIMarker, and introduce the most
 important concepts.
 
-The `User Manual`_ then contains details.
+Once you are done with the tutorial, the :ref:`guidelines` will
+give you detailed instructions on how to annotate music notation symbols.
+
+.. The `User Manual`_ then contains details.
 
 Contact
 -------
@@ -60,6 +63,7 @@ Contents:
    Installation <installation>
    Tutorial <tutorial>
    Starting MUSCIMarker <running>
+   Annotation guidelines <guidelines>
 
 
 Indices and tables
