@@ -596,8 +596,8 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         mask = None
         m = cropobject.findall('Mask')
         if len(m) > 0:
-            mask = CropObject.decode_mask(cropobject.findall('Mask')[0].text,
-                                          shape=(obj.height, obj.width))
+            mask = self.decode_mask(cropobject.findall('Mask')[0].text,
+                                    shape=(obj.height, obj.width))
         obj.set_mask(mask)
         logging.info('Created CropObject with ID {0}'.format(obj.objid))
         if integer_bounds is True:
