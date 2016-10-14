@@ -380,7 +380,7 @@ class CropObjectView(SelectableView, ToggleButton):
             self.update_info_label()
 
             # Update color
-            rgb = tuple([float(x) / 255.0 for x in self._model.mlclasses[clsid].color])
+            rgb = tuple([float(x) for x in self._model.mlclasses[clsid].color])
             self.update_color(rgb)
 
         self.destroy_mlclass_selection_spinner()
