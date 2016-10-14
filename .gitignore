@@ -94,3 +94,5 @@ MUSCIMarker/recovery/MUSCIMarker_state.pkl
 doc/source/_static/
 doc/source/_templates/
 MUSCIMarker/muscimarker.ini
+MUSCIMarker/test-data/test_output_list.xml
+
