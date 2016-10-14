@@ -395,7 +395,7 @@ class CropObject(object):
         lines.append('</CropObject>')
         return '\n'.join(lines)
 
-    def encode_mask(mask, compress=False, mode='rle'):
+    def encode_mask(self, mask, compress=False, mode='rle'):
         if mode == 'rle':
             return self.encode_mask_rle(mask, compress=compress)
         elif mode == 'bitmap':
@@ -440,7 +440,7 @@ class CropObject(object):
         current_run_length = 0
         for i in mask_flat:
             if i == current_run_type:
-                currentrun_length += 1
+                current_run_length += 1
             else:
                 s = '{0}:{1}'.format(current_run_type, current_run_length)
                 output_strings.append(s)
@@ -451,12 +451,12 @@ class CropObject(object):
         output = ' '.join(output_strings)
         return output
 
-    def decode_mask(self, mask_string, compress=False):
+    def decode_mask(self, mask_string, shape):
         mode = self._determine_mask_mode(mask_string)
         if mode == 'rle':
-            return self.decode_mask_rle(mask_string, compress=compress)
+            return self.decode_mask_rle(mask_string, shape=shape)
         elif mode == 'bitmap':
-            return self.decode_mask_bitmap(mask_string, compress=compress)
+            return self.decode_mask_bitmap(mask_string, shape=shape)
 
     def _determine_mask_mode(self, mask_string):
         """If the mask string starts with '0:' or '1:', or generally
@@ -596,8 +596,8 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         mask = None
         m = cropobject.findall('Mask')
         if len(m) > 0:
-            mask = self.decode_mask(cropobject.findall('Mask')[0].text,
-                                    shape=(obj.height, obj.width))
+            mask = obj.decode_mask(cropobject.findall('Mask')[0].text,
+                                   shape=(obj.height, obj.width))
         obj.set_mask(mask)
         logging.info('Created CropObject with ID {0}'.format(obj.objid))
         if integer_bounds is True:
