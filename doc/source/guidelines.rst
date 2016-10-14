@@ -94,6 +94,89 @@ to ``hajicj@ufal.mff.cuni.cz``!
 Specific symbol rules
 ---------------------
 
+We now give the instructions for individual symbol classes. Make sure
+you understand these. If you don't, ask! (``hajicj@ufal.mff.cuni.cz``)
+
+
+Notes
+-----
+
+**Primitives and note symbols.** The first part of annotating notes
+is marking the notation primitives: notehead, stem, flags/beams.
+Then, mark the entire note using the appropriate category: ``solitary_note``,
+``solitary_chord``, ``beamed_group``, ``grace_note``, ``grace_beamed_group``,
+or ``other_note`` for cases that do not fall into either of these
+three categories.
+
+**What constitutes an entire note?** (Or, a beamed group?)
+In the previous paragraph, you were instructed to assign a label
+to an "entire note". However, this needs further clarification.
+
+*Attached* to a note means a symbol that pertains specifically
+to the given note. So, ledger lines are attached to a note. Duration
+dots are attached to a note. A flat or a sharp is attached to a note
+(although this is more of a technical definition, because commonly
+the sharp affects the rest of the notes on that pitch within the
+measure, we still consider sharps and flats attached to their respective
+notes). However, ties and slurs are not attached to notes. Crescendo
+and decrescendo hairpins are not. Tuple signs, volta signs, texts, clefs,
+key signatures -- these symbols are *not* attached to notes.
+
+So, we want the symbols attached to a note to be a part of the ``note``
+symbol (whichever category applies). The logic behind this decision
+is this: all the components of the complex note symbol are marked
+individually. So, if we later want the complex note to *not* include some
+symbols like staccato dots or ledger lines, we can "subtract" them
+from the complex note. But if they are *not* a part of the complex note,
+adding them is a much harder problem: we would have to decide to which
+complex note they should be attached, etc.
+
+**Beams and beamed groups.** A beam is just one line connecting the stems
+to give note type information. A group of four 16th notes with beams will
+consist of four ``notehead_full`` symbols, four ``stem`` symbols and two
+``beam`` symbols. With a dotted note in a beamed group, the very short
+beam "hook" on the shorter note of the dotted pair is also a ``beam``.
+
+**Rests within beamed groups.** Rests that are in the middle of a beamed
+group are a part of the group.
+
+**Grace notes** are marked like regular notes (notehead, stem and flags
+or beams), but there are two extra actions. First, if the grace note
+has a strikethrough (like *acacciatura* in early music), this strikethrough
+is marked with the ``PRIM__grace-strikethrough`` symbol. Second, the entire
+grace note (or group, in case of beamed grace note groups) is marked
+with the ``PRIM__grace-note`` symbol.
+
+
+Other Notations
+---------------
+
+**Key signatures** The sharps or flats are marked as ``sharp`` or ``flat``,
+just as if the symbols are next to notes. However, the symbols making
+up the key signature should all be marked as a part of a ``key_signature``
+symbol.
+
+**Time signatures** The time signatures consisting of numerals are marked
+as the given numerals; then, the numeral-based time signatures should be
+marked as a symbol of the ``time_signature`` class.
+The "whole" time signature (a "C" symbol), the
+*alla breve* (a "C" with a vertical line) and other time signature symbols
+have their own distinct categories.
+
+**F-clef** gets marked twice. There are two Dots, the F-clef curve
+to the left of the dots (``PRIM__F-clef``), and then please mark
+the entire F-clef symbol again with the ``PRIM__F-clef`` symbol.
+
+**Ties and slurs.** Please do mark ties as ties and slurs as slurs.
+(This is contrary to the original instructions we had in mind, but
+nevertheless, we have determined that a more detailed annotation
+is better than a less detailed one, no excuses.) If you are not sure,
+make a guess.
+
+
+Handling text
+-------------
+
 **Text** is marked as individual letters. Upper-case letters and lower-case
 letters are not the same. Numerals (including time signatures) will have
 the same fate.
@@ -107,26 +190,3 @@ of the letters should be marked as a ``text_box``.
 sign (*pp*) is annotated as ``letter_p`` and ``letter_p``, but instead
 of ``text_box``, the marking is annotated as ``text_dynamics``.
 
-**Grace notes** are marked like regular notes (notehead, stem and flags
-or beams), but there are two extra actions. First, if the grace note
-has a strikethrough (like *acacciatura* in early music), this strikethrough
-is marked with the ``PRIM__grace-strikethrough`` symbol. Second, the entire
-grace note (or group, in case of beamed grace note groups) is marked
-with the ``PRIM__grace-note`` symbol.
-
-**F-clef** gets marked twice. There are two Dots, the F-clef curve
-to the left of the dots (``PRIM__F-clef``), and then please mark
-the entire F-clef symbol again with the ``PRIM__F-clef`` symbol.
-This is a technical operation; we haven't yet determined fully how
-to deal with "composite primitives" such as the F-clef.
-
-**Ties and slurs.** Please do mark ties as ties and slurs as slurs.
-(This is contrary to the original instructions we had in mind, but
-nevertheless, we have determined that a more detailed annotation
-is better than a less detailed one, no excuses.)
-
-**Beams and beamed groups.** A beam is just one line connecting the stems
-to give note type information. A group of four 16th notes with beams will
-consist of four ``notehead_full`` symbols, four ``stem`` symbols and two
-``beam`` symbols. With a dotted note in a beamed group, the very short
-beam "hook" on the shorter note of the dotted pair is also a ``beam``.
