@@ -399,6 +399,7 @@ class LineTracer(FloatLayout):
         ud['start_time'] = time.time()
 
         with self.canvas:
+            Color(1.0, 0.5, 0.5)
             ud['line'] = Line(points=(touch.x, touch.y))
 
         touch.grab(self)
