@@ -395,8 +395,14 @@ class CropObject(object):
         lines.append('</CropObject>')
         return '\n'.join(lines)
 
+    def encode_mask(mask, compress=False, mode='bitmap'):
+        if mode == 'rle':
+            return self.encode_mask_rle(mask, compress=compress)
+        elif mode == 'bitmap':
+            return self.encode_mask_bitmap(mask, compress=compress)
+
     @staticmethod
-    def encode_mask(mask, compress=False):
+    def encode_mask_bitmap(mask, compress=False):
         """Encodes the mask array in a compact form. Returns 'None' if mask
         is None. If the mask is not None, uses the following algorithm:
 
@@ -415,7 +421,55 @@ class CropObject(object):
         return output
 
     @staticmethod
-    def decode_mask(mask_string, shape):
+    def encode_mask_rle(mask, compress=False):
+        """Encodes the mask array in Run-Length Encoding. Instead of
+        having the bitmap ``0 0 1 1 1 0 0 0 1 1``, the RLE encodes
+        the mask as ``0:2 1:3 0:3 1:2``. This is much more compact.
+
+        Currently, the rows of the mask are not treated in any special
+        way. The mask just gets flattened and then encoded.
+
+        Implementation:
+        """
+        if mask is None:
+            return 'None'
+        mask_flat = mask.flatten(order=CROPOBJECT_MASK_ORDER)
+
+        output_strings = []
+        current_run_type = 0
+        current_run_length = 0
+        for i in mask_flat:
+            if i == current_run_type:
+                currentrun_length += 1
+            else:
+                s = '{0}:{1}'.format(current_run_type, current_run_length)
+                output_strings.append(s)
+                current_run_type = i
+                current_run_length = 1
+        s = '{0}:{1}'.format(current_run_type, current_run_length)
+        output_strings.append(s)
+        output = ' '.join(output_strings)
+        return output
+
+    def decode_mask(self, mask_string, compress=False):
+        mode = self._determine_mask_mode(mask_string)
+        if mode == 'rle':
+            return self.decode_mask_rle(mask_string, compress=compress)
+        elif mode == 'bitmap':
+            return self.decode_mask_bitmap(mask_string, compress=compress)
+
+    def _determine_mask_mode(self, mask_string):
+        """If the mask string starts with '0:' or '1:', or generally
+        if it contains a non-0 or 1 symbol, assume it is RLE."""
+        mode = 'bitmap'
+        if len(mask_string) < 3:
+            mode = 'bitmap'
+        elif ':' in mask_string[:3]:
+            mode = 'rle'
+        return mode
+
+    @staticmethod
+    def decode_mask_bitmap(mask_string, shape):
         """Decodes the mask array from the encoded form to the 2D numpy array."""
         if mask_string == 'None':
             return None
@@ -429,6 +483,25 @@ class CropObject(object):
         #mask = numpy.frombuffer(s)
         #logging.info('CropObject.decode_mask(): shape={0}\nmask={1}'.format(mask.shape, mask))
         return mask
+
+    @staticmethod
+    def decode_mask_rle(mask_string, shape):
+        """Decodes the mask array from the RLE-encoded form
+        to the 2D numpy array."""
+        if mask_string == 'None':
+            return None
+
+        values = []
+        for kv in mask_string.split(' '):
+            k_string, v_string = kv.split(':')
+            k, v = int(k_string), int(v_string)
+            vs = [k for _ in xrange(v)]
+            values.extend(vs)
+
+        mask = numpy.array(values).reshape(shape)
+        return mask
+
+
 
 
 class MLClass(object):
