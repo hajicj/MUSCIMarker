@@ -241,6 +241,8 @@ class TrimmedBoundingBoxTracer(BoundingBoxTracer):
                                           'bottom': ed_b,
                                           'left': ed_l,
                                           'right': ed_r}
+        else:
+            self.clear()
 
 
 class ConnectedComponentBoundingBoxTracer(BoundingBoxTracer):
@@ -343,6 +345,8 @@ class ConnectedComponentBoundingBoxTracer(BoundingBoxTracer):
                                           'bottom': ed_b,
                                           'left': ed_l,
                                           'right': ed_r}
+        else:
+            self.clear()
 
     def _is_bbox_overlap(self, box1, box2):
         """True if the given bounding boxes overlap, False otherwise.
