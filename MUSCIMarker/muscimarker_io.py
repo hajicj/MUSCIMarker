@@ -395,7 +395,7 @@ class CropObject(object):
         lines.append('</CropObject>')
         return '\n'.join(lines)
 
-    def encode_mask(mask, compress=False, mode='bitmap'):
+    def encode_mask(mask, compress=False, mode='rle'):
         if mode == 'rle':
             return self.encode_mask_rle(mask, compress=compress)
         elif mode == 'bitmap':
