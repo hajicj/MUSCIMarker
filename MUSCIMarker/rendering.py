@@ -259,11 +259,10 @@ class CropObjectListView(ListView):
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
         for s in self.adapter.selection:
             s.remove_from_model()
-        self.render_new_to_back = True
 
+        self.render_new_to_back = True
         for c in cropobjects:
             App.get_running_app().annot_model.add_cropobject(c)
-
         self.render_new_to_back = False
 
 

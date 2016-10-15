@@ -114,7 +114,7 @@ Then, mark the entire note using the appropriate category: ``solitary_note``,
 or ``other_note`` for cases that do not fall into either of these
 three categories.
 
-.. image:: images/guidelines/note_primitives.png
+.. image:: images/guidelines/note_primitives_and_complex.png
 
 **What constitutes an entire note?** (Or, a beamed group?)
 In the previous paragraph, you were instructed to assign a label
@@ -161,14 +161,21 @@ or beams), but there are two extra actions. First, if the grace note
 has a strikethrough (like *acacciatura* in early music), this strikethrough
 is marked with the ``grace-strikethrough`` symbol. Second, the entire
 grace note (or group, in case of beamed grace note groups) is marked
-with the ``grace-note`` (or ``grace_beamed_group``) symbol.
+with the ``grace_note`` (or ``grace_beamed_group``) symbol.
 
 **Grace notes are also attached to their complex note!** So, a grace note
 belongs to two complex notes: its ``grace`` category, and the ``solitary_note``,
 ``beamed_group`` or whatever it is attached to.
 
+.. image:: images/guidelines/grace_notes.png
+
 **Other complex notes.** Sometimes, there may be notes in non-playing
 contexts, such as in tempo markings or proportional tempo transitions.
+These are still annotated the same way (notehead, stem, dot, etc.), but
+their complex class is ``other_solitary_note`` or ``other_beamed_group``.
+
+**Ossia.** If there is an *ossia*, annotate it as if it were regular
+notation, and then mark it all as ``ossia``.
 
 Other Notations
 ---------------
