@@ -85,6 +85,10 @@ class CropObjectListView(ListView):
 
     _trap_key = BooleanProperty(False)
 
+    render_new_to_back = BooleanProperty(False)
+    '''If True, will send new CropObjectViews to the back of the container
+    instead of on top when populating.'''
+
     def populate(self, istart=None, iend=None):
 
         logging.info('CropObjectListView.populate(): started')
@@ -137,9 +141,10 @@ class CropObjectListView(ListView):
 
         # Add cropobjects to add.
         for c_objid, c in cropobjects_to_add.iteritems():
-            # Because the cropobjects_to_add are derived from current adapter data,
-            # the corresponding keys should definitely be there.
             c_idx = self._adapter_key2index(c_objid)
+            # Because the cropobjects_to_add are derived from current adapter data,
+            # the corresponding keys should definitely be there. But just in case,
+            # we check.
             if c_idx is None:
                 raise ValueError('CropObjectListView.populate(): Adapter sorted_keys'
                                  ' out of sync with data.')
@@ -147,7 +152,13 @@ class CropObjectListView(ListView):
             logging.info('Populating with view that has color {0}'
                          ''.format(item_view.selected_color))
             item_view.bind(on_key_captured=self.set_key_trap)
-            container.add_widget(item_view)
+
+            # Do new objects go into the back, or into the front?
+            if self.render_new_to_back:
+                ins_index = len(container.children)
+            else:
+                ins_index = 0
+            container.add_widget(item_view, index=ins_index)
             self._count += 1
 
     def _adapter_key2index(self, key):
@@ -208,9 +219,15 @@ class CropObjectListView(ListView):
         if dispatch_key == '109':
             logging.info('CropObjectListView: handling merge')
             self.merge_current_selection(destructive=True)
+        # M+shift for non-destrcutive merge
         if dispatch_key == '109+shift':
-            logging.info('CropObjectListView: hanling non-destructive merge')
+            logging.info('CropObjectListView: handling non-destructive merge')
             self.merge_current_selection(destructive=False)
+        # B for sending selection to back (for clickability)
+        if dispatch_key == '98':
+            logging.info('CropObjectListView: sending selected CropObjects'
+                         ' to the back of the view stack.')
+            self.send_current_selection_back()
 
         # X for split (handled in CropObject)
 
@@ -226,9 +243,38 @@ class CropObjectListView(ListView):
         if self.handle_key_trap(window, key, scancode):
             return True
 
+    def send_current_selection_back(self):
+        """Moves the selected items back in the rendering order,
+        so that if they obscure other items, these obscured items
+        will become clickable."""
+        logging.info('CropObjectListView.back(): selection {0}'
+                     ''.format(self.adapter.selection))
+        if len(self.adapter.selection) == 0:
+            logging.warn('CropObjectListView.back(): trying to send back empty'
+                         ' selection.')
+            return
+
+        # How to achieve sending them back?
+        # The selected CropObjectView needs to become a new child.
+        cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        for s in self.adapter.selection:
+            s.remove_from_model()
+        self.render_new_to_back = True
+
+        for c in cropobjects:
+            App.get_running_app().annot_model.add_cropobject(c)
+
+        self.render_new_to_back = False
+
+
     def merge_current_selection(self, destructive=True):
         """Take all the selected items and merge them into one.
-        Uses the current MLClass."""
+        Uses the current MLClass.
+
+        :param destructive: If set to True, will remove the selected
+            CropObjects from the model. If False, will only unselect
+            them.
+        """
         logging.info('CropObjectListView.merge(): selection {0}'
                      ''.format(self.adapter.selection))
         if len(self.adapter.selection) == 0:
@@ -248,7 +294,6 @@ class CropObjectListView(ListView):
         else:
             for s in self.adapter.selection:
                 s.deselect()
-
 
         model_cropobjects = None  # Release refs
 

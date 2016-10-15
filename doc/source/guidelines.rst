@@ -163,6 +163,10 @@ is marked with the ``grace-strikethrough`` symbol. Second, the entire
 grace note (or group, in case of beamed grace note groups) is marked
 with the ``grace-note`` (or ``grace_beamed_group``) symbol.
 
+**Grace notes are also attached to their complex note!** So, a grace note
+belongs to two complex notes: its ``grace`` category, and the ``solitary_note``,
+``beamed_group`` or whatever it is attached to.
+
 **Other complex notes.** Sometimes, there may be notes in non-playing
 contexts, such as in tempo markings or proportional tempo transitions.
 
