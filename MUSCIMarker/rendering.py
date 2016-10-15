@@ -89,6 +89,10 @@ class CropObjectListView(ListView):
     '''If True, will send new CropObjectViews to the back of the container
     instead of on top when populating.'''
 
+    @property
+    def _model(self):
+        return App.get_running_app().annot_model
+
     def populate(self, istart=None, iend=None):
 
         logging.info('CropObjectListView.populate(): started')
@@ -228,8 +232,14 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView: sending selected CropObjects'
                          ' to the back of the view stack.')
             self.send_current_selection_back()
-
-        # X for split (handled in CropObject)
+        # A for attaching
+        if dispatch_key == '97':
+            logging.info('CropObjectListView: attaching selected CropObjects.')
+            self.process_attach()
+        # D for detaching
+        if dispatch_key == '100':
+            logging.info('CropObjectListView: detaching selected CropObjects.')
+            self.process_detach()
 
         else:
             return False
@@ -242,6 +252,28 @@ class CropObjectListView(ListView):
                      ''.format(self._trap_key))
         if self.handle_key_trap(window, key, scancode):
             return True
+
+    def process_attach(self):
+        cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        if len(cropobjects) != 2:
+            logging.warn('Currently cannot process attachment for a different'
+                         ' number of selected CropObjects than 2.')
+            return
+
+        a1, a2 = cropobjects[0].objid, cropobjects[1].objid
+        self._model.ensure_add_attachment((a1, a2))
+
+    def process_detach(self):
+        cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        if len(cropobjects) != 2:
+            logging.warn('Currently cannot process attachment for a different'
+                         ' number of selected CropObjects than 2.')
+            return
+
+        a1, a2 = cropobjects[0].objid, cropobjects[1].objid
+        self._model.ensure_remove_attachment(a1, a2)
+        #self._model.ensure_remove_attachment(a2, a1)
+
 
     def send_current_selection_back(self):
         """Moves the selected items back in the rendering order,
@@ -264,7 +296,6 @@ class CropObjectListView(ListView):
         for c in cropobjects:
             App.get_running_app().annot_model.add_cropobject(c)
         self.render_new_to_back = False
-
 
     def merge_current_selection(self, destructive=True):
         """Take all the selected items and merge them into one.

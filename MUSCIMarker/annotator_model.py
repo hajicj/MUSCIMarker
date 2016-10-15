@@ -7,7 +7,7 @@ import logging
 # import cv2
 # import matplotlib.pyplot as plt
 
-from kivy.properties import ObjectProperty, DictProperty, NumericProperty
+from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty
 from kivy.uix.widget import Widget
 
 import muscimarker_io
@@ -42,6 +42,23 @@ class CropObjectAnnotatorModel(Widget):
     mlclasses = DictProperty()
     mlclasses_by_name = DictProperty()
 
+    attachments = DictProperty()
+    '''Attachments among symbols are dependency relationships, such as
+    between a notehead and a stem. We store attachments as oriented
+    edges.
+
+    An attachment is represented as a ``(objid_1, objid_2)`` key with
+    a value of ``True``.
+    '''
+
+    attachment_outlinks = DictProperty()
+    '''Automatically computed dict of all CropObjects attached to a given
+    CropObject.'''
+
+    attachment_inlinks = DictProperty()
+    '''Automatically computed dict of all CropObjects that the given
+    CropObject is attached to.'''
+
     def __init__(self, image=None, cropobjects=None, mlclasses=None, **kwargs):
         super(CropObjectAnnotatorModel, self).__init__(**kwargs)
 
@@ -73,6 +90,7 @@ class CropObjectAnnotatorModel(Widget):
              fn_name='model.remove_cropobject',
              tracker_name='model')
     def remove_cropobject(self, key):
+        self.remove_obj_from_attachment_index(key)
         del self.cropobjects[key]
 
     @Tracker(track_names=['cropobjects'],
@@ -84,6 +102,7 @@ class CropObjectAnnotatorModel(Widget):
         logging.info('Model: Importing {0} cropobjects.'.format(len(cropobjects)))
         # Batch processing is more efficient, since rendering the CropObjectList
         # is tied to any change of self.cropobjects
+        self.clear_attachments()
         self.cropobjects = {c.objid: c for c in cropobjects}
 
     def export_cropobjects_string(self, **kwargs):
@@ -103,6 +122,7 @@ class CropObjectAnnotatorModel(Widget):
     def clear_cropobjects(self):
         logging.info('Model: Clearing all {0} cropobjects.'.format(len(self.cropobjects)))
         self.cropobjects = {}
+        self.clear_attachments()
 
     def import_classes_definition(self, mlclasses):
         """Overwrites previous mlclasses definition -- there can only be
@@ -115,6 +135,115 @@ class CropObjectAnnotatorModel(Widget):
             return 0
         return max(self.cropobjects.keys()) + 1
 
+    ##########################################################################
+    # Managing the attachment tree
+    # TODO: Refactor into a separate CropObjectGraph.
+    def ensure_add_attachment(self, attachment):
+        logging.info('Model: ensuring attachment {0}'.format(attachment))
+        if attachment not in self.attachments:
+            self.add_attachment(attachment)
+
+    def add_attachment(self, attachment):
+        '''Attachment is an ``(a1, a2)`` pair such that ``a1`` is the head
+        and ``a2`` is the child CropObject. Our (attachment) dependency edges
+        lead from the root down, at least in the model.'''
+        logging.info('Model: adding attachment {0}'.format(attachment))
+        a1 = attachment[0]
+        a2 = attachment[1]
+        if a1 not in self.cropobjects:
+            raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
+                             ''.format(attachment, a1))
+        if a2 not in self.cropobjects:
+            raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
+                             ''.format(attachment, a2))
+
+        self.attachments[attachment] = True
+        self.add_to_attachments_index(a1, a2)
+
+    def add_to_attachments_index(self, a1, a2):
+        if a1 not in self.attachment_outlinks:
+            self.attachment_outlinks[a1] = set()
+        if a2 not in self.attachment_inlinks:
+            self.attachment_inlinks[a2] = set()
+
+        if a2 not in self.attachment_outlinks[a1]:
+            self.attachment_outlinks[a1].add(a2)
+        else:
+            logging.warn('Trying to re-add outlink from {0} to {1}'
+                         ''.format(a1, a2))
+        if a1 not in self.attachment_inlinks[a2]:
+            self.attachment_inlinks[a2].add(a1)
+        else:
+            logging.warn('Trying to re-add inlink from {0} to {1}'
+                         ''.format(a1, a2))
+
+    def compute_attachment_index(self, attachments):
+        '''Adds to the attachment indexes all the given
+        attachments ``(a1, a2)``.'''
+        for a1, a2 in attachments:
+            self.add_to_attachments_index((a1, a2))
+
+    def ensure_remove_attachment(self, a1, a2):
+        """If there was an edge from a1 to a2, remove it."""
+        logging.info('Model: ensuring detaching edge from {0} to {1}'
+                     ''.format(a1, a2))
+        if (a1, a2) in self.attachments:
+            self.remove_attachment(a1, a2)
+
+    def remove_attachment(self, a1, a2):
+        """Object a1 will no longer point at object a2."""
+        self.attachment_inlinks[a2].remove(a1)
+        self.attachment_outlinks[a1].remove(a2)
+        del self.attachments[a1, a2]
+
+    def remove_obj_from_attachment(self, objid):
+        """Clears out the given CropObject from the attachments
+        graph."""
+        inlinks = self.attachment_inlinks[objid]
+        for a in inlinks:
+            self.attachments.remove((a, objid))
+
+        outlinks = self.attachment_outlinks[objid]
+        for a in outlinks:
+            self.attachments.remove((objid, a))
+
+        self.remove_obj_from_attachment_index(objid)
+
+    def remove_obj_from_attachment_index(self, objid):
+        """Remove all of this node's inlinks and outlinks,
+        and remove its record from the attachment index."""
+        if objid in self.attachment_outlinks:
+            self.clear_obj_outlinks(objid)
+            del self.attachment_outlinks[objid]
+        if objid in self.attachment_inlinks:
+            self.clear_obj_inlinks(objid)
+            del self.attachment_inlinks[objid]
+
+    def clear_obj_outlinks(self, objid):
+        """Remove the node's outlinks, and remove it from the inlinks
+        of the notdes it outlinks to."""
+        if objid in self.attachment_outlinks:
+            outlinks = self.attachment_outlinks[objid]
+            for o in outlinks:
+                if objid in self.attachment_inlinks[o]:
+                    self.attachment_inlinks[o].remove(objid)
+            self.attachment_outlinks[objid] = set()
+
+    def clear_obj_inlinks(self, objid):
+        """Remove the node's inlinks, and remove it from the outlinks
+        of the nodes from which it has inlinks"""
+        if objid in self.attachment_inlinks:
+            inlinks = self.attachment_inlinks[objid]
+            for i in inlinks:
+                if objid in self.attachment_outlinks[i]:
+                    self.attachment_outlinks[i].remove(objid)
+            self.attachment_inlinks[objid] = set()
+
+    def clear_attachments(self):
+        self.attachments = []
+        self.attachment_index = dict()
+
+    ##########################################################################
     # Integrity
     def validate_cropobjects(self):
         """Check that all current CropObject correspond to a class."""
