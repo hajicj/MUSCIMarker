@@ -1,6 +1,7 @@
 #:kivy 1.9.1
 #:import os os
 #:import mm muscimarker_io
+#:import Factory kivy.factory.Factory
 
 #############################################################################
 # Action bar style
@@ -23,6 +24,11 @@
     valign: 'middle'
     halign: 'center'
 
+##############################################################################
+# Commands style
+
+<MLClassSelectionSpinnerOption@SpinnerOption>
+    height: 37
 
 ##############################################################################
 # For in-app messages
@@ -301,7 +307,10 @@
         values: sorted(app.annot_model.mlclasses_by_name.keys(), key=lambda x: app.annot_model.mlclasses_by_name[x].clsid)
         on_text: app.currently_selected_mlclass_name = mlclass_selection_spinner.text
 
+        # For tracking
         on_is_open: app._mlclass_selection_spinner_state_change(self.is_open)
+
+        option_cls: Factory.MLClassSelectionSpinnerOption
 
     Label:
         size_hint: 1.0, 0.1

@@ -516,6 +516,7 @@ class MUSCIMarkerApp(App):
         logging.info('Build: Adding renderer to editor widget {0}'
                      ''.format(e))
         e.add_widget(self.cropobject_list_renderer)
+
         Window.bind(on_resize=self.window_resized)
 
         # Editor scale broadcasting
@@ -587,12 +588,12 @@ class MUSCIMarkerApp(App):
         _scatter.parent.parent.do_layout()
         logging.info('App.build: Scatter parent position after do_layout:'
                      ' {0}'.format(_scatter.parent.pos))
-        logging.info('App.build: _scatter.parent.pos={0}'
-                     ''.format(_scatter.parent))
-        logging.info('App.build: _scatter.parent.parent.pos={0}'
-                     ''.format(_scatter.parent.parent.pos))
-        logging.info('App.build: _scatter.parent.parent.parent.pos={0}'
-                     ''.format(_scatter.parent.parent.parent.pos))
+        # logging.info('App.build: _scatter.parent.pos={0}'
+        #              ''.format(_scatter.parent))
+        # logging.info('App.build: _scatter.parent.parent.pos={0}'
+        #              ''.format(_scatter.parent.parent.pos))
+        # logging.info('App.build: _scatter.parent.parent.parent.pos={0}'
+        #              ''.format(_scatter.parent.parent.parent.pos))
 
         self._enforce_center_current_image_once()
 

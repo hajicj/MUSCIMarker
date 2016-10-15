@@ -360,6 +360,7 @@ class CropObjectView(SelectableView, ToggleButton):
             # is_open=True,
         )
         self.mlclass_selection_spinner.bind(text=self.do_class_selection)
+        # self.mlclass_selection_spinner.option_cls.height = 37
 
         self.add_widget(self.mlclass_selection_spinner)
         self._mlclass_selection_spinner_shown = True
