@@ -62,6 +62,8 @@ such as between a stem and a beam, the intersection pixels just belong
 to both symbols. Belonging to one symbol does not exclude a pixel
 from belonging to another symbol. Intersections happen all the time.
 
+.. image:: images/guidelines/intersections.png
+
 **Not all non-background pixels are part of a symbol.** There may be
 non-background pixels that are a result of the writer's mistake,
 or artifacts of the input mode (e.g. stylus on a tablet - sometimes,
@@ -71,7 +73,9 @@ It's perfectly fine to leave these extra pixels out of the symbols
 you are marking. In fact, including such extra pixels would be
 a mistake.
 
-**Layered annotation.** Sometimes (e.g. grace notes, key signatures),
+.. image:: images/guidelines/spurious_pixels.png
+
+**Layered annotation.** Often (e.g. notes, key signatures),
 you will be asked to annotated the same thing with more markings.
 For instance, a correct annotation of the  key signature for A major
 has three ``sharp`` annotations and a ``key_signature`` annotation
@@ -79,6 +83,8 @@ that covers all these symbols. This is because musical notation has
 several layers at which it needs to be annotated: we need to know,
 at the same time, that the symbols for key signatures are sharps,
 and that these praticular sharps are part of a key signature.
+
+.. image:: images/guidelines/layered_annotation.png
 
 **Use your judgement.** By definition, we cannot really enumerate
 all the rules for annotating, as you will always encounter a new
@@ -108,6 +114,8 @@ Then, mark the entire note using the appropriate category: ``solitary_note``,
 or ``other_note`` for cases that do not fall into either of these
 three categories.
 
+.. image:: images/guidelines/note_primitives.png
+
 **What constitutes an entire note?** (Or, a beamed group?)
 In the previous paragraph, you were instructed to assign a label
 to an "entire note". However, this needs further clarification.
@@ -122,8 +130,10 @@ notes). However, ties and slurs are not attached to notes. Crescendo
 and decrescendo hairpins are not. Tuple signs, volta signs, texts, clefs,
 key signatures -- these symbols are *not* attached to notes.
 
-So, we want the symbols attached to a note to be a part of the ``note``
-symbol (whichever category applies). The logic behind this decision
+.. image:: images/guidelines/note_attachment.png
+
+So, we want the symbols attached to a note to be a part of the complex
+``note`` symbol (whichever category applies). The logic behind this decision
 is this: all the components of the complex note symbol are marked
 individually. So, if we later want the complex note to *not* include some
 symbols like staccato dots or ledger lines, we can "subtract" them
@@ -131,22 +141,30 @@ from the complex note. But if they are *not* a part of the complex note,
 adding them is a much harder problem: we would have to decide to which
 complex note they should be attached, etc.
 
-**Beams and beamed groups.** A beam is just one line connecting the stems
+**Beams and beamed groups.** A ``beam`` is just one line connecting the stems
 to give note type information. A group of four 16th notes with beams will
 consist of four ``notehead_full`` symbols, four ``stem`` symbols and two
 ``beam`` symbols. With a dotted note in a beamed group, the very short
 beam "hook" on the shorter note of the dotted pair is also a ``beam``.
 
-**Rests within beamed groups.** Rests that are in the middle of a beamed
-group are a part of the group.
+.. image:: images/guidelines/beamed_group.png
+
+**Rests** have their own set of primitives (``quarter_rest``, ``half_rest``,
+etc.). Individual rests should not be marked with complex symbols, but
+rests that are inside a beamed group are marked as a part of the
+``beamed_group``. (Again, the logic is, we can filter them out, and
+the beamed group should consist of all the duration it spans
+in the given voice.)
 
 **Grace notes** are marked like regular notes (notehead, stem and flags
 or beams), but there are two extra actions. First, if the grace note
 has a strikethrough (like *acacciatura* in early music), this strikethrough
-is marked with the ``PRIM__grace-strikethrough`` symbol. Second, the entire
+is marked with the ``grace-strikethrough`` symbol. Second, the entire
 grace note (or group, in case of beamed grace note groups) is marked
-with the ``PRIM__grace-note`` symbol.
+with the ``grace-note`` (or ``grace_beamed_group``) symbol.
 
+**Other complex notes.** Sometimes, there may be notes in non-playing
+contexts, such as in tempo markings or proportional tempo transitions.
 
 Other Notations
 ---------------
@@ -156,16 +174,19 @@ just as if the symbols are next to notes. However, the symbols making
 up the key signature should all be marked as a part of a ``key_signature``
 symbol.
 
+.. image:: images/guidelines/key_signature.png
+
 **Time signatures** The time signatures consisting of numerals are marked
 as the given numerals; then, the numeral-based time signatures should be
 marked as a symbol of the ``time_signature`` class.
 The "whole" time signature (a "C" symbol), the
 *alla breve* (a "C" with a vertical line) and other time signature symbols
-have their own distinct categories.
+have their own distinct categories; they should *not* be marked
+as ``time_signature`` on top of these.
 
-**F-clef** gets marked twice. There are two Dots, the F-clef curve
-to the left of the dots (``PRIM__F-clef``), and then please mark
-the entire F-clef symbol again with the ``PRIM__F-clef`` symbol.
+.. image:: images/guidelines/time_signature.png
+
+**F-clef** now gets no special marking rules.
 
 **Ties and slurs.** Please do mark ties as ties and slurs as slurs.
 (This is contrary to the original instructions we had in mind, but
@@ -179,7 +200,8 @@ Handling text
 
 **Text** is marked as individual letters. Upper-case letters and lower-case
 letters are not the same. Numerals (including time signatures) will have
-the same fate.
+the same fate. As with key signatures or notes, texts are composite symbols;
+the letters are the "text primitives" and there are classes of texts.
 
 **Text boxes** join letters together to make sensible wholes. For instance,
 a "dolce" expressive instruction should be annotated as ``letter_d``, ``letter_o``,

@@ -607,13 +607,13 @@ class MUSCIMarkerApp(App):
             })
         config.setdefaults('current_input_files',
             {
-                'mlclass_list_file': os.path.abspath('data/mff-muscima-mlclasses-primitives.xml'),
+                'mlclass_list_file': os.path.abspath('data/mff-muscima-mlclasses-annot.xml'),
                 'cropobject_list_file': os.path.abspath('test_data/empty_cropobject_list.xml'),
                 'image_file': os.path.abspath('static/default_score_image.png'),
             })
         config.setdefaults('default_input_files',
             {
-                'mlclass_list_file': os.path.abspath('data/mff-muscima-mlclasses-primitives.xml'),
+                'mlclass_list_file': os.path.abspath('data/mff-muscima-mlclasses-annot.xml'),
                 'cropobject_list_file': os.path.abspath('test_data/empty_cropobject_list.xml'),
                 'image_file': os.path.abspath('static/default_score_image.png'),
             })
