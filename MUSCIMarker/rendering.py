@@ -245,6 +245,10 @@ class CropObjectListView(ListView):
         if destructive:
             for s in self.adapter.selection:
                 s.remove_from_model()
+        else:
+            for s in self.adapter.selection:
+                s.deselect()
+
 
         model_cropobjects = None  # Release refs
 
