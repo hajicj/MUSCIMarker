@@ -52,7 +52,7 @@ class EdgeView(SelectableView, ToggleButton):
         self.x_end = cropobject_to.x + (cropobject_to.height / 2)
         self.y_end = cropobject_to.y + (cropobject_to.width / 2)
 
-        self._line_width = 10
+        self._line_width = 1
 
         ##### Handling the button stuff -- temporary...
         alpha = 0.3
@@ -84,7 +84,7 @@ class EdgeView(SelectableView, ToggleButton):
         self.size = h, w
         self.size_hint = (None, None)
         self.pos = min(self.y_start, self.y_end), min(self.x_start, self.x_end)
-        self.pos_hint = (None, None)
+        # self.pos_hint = (None, None)
 
         # Note: until the edge is added to the widget tree, it does not
         # get rendered.
@@ -140,14 +140,19 @@ class EdgeView(SelectableView, ToggleButton):
         return self.y_end - self.pos[0]
 
     def render(self):
-        points = [self.rel_x_start, self.rel_y_start,
-                  self.rel_x_end, self.rel_y_end]
+        points = [self.rel_y_start, self.rel_x_start,
+                  self.rel_y_end, self.rel_x_end]
         logging.info('EdgeView: Rendering edge {0} with points {1}'
                      ''.format(self.edge, points))
+        logging.info('EdgeView: Derived size {0}, self.size {1}, self.pos {2}'
+                     ''.format((points[0] - points[2], points[1] - points[3]),
+                               self.size,
+                               self.pos))
         self.canvas.clear()
         with self.canvas:
             Color(*self.rgb)
             Line(points=points)
+            # Rectangle(pos=self.pos, size=self.size)
 
     def do_render(self):
         logging.info('EdgeView: Requested rendering for edge {0}'
@@ -203,6 +208,11 @@ class ObjectGraphRenderer(FloatLayout):
                                  size_hint=(None, None),
                                  size=self.size,
                                  pos=self.pos)
+        # Hacking the ListView
+        logging.info('View children: {0}'.format(self.view.children))
+        self.view.remove_widget(self.view.children[0])
+        self.view.container = FloatLayout(pos=self.pos, size=self.size)
+        self.view.add_widget(self.view.container)
 
         # Automating the redraw pipeline:
         #  - when edge data changes, fill in adapter data,
@@ -212,11 +222,11 @@ class ObjectGraphRenderer(FloatLayout):
 
         self.add_widget(self.view)
 
-        with self.canvas.before:
-            Color(0.6, 0, 0, 0.2)
-            Rectangle(pos=self.view.pos, size=self.view.size)
-            Color(0.0, 0.6, 0.4, 0.2)
-            Rectangle(pos=self.pos, size=self.size)
+        # with self.canvas.before:
+        #     Color(0.6, 0, 0, 0.2)
+        #     Rectangle(pos=self.view.pos, size=self.view.size)
+        #     Color(0.0, 0.6, 0.4, 0.2)
+        #     Rectangle(pos=self.pos, size=self.size)
 
     def update_edge_adapter_data(self, instance, edges):
         """Copy the graph's edges to adapter data."""
@@ -240,6 +250,7 @@ class ObjectGraphRenderer(FloatLayout):
                      ' size: {0}'
                      ''.format(self.redraw, self.size))
         self.view.populate()
+        self.view.log_rendered_edges()
 
     def edge_converter(self, row_index, rec):
         """Interface between the edge and the EdgeView."""
@@ -302,6 +313,8 @@ class ObjectGraphRenderer(FloatLayout):
 class EdgeListView(ListView):
     # Needs to implement:
     #  - populate
+    #container = FloatLayout()
+
     @property
     def _model(self):
         return App.get_running_app().annot_model
@@ -310,6 +323,22 @@ class EdgeListView(ListView):
     def _graph(self):
         return self._model.graph
 
+    @property
+    def rendered_edges(self):
+        return self.container.children
+
+    def log_rendered_edges(self):
+        # logging.info('EdgeListView.log_rendered_edges: self.pos = {0},'
+        #              ' self.wpos = {1},'
+        #              ' self.size = {2}'.format(self.pos, self.to_window(*self.pos),
+        #                                        self.size))
+        for e in self.rendered_edges:
+            logging.info('EdgeListView.log_rendered_edges: edge {0} with'
+                         ' pos {1}, wpos {2}, size {3}'.format(e.edge,
+                                                               e.pos,
+                                                               e.to_window(*e.pos),
+                                                               e.size))
+
     # Currently a "slow populate": remove everything and then add everything
     def populate(self, istart=None, iend=None):
         logging.info('EdgeListView: populating, with {0}'
@@ -317,6 +346,9 @@ class EdgeListView(ListView):
                      ''.format(len(self.container.children),
                                len(self.adapter.data)))
         container = self.container
+
+        logging.info('EdgeListView: populating, container pos={0}, size={1}'
+                     ''.format(container.pos, container.size))
 
         for w in container.children[:]:
             logging.debug('EdgeListView.populate: Current edges in container: {0}'
