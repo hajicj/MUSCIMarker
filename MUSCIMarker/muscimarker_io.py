@@ -116,6 +116,13 @@ class CropObject(object):
       that the CropObject actually occupies. If the mask is `None`, the
       object occupies the entire bounding box.
 
+    CropObjects can also form graphs, using the following attributes:
+
+    * `outlinks`: Outgoing edges. A list of integers; it is assumed they are
+      valid `objid`s.
+    * `inlinks`: Incoming edges. A list of integers; it is assumed they are
+      valid `objid`s.
+
     To recover the area corresponding to a CropObject `c`, use:
 
     >>> crop = img[c.top:c.bottom, c.left:c.right] * c.mask if c.mask is not None
@@ -162,7 +169,9 @@ class CropObject(object):
           <Width>16</Width>
           <Height>6</Height>
           <Selected>false</Selected>
-          <Mask>1 1 1 1 1 0 0 0 0 0 0 (...) 0 0 0 0 0 0 1 1 1 1 1 1 0</Mask>
+          <Mask>1:5 0:11 (...) 1:4 0:6 1:5 0:1</Mask>
+          <Outlinks>12 24 26</Outlinks>
+          <Inlinks>13</Inlinks>
         </CropObject>
 
     The CropObjects are themselves kept as a list::
@@ -182,7 +191,7 @@ class CropObject(object):
     that were used to label the CropObjects. The CropObjects themselves
     are inside the ``<CropObjects>`` element.
 
-    The ``<Classes>`` element might not be present. In that case,
+    The ``<Classes>`` element *might not be present*. In that case,
     it is necessary to match the list of classes document to the
     CropObjects manually. However, since the class names are present
     through the ``clsname`` attribute (``<MLClassName>`` element),
@@ -235,7 +244,9 @@ class CropObject(object):
     (Also, the numpy array needs to be made C-contiguous for that, which
     explains the `order='C'` hack in `set_mask()`.)
     """
-    def __init__(self, objid, clsid, clsname, x, y, width, height, mask=None):
+    def __init__(self, objid, clsid, clsname, x, y, width, height,
+                 outlinks=[], inlinks=[],
+                 mask=None):
         logging.info('Initializing CropObject with objid {0}, x={1}, '
                      'y={2}, h={3}, w={4}'.format(objid, x, y, height, width))
         self.objid = objid
@@ -252,6 +263,9 @@ class CropObject(object):
         # Applied relative to CropObject bounds, not the whole image.
         self.mask = None
         self.set_mask(mask)
+
+        self.inlinks = inlinks
+        self.outlinks = outlinks
 
         self.is_selected = False
         logging.info('...done!')
@@ -391,6 +405,13 @@ class CropObject(object):
 
         mask_string = self.encode_mask(self.mask)
         lines.append('\t<Mask>{0}</Mask>'.format(mask_string))
+
+        if len(self.inlinks) > 0:
+            inlinks_string = ' '.join(map(unicode, self.inlinks))
+            lines.append('\t<Inlinks>{0}</Inlinks>'.format(inlinks_string))
+        if len(self.outlinks) > 0:
+            outlinks_string = ' '.join(map(unicode, self.outlinks))
+            lines.append('\t<Outlinks>{0}</Outlinks>'.format(outlinks_string))
 
         lines.append('</CropObject>')
         return '\n'.join(lines)
@@ -580,11 +601,26 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
                                  ' MLClassList, but the list does not contain'
                                  ' id {0}'.format(clsid))
 
-        # NOTE THE SWAP of coordinates
+        # NOTE THE SWAP OF COORDINATES
         x = float(cropobject.findall('Y')[0].text)
         y = float(cropobject.findall('X')[0].text)
         width = float(cropobject.findall('Width')[0].text)
         height = float(cropobject.findall('Height')[0].text)
+
+        # Parsing the graph structure (Can deal with missing Inlinks/Outlinks)
+        inlinks = []
+        i_s = cropobject.findall('Inlinks')
+        if len(i_s) > 0:
+            i_s_text = cropobject.findall('Inlinks')[0].text
+            if i_s_text is not None:  # Zero-length links
+                inlinks = map(int, i_s_text.split(' '))
+
+        outlinks = []
+        o_s = cropobject.findall('Outlinks')
+        if len(o_s) > 0:
+            o_s_text = cropobject.findall('Outlinks')[0].text
+            if o_s_text is not None:
+                outlinks = map(int, o_s_text.split(' '))
 
         obj = CropObject(objid=objid,
                          clsid=clsid,
@@ -592,7 +628,10 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
                          x=x,
                          y=y,
                          width=width,
-                         height=height)
+                         height=height,
+                         inlinks=inlinks,
+                         outlinks=outlinks)
+
         mask = None
         m = cropobject.findall('Mask')
         if len(m) > 0:
@@ -605,6 +644,9 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         cropobject_list.append(obj)
 
     logging.info('CropObjectList loaded.')
+
+    validate_cropobjects_graph_structure(cropobject_list)
+
     if with_refs:
         logging.info('Parsing CropObjectList refs.')
         # This is pretty bad at this point. We should change it to a regular tag...
@@ -631,6 +673,24 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         return cropobject_list, mlclasslist_file, image_file
 
     return cropobject_list
+
+
+def validate_cropobjects_graph_structure(cropobjects):
+    # Verify graph structure
+    objids = frozenset([c.objid for c in cropobjects])
+    for c in cropobjects:
+        inlinks = c.inlinks
+        for i in inlinks:
+            if i not in objids:
+                raise ValueError('Invalid graph structure in CropObjectList:'
+                                 ' object {0} has inlink from non-existent'
+                                 ' object {1}'.format(c, i))
+        outlinks = c.outlinks
+        for o in outlinks:
+            if o not in objids:
+                raise ValueError('Invalid graph structure in CropObjectList:'
+                                 ' object {0} has outlink to non-existent'
+                                 ' object {1}'.format(c, o))
 
 
 def export_cropobject_list(cropobjects, mlclasslist_file=None, image_file=None, ref_root=None):

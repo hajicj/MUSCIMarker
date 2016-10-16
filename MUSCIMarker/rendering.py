@@ -86,7 +86,7 @@ class CropObjectListView(ListView):
     _trap_key = BooleanProperty(False)
 
     render_new_to_back = BooleanProperty(False)
-    '''If True, will send new CropObjectViews to the back of the container
+    '''If True, will send new CropObjectsViews to the back of the container
     instead of on top when populating.'''
 
     @property

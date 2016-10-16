@@ -90,7 +90,7 @@ class CropObjectAnnotatorModel(Widget):
              fn_name='model.remove_cropobject',
              tracker_name='model')
     def remove_cropobject(self, key):
-        self.remove_obj_from_attachment_index(key)
+        self.remove_obj_from_attachment(key)
         del self.cropobjects[key]
 
     @Tracker(track_names=['cropobjects'],
@@ -104,14 +104,20 @@ class CropObjectAnnotatorModel(Widget):
         # is tied to any change of self.cropobjects
         self.clear_attachments()
         self.cropobjects = {c.objid: c for c in cropobjects}
+        self.sync_cropobjects_to_attachments()
 
+    @Tracker(track_names=[],
+             fn_name='model.export_cropobjects_string',
+             tracker_name='model')
     def export_cropobjects_string(self, **kwargs):
+        self.sync_attachments_to_cropobjects()
         return muscimarker_io.export_cropobject_list(self.cropobjects.values(), **kwargs)
 
     @Tracker(track_names=['output'],
              fn_name='model.export_cropobjects',
              tracker_name='model')
     def export_cropobjects(self, output, **kwargs):
+        logging.info('Model: Exporting CropObjects to {0}'.format(output))
         with codecs.open(output, 'w', 'utf-8') as hdl:
             hdl.write(self.export_cropobjects_string(**kwargs))
             hdl.write('\n')
@@ -137,7 +143,7 @@ class CropObjectAnnotatorModel(Widget):
 
     ##########################################################################
     # Managing the attachment tree
-    # TODO: Refactor into a separate CropObjectGraph.
+    # TODO: Refactor into a separate CropObjectGraph?
     def ensure_add_attachment(self, attachment):
         logging.info('Model: ensuring attachment {0}'.format(attachment))
         if attachment not in self.attachments:
@@ -199,19 +205,22 @@ class CropObjectAnnotatorModel(Widget):
     def remove_obj_from_attachment(self, objid):
         """Clears out the given CropObject from the attachments
         graph."""
-        inlinks = self.attachment_inlinks[objid]
-        for a in inlinks:
-            self.attachments.remove((a, objid))
+        if objid in self.attachment_inlinks:
+            inlinks = self.attachment_inlinks[objid]
+            for a in inlinks:
+                del self.attachments[a, objid]
 
-        outlinks = self.attachment_outlinks[objid]
-        for a in outlinks:
-            self.attachments.remove((objid, a))
+        if objid in self.attachment_outlinks:
+            outlinks = self.attachment_outlinks[objid]
+            for a in outlinks:
+                del self.attachments[objid, a]
 
-        self.remove_obj_from_attachment_index(objid)
+        self._remove_obj_from_attachment_index(objid)
 
-    def remove_obj_from_attachment_index(self, objid):
+    def _remove_obj_from_attachment_index(self, objid):
         """Remove all of this node's inlinks and outlinks,
-        and remove its record from the attachment index."""
+        and remove its record from the attachment index.
+        DO NOT USE THIS directly, use :meth:`remove_obj_from_attachment`!"""
         if objid in self.attachment_outlinks:
             self.clear_obj_outlinks(objid)
             del self.attachment_outlinks[objid]
@@ -241,7 +250,37 @@ class CropObjectAnnotatorModel(Widget):
 
     def clear_attachments(self):
         self.attachments = []
-        self.attachment_index = dict()
+        self.attachment_inlinks = dict()
+        self.attachment_outlinks = dict()
+
+    def sync_attachments_to_cropobjects(self):
+        """Ensures that the attachments are accurately reflected
+        among the CropObjects. The attachments are build separately
+        in the app, so they need to be written to the CropObjects
+        explicitly."""
+        logging.info('Model: Syncing {0} attachments to CropObjects.'
+                     ''.format(len(self.attachments)))
+        for objid in self.attachment_inlinks:
+            c = self.cropobjects[objid]
+            c.inlinks = list(self.attachment_inlinks[objid])
+        for objid in self.attachment_outlinks:
+            c = self.cropobjects[objid]
+            c.outlinks = list(self.attachment_outlinks[objid])
+        # raise NotImplementedError()
+
+    def sync_cropobjects_to_attachments(self):
+        """Ensures that the attachment structure in CropObjects
+        is accurately reflected in the attachments data structure
+        of the model. (Typically, you want to call this on importing
+        a new set of CropObjects, to make sure their inlinks and outlinks
+        are correctly represented in the attachment structures."""
+        edges = []
+        for c in self.cropobjects.values():
+            for o in c.outlinks:
+                edges.append((c, o))
+        self.clear_attachments()
+        for e in edges:
+            self.add_attachment(e)
 
     ##########################################################################
     # Integrity
