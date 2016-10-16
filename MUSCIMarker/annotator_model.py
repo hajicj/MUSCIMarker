@@ -18,6 +18,172 @@ __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
 
 
+class ObjectGraph(Widget):
+    """This class describes how the CropObjects from
+    a CropObjectAnnotatorModel are attached to each other,
+    forming an oriented graph.
+
+    The Graph model never actually interacts with the CropObjects
+    that form its nodes. It is only aware of their ``objid``s.
+    The interaction with CropObjects is only necessary during rendering.
+    """
+
+    # cropobject_model = ObjectProperty()
+    # '''Reference to the CropObjcetAnnotatorModel holding CropObject
+    # information.'''
+    vertices = DictProperty()
+    '''List of valid vertex indices.'''
+
+    edges = DictProperty()
+    '''Attachments among symbols are dependency relationships, such as
+    between a notehead and a stem. We store attachments as oriented
+    edges.
+
+    An attachment is represented as a ``(objid_1, objid_2)`` key with
+    a value of ``True``.
+    '''
+
+    _outlinks = DictProperty()
+    '''Automatically computed dict of all CropObjects attached to a given
+    CropObject. Internal.'''
+
+    _inlinks = DictProperty()
+    '''Automatically computed dict of all CropObjects that the given
+    CropObject is attached to. Internal.'''
+
+    # def __init__(self, model, **kwargs):
+    #     super(ObjectGraph, self).__init__(**kwargs)
+    #     # self.cropobject_model = model
+    #     # model.sync_cropobjects_to_graph()
+
+    ##########################################################################
+    # Managing the attachments
+
+    def add_vertex(self, v):
+        self.vertices[v] = True
+
+    def remove_vertex(self, v):
+        if v in self.vertices:
+            self.remove_obj_from_graph(v)
+
+    def ensure_add_edge(self, edge):
+        logging.info('Model: ensuring edge {0}'.format(edge))
+        if edge not in self.edges:
+            self.add_edge(edge)
+
+    def add_edge(self, edge):
+        '''Edge is an ``(a1, a2)`` pair such that ``a1`` is the head
+        and ``a2`` is the child CropObject. Our (attachment) dependency edges
+        lead from the root down, at least in the model.'''
+        logging.info('Model: adding attachment {0}'.format(edge))
+        a1 = edge[0]
+        a2 = edge[1]
+        if a1 not in self.vertices:
+            raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
+                             ''.format(edge, a1))
+        if a2 not in self.vertices:
+            raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
+                             ''.format(edge, a2))
+
+        self.edges[edge] = True
+        self.add_to_edges_index(a1, a2)
+
+    def add_to_edges_index(self, a1, a2):
+        if a1 not in self._outlinks:
+            self._outlinks[a1] = set()
+        if a2 not in self._inlinks:
+            self._inlinks[a2] = set()
+
+        if a2 not in self._outlinks[a1]:
+            self._outlinks[a1].add(a2)
+        else:
+            logging.warn('Trying to re-add outlink from {0} to {1}'
+                         ''.format(a1, a2))
+        if a1 not in self._inlinks[a2]:
+            self._inlinks[a2].add(a1)
+        else:
+            logging.warn('Trying to re-add inlink from {0} to {1}'
+                         ''.format(a1, a2))
+
+    def compute_edges_index(self, attachments):
+        '''Adds to the attachment indexes all the given
+        attachments ``(a1, a2)``.'''
+        for a1, a2 in attachments:
+            self.add_to_edges_index((a1, a2))
+
+    def ensure_remove_edge(self, a1, a2):
+        """If there was an edge from a1 to a2, remove it."""
+        logging.info('Model: ensuring detaching edge from {0} to {1}'
+                     ''.format(a1, a2))
+        if (a1, a2) in self.edges:
+            self.remove_edge(a1, a2)
+
+    def remove_edge(self, a1, a2):
+        """Object a1 will no longer point at object a2."""
+        self._inlinks[a2].remove(a1)
+        self._outlinks[a1].remove(a2)
+        del self.edges[a1, a2]
+
+    def remove_obj_from_graph(self, objid):
+        """Clears out the given CropObject from the attachments
+        graph."""
+        if objid in self._inlinks:
+            inlinks = self._inlinks[objid]
+            for a in inlinks:
+                del self.edges[a, objid]
+
+        if objid in self._outlinks:
+            outlinks = self._outlinks[objid]
+            for a in outlinks:
+                del self.edges[objid, a]
+
+        self._remove_obj_from_edges_index(objid)
+        del self.vertices[objid]
+
+    def _remove_obj_from_edges_index(self, objid):
+        """Remove all of this node's inlinks and outlinks,
+        and remove its record from the attachment index.
+        DO NOT USE THIS directly, use :meth:`remove_obj_from_attachment`!"""
+        if objid in self._outlinks:
+            self._clear_obj_outlinks(objid)
+            del self._outlinks[objid]
+        if objid in self._inlinks:
+            self._clear_obj_inlinks(objid)
+            del self._inlinks[objid]
+
+    def _clear_obj_outlinks(self, objid):
+        """Remove the node's outlinks, and remove it from the inlinks
+        of the notdes it outlinks to."""
+        if objid in self._outlinks:
+            outlinks = self._outlinks[objid]
+            for o in outlinks:
+                if objid in self._inlinks[o]:
+                    self._inlinks[o].remove(objid)
+            self._outlinks[objid] = set()
+
+    def _clear_obj_inlinks(self, objid):
+        """Remove the node's inlinks, and remove it from the outlinks
+        of the nodes from which it has inlinks"""
+        if objid in self._inlinks:
+            inlinks = self._inlinks[objid]
+            for i in inlinks:
+                if objid in self._outlinks[i]:
+                    self._outlinks[i].remove(objid)
+            self._inlinks[objid] = set()
+
+    def clear(self):
+        self.vertices = []
+        self.clear_edges()
+
+    def clear_edges(self):
+        self.edges = []
+        self._inlinks = dict()
+        self._outlinks = dict()
+
+
+##############################################################################
+
+
 class CropObjectAnnotatorModel(Widget):
     """This model describes the conceptual interface of the annotation
     app: there is an annotator performing some actions, and this model
@@ -29,6 +195,9 @@ class CropObjectAnnotatorModel(Widget):
     * The image that is being annotated,
     * the CropObjects that have already been marked,
     * the set of object types that can be marked.
+
+    The object graph is synced to the CropObject dict in the Model
+    on export.
 
     """
     image = ObjectProperty()
@@ -42,22 +211,7 @@ class CropObjectAnnotatorModel(Widget):
     mlclasses = DictProperty()
     mlclasses_by_name = DictProperty()
 
-    attachments = DictProperty()
-    '''Attachments among symbols are dependency relationships, such as
-    between a notehead and a stem. We store attachments as oriented
-    edges.
-
-    An attachment is represented as a ``(objid_1, objid_2)`` key with
-    a value of ``True``.
-    '''
-
-    attachment_outlinks = DictProperty()
-    '''Automatically computed dict of all CropObjects attached to a given
-    CropObject.'''
-
-    attachment_inlinks = DictProperty()
-    '''Automatically computed dict of all CropObjects that the given
-    CropObject is attached to.'''
+    graph = ObjectProperty()
 
     def __init__(self, image=None, cropobjects=None, mlclasses=None, **kwargs):
         super(CropObjectAnnotatorModel, self).__init__(**kwargs)
@@ -71,6 +225,9 @@ class CropObjectAnnotatorModel(Widget):
         if mlclasses:
             self.import_classes_definition(mlclasses)
 
+        self.graph = ObjectGraph()
+        self.sync_cropobjects_to_graph()
+
     def load_image(self, image, compute_cc=False):
         self._invalidate_cc_cache()
         self.image = image
@@ -83,6 +240,7 @@ class CropObjectAnnotatorModel(Widget):
              fn_name='model.add_cropobject',
              tracker_name='model')
     def add_cropobject(self, cropobject):
+        self.graph.add_vertex(cropobject.objid)
         self.cropobjects[cropobject.objid] = cropobject
 
     @Tracker(track_names=['key'],
@@ -90,7 +248,8 @@ class CropObjectAnnotatorModel(Widget):
              fn_name='model.remove_cropobject',
              tracker_name='model')
     def remove_cropobject(self, key):
-        self.remove_obj_from_attachment(key)
+        # Could graph sync be solved by binding?
+        self.graph.remove_obj_from_graph(key)
         del self.cropobjects[key]
 
     @Tracker(track_names=['cropobjects'],
@@ -102,15 +261,14 @@ class CropObjectAnnotatorModel(Widget):
         logging.info('Model: Importing {0} cropobjects.'.format(len(cropobjects)))
         # Batch processing is more efficient, since rendering the CropObjectList
         # is tied to any change of self.cropobjects
-        self.clear_attachments()
         self.cropobjects = {c.objid: c for c in cropobjects}
-        self.sync_cropobjects_to_attachments()
+        self.sync_cropobjects_to_graph()
 
     @Tracker(track_names=[],
              fn_name='model.export_cropobjects_string',
              tracker_name='model')
     def export_cropobjects_string(self, **kwargs):
-        self.sync_attachments_to_cropobjects()
+        self.sync_graph_to_cropobjects()
         return muscimarker_io.export_cropobject_list(self.cropobjects.values(), **kwargs)
 
     @Tracker(track_names=['output'],
@@ -128,11 +286,14 @@ class CropObjectAnnotatorModel(Widget):
     def clear_cropobjects(self):
         logging.info('Model: Clearing all {0} cropobjects.'.format(len(self.cropobjects)))
         self.cropobjects = {}
-        self.clear_attachments()
+        self.sync_cropobjects_to_graph()
 
     def import_classes_definition(self, mlclasses):
         """Overwrites previous mlclasses definition -- there can only be
-        one active at the same time."""
+        one active at the same time.
+
+        Note that this may invalidate all of the CropObjects in memory.
+        """
         self.mlclasses = {m.clsid: m for m in mlclasses}
         self.mlclasses_by_name = {m.name: m for m in mlclasses}
 
@@ -142,145 +303,50 @@ class CropObjectAnnotatorModel(Widget):
         return max(self.cropobjects.keys()) + 1
 
     ##########################################################################
-    # Managing the attachment tree
-    # TODO: Refactor into a separate CropObjectGraph?
-    def ensure_add_attachment(self, attachment):
-        logging.info('Model: ensuring attachment {0}'.format(attachment))
-        if attachment not in self.attachments:
-            self.add_attachment(attachment)
-
-    def add_attachment(self, attachment):
-        '''Attachment is an ``(a1, a2)`` pair such that ``a1`` is the head
-        and ``a2`` is the child CropObject. Our (attachment) dependency edges
-        lead from the root down, at least in the model.'''
-        logging.info('Model: adding attachment {0}'.format(attachment))
-        a1 = attachment[0]
-        a2 = attachment[1]
-        if a1 not in self.cropobjects:
-            raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
-                             ''.format(attachment, a1))
-        if a2 not in self.cropobjects:
-            raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
-                             ''.format(attachment, a2))
-
-        self.attachments[attachment] = True
-        self.add_to_attachments_index(a1, a2)
-
-    def add_to_attachments_index(self, a1, a2):
-        if a1 not in self.attachment_outlinks:
-            self.attachment_outlinks[a1] = set()
-        if a2 not in self.attachment_inlinks:
-            self.attachment_inlinks[a2] = set()
-
-        if a2 not in self.attachment_outlinks[a1]:
-            self.attachment_outlinks[a1].add(a2)
-        else:
-            logging.warn('Trying to re-add outlink from {0} to {1}'
-                         ''.format(a1, a2))
-        if a1 not in self.attachment_inlinks[a2]:
-            self.attachment_inlinks[a2].add(a1)
-        else:
-            logging.warn('Trying to re-add inlink from {0} to {1}'
-                         ''.format(a1, a2))
-
-    def compute_attachment_index(self, attachments):
-        '''Adds to the attachment indexes all the given
-        attachments ``(a1, a2)``.'''
-        for a1, a2 in attachments:
-            self.add_to_attachments_index((a1, a2))
-
-    def ensure_remove_attachment(self, a1, a2):
-        """If there was an edge from a1 to a2, remove it."""
-        logging.info('Model: ensuring detaching edge from {0} to {1}'
-                     ''.format(a1, a2))
-        if (a1, a2) in self.attachments:
-            self.remove_attachment(a1, a2)
-
-    def remove_attachment(self, a1, a2):
-        """Object a1 will no longer point at object a2."""
-        self.attachment_inlinks[a2].remove(a1)
-        self.attachment_outlinks[a1].remove(a2)
-        del self.attachments[a1, a2]
-
-    def remove_obj_from_attachment(self, objid):
-        """Clears out the given CropObject from the attachments
-        graph."""
-        if objid in self.attachment_inlinks:
-            inlinks = self.attachment_inlinks[objid]
-            for a in inlinks:
-                del self.attachments[a, objid]
-
-        if objid in self.attachment_outlinks:
-            outlinks = self.attachment_outlinks[objid]
-            for a in outlinks:
-                del self.attachments[objid, a]
-
-        self._remove_obj_from_attachment_index(objid)
-
-    def _remove_obj_from_attachment_index(self, objid):
-        """Remove all of this node's inlinks and outlinks,
-        and remove its record from the attachment index.
-        DO NOT USE THIS directly, use :meth:`remove_obj_from_attachment`!"""
-        if objid in self.attachment_outlinks:
-            self.clear_obj_outlinks(objid)
-            del self.attachment_outlinks[objid]
-        if objid in self.attachment_inlinks:
-            self.clear_obj_inlinks(objid)
-            del self.attachment_inlinks[objid]
-
-    def clear_obj_outlinks(self, objid):
-        """Remove the node's outlinks, and remove it from the inlinks
-        of the notdes it outlinks to."""
-        if objid in self.attachment_outlinks:
-            outlinks = self.attachment_outlinks[objid]
-            for o in outlinks:
-                if objid in self.attachment_inlinks[o]:
-                    self.attachment_inlinks[o].remove(objid)
-            self.attachment_outlinks[objid] = set()
-
-    def clear_obj_inlinks(self, objid):
-        """Remove the node's inlinks, and remove it from the outlinks
-        of the nodes from which it has inlinks"""
-        if objid in self.attachment_inlinks:
-            inlinks = self.attachment_inlinks[objid]
-            for i in inlinks:
-                if objid in self.attachment_outlinks[i]:
-                    self.attachment_outlinks[i].remove(objid)
-            self.attachment_inlinks[objid] = set()
-
-    def clear_attachments(self):
-        self.attachments = []
-        self.attachment_inlinks = dict()
-        self.attachment_outlinks = dict()
-
-    def sync_attachments_to_cropobjects(self):
+    # Synchronizing with the graph.
+    def sync_graph_to_cropobjects(self):
         """Ensures that the attachments are accurately reflected
         among the CropObjects. The attachments are build separately
         in the app, so they need to be written to the CropObjects
-        explicitly."""
-        logging.info('Model: Syncing {0} attachments to CropObjects.'
-                     ''.format(len(self.attachments)))
-        for objid in self.attachment_inlinks:
-            c = self.cropobjects[objid]
-            c.inlinks = list(self.attachment_inlinks[objid])
-        for objid in self.attachment_outlinks:
-            c = self.cropobjects[objid]
-            c.outlinks = list(self.attachment_outlinks[objid])
-        # raise NotImplementedError()
+        explicitly.
 
-    def sync_cropobjects_to_attachments(self):
+        .. warning::
+
+            Clears all outlinks and inlinks from the CropObjects and replaces
+            them with the graph's structure!
+        """
+        logging.info('Model: Syncing {0} attachments to CropObjects.'
+                     ''.format(len(self.graph.edges)))
+
+        for objid in self.graph._inlinks:
+            c = self.cropobjects[objid]
+            c.inlinks = list(self.graph._inlinks[objid])
+        for objid in self.graph._outlinks:
+            c = self.cropobjects[objid]
+            c.outlinks = list(self.graph._outlinks[objid])
+
+    def sync_cropobjects_to_graph(self):
         """Ensures that the attachment structure in CropObjects
         is accurately reflected in the attachments data structure
         of the model. (Typically, you want to call this on importing
         a new set of CropObjects, to make sure their inlinks and outlinks
-        are correctly represented in the attachment structures."""
+        are correctly represented in the attachment structures.
+
+        .. warning::
+
+            Clears the current graph and replaces it with the edges inferred
+            from CropObjects!
+        """
+        self.graph.clear()
+
         edges = []
         for c in self.cropobjects.values():
             for o in c.outlinks:
                 edges.append((c, o))
-        self.clear_attachments()
+            self.graph.add_vertex(c.objid)
+
         for e in edges:
-            self.add_attachment(e)
+            self.graph.add_edge(e)
 
     ##########################################################################
     # Integrity

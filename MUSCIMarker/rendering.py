@@ -261,7 +261,7 @@ class CropObjectListView(ListView):
             return
 
         a1, a2 = cropobjects[0].objid, cropobjects[1].objid
-        self._model.ensure_add_attachment((a1, a2))
+        self._model.graph.ensure_add_edge((a1, a2))
 
     def process_detach(self):
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
@@ -271,9 +271,7 @@ class CropObjectListView(ListView):
             return
 
         a1, a2 = cropobjects[0].objid, cropobjects[1].objid
-        self._model.ensure_remove_attachment(a1, a2)
-        #self._model.ensure_remove_attachment(a2, a1)
-
+        self._model.graph.ensure_remove_edge(a1, a2)
 
     def send_current_selection_back(self):
         """Moves the selected items back in the rendering order,
