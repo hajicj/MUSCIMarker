@@ -6,7 +6,7 @@ import logging
 
 from kivy.adapters.dictadapter import DictAdapter
 from kivy.app import App
-from kivy.graphics import Color, Line
+from kivy.graphics import Color, Line, Rectangle
 from kivy.properties import ObjectProperty, NumericProperty, BooleanProperty, ListProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.listview import SelectableView, ListView, CompositeListItem
@@ -81,12 +81,13 @@ class EdgeView(SelectableView, ToggleButton):
                 self._line_width)
         w = max(max(self.x_start, self.x_end) - min(self.x_start, self.x_end),
                 self._line_width)
-        self.size_hint = (None, None)
         self.size = h, w
+        self.size_hint = (None, None)
         self.pos = min(self.y_start, self.y_end), min(self.x_start, self.x_end)
+        self.pos_hint = (None, None)
 
         # Note: until the edge is added to the widget tree, it does not
-        # get rendered..?
+        # get rendered.
 
         # Overriding default release
         self.always_release = False
@@ -210,6 +211,12 @@ class ObjectGraphRenderer(FloatLayout):
         self.edge_adapter.bind(data=self.do_redraw)
 
         self.add_widget(self.view)
+
+        with self.canvas.before:
+            Color(0.6, 0, 0, 0.2)
+            Rectangle(pos=self.view.pos, size=self.view.size)
+            Color(0.0, 0.6, 0.4, 0.2)
+            Rectangle(pos=self.pos, size=self.size)
 
     def update_edge_adapter_data(self, instance, edges):
         """Copy the graph's edges to adapter data."""

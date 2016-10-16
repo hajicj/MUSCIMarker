@@ -1134,12 +1134,12 @@ class MUSCIMarkerApp(App):
         # There is some problem with ``touch.grab_current is not editor``,
         # the id() result for the two is somehow different (maybe grab_current is a weakref?)
         if not isinstance(touch.grab_current, editor.__class__):
-            logging.info('App: image on_touch_up, but editor did not grab it.'
-                         ' Touch {0} grabbed by: {1}, editor: {2}'.format(touch, touch.grab_current, editor))
+            #logging.info('App: image on_touch_up, but editor did not grab it.'
+            #             ' Touch {0} grabbed by: {1}, editor: {2}'.format(touch, touch.grab_current, editor))
             return
 
-        logging.info('App: image on_touch_up, touch {0} grabbed by editor.'
-                     ' Determining whether the image was actually moved.'.format(touch))
+        #logging.info('App: image on_touch_up, touch {0} grabbed by editor.'
+        #             ' Determining whether the image was actually moved.'.format(touch))
 
         # Scaling changes pos, but moving does not change scale.
         # Maybe this could be rewritten as events?
@@ -1164,8 +1164,8 @@ class MUSCIMarkerApp(App):
         # x, y = touch.x, touch.y
         # ud['touch_start_x'] = x
         # ud['touch_start_y'] = y
-        logging.info('App: image touched, recording data for tracking'
-                     ' user navigation around the image.')
+        #logging.info('App: image touched, recording data for tracking'
+        #             ' user navigation around the image.')
 
 
     ##########################################################################
