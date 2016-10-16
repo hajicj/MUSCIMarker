@@ -145,7 +145,7 @@ class EdgeView(SelectableView, ToggleButton):
         return self.horz_end - self.pos[0]
 
     def select(self, *args):
-        logging.info('EdgeView\t{0}: called selection!'.format(self.edge))
+        # logging.info('EdgeView\t{0}: called selection!'.format(self.edge))
         self.background_color = self.selected_color
         if isinstance(self.parent, CompositeListItem):
             self.parent.select_from_child(self, *args)
@@ -153,8 +153,7 @@ class EdgeView(SelectableView, ToggleButton):
         self.do_render()
 
     def deselect(self, *args):
-        logging.info('EdgeView\t{0}: called deselection!'
-                      ''.format(self.edge, args))
+        # logging.info('EdgeView\t{0}: called deselection!'.format(self.edge))
         self.background_color = self.deselected_color
         if isinstance(self.parent, CompositeListItem):
             self.parent.deselect_from_child(self, *args)
@@ -169,22 +168,22 @@ class EdgeView(SelectableView, ToggleButton):
                 and (self.y - _cthr) <= y <= (self.top + _cthr)):
             return False
 
-        logging.info('EdgeView\t{0}: collide_point({1}, {2}):'
-                     ''.format(self.edge, x, y))
-        logging.info('EdgeView\t{0}:    pos={1}, size={2}'
-                     ''.format(self.edge, self.pos, self.size))
-        logging.info('EdgeView\t{0}:    top={1}, left={2}, bottom={3}, right={4}'
-                     ''.format(self.edge, self.top, self.x, self.y, self.right))
-        logging.info('EdgeView\t{0}:    vert_start={1}, horz_start={2}, vert_end={3}, horz_end={4}'
-                     ''.format(self.edge, self.vert_start, self.horz_start, self.vert_end, self.horz_end))
+        # logging.info('EdgeView\t{0}: collide_point({1}, {2}):'
+        #              ''.format(self.edge, x, y))
+        # logging.info('EdgeView\t{0}:    pos={1}, size={2}'
+        #              ''.format(self.edge, self.pos, self.size))
+        # logging.info('EdgeView\t{0}:    top={1}, left={2}, bottom={3}, right={4}'
+        #              ''.format(self.edge, self.top, self.x, self.y, self.right))
+        # logging.info('EdgeView\t{0}:    vert_start={1}, horz_start={2}, vert_end={3}, horz_end={4}'
+        #              ''.format(self.edge, self.vert_start, self.horz_start, self.vert_end, self.horz_end))
         slope = float(self.vert_end - self.vert_start) / float(self.right - self.x)
         delta_horizontal = x - self.x
         vert_on_line_at_x = delta_horizontal * slope + self.vert_start
 
         output =  (((y - vert_on_line_at_x) ** 2) < (self._collide_threshold ** 2))
-        logging.info('EdgeView\t{0}:   slope={0}, delta_horizontal={0}, vert_on_line_at_x={1}, delta_x={2}'
-                     ''.format(slope, vert_on_line_at_x, y - vert_on_line_at_x))
-        logging.info('EdgeView\t{0}:   collide = {0}'.format(output))
+        # logging.info('EdgeView\t{0}:   slope={0}, delta_horizontal={0}, vert_on_line_at_x={1}, delta_x={2}'
+        #              ''.format(slope, vert_on_line_at_x, y - vert_on_line_at_x))
+        # logging.info('EdgeView\t{0}:   collide = {0}'.format(output))
         return output
 
     def render(self):
@@ -203,14 +202,14 @@ class EdgeView(SelectableView, ToggleButton):
             Color(*self.rgb)
             Line(points=points, width=self._line_width)
             if self.is_selected:
-                logging.info('EdgeView\t{0}: Rendering selected!'.format(self.edge))
+                # logging.info('EdgeView\t{0}: Rendering selected!'.format(self.edge))
                 Color(*self.background_color)
                 Line(points=points, width=self._selected_line_width)
             # Rectangle(pos=self.pos, size=self.size)
 
     def do_render(self):
-        logging.info('EdgeView: Requested rendering for edge {0}'
-                     ''.format(self.edge))
+        # logging.info('EdgeView: Requested rendering for edge {0}'
+        #              ''.format(self.edge))
         self.render()
 
 
