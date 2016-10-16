@@ -24,11 +24,13 @@ class EdgeView(SelectableView, ToggleButton):
     selected_color = ListProperty([1., 0., 0., 0.5])
     deselected_color = ListProperty([1., 0., 0., 0.3])
 
-    x_start = NumericProperty()
-    y_start = NumericProperty()
+    vert_start = NumericProperty()
+    horz_start = NumericProperty()
 
-    x_end = NumericProperty()
-    y_end = NumericProperty()
+    vert_end = NumericProperty()
+    horz_end = NumericProperty()
+
+    _collide_threshold = NumericProperty(10.0)
 
     def __init__(self,
                  cropobject_from, cropobject_to, edge_label=None,
@@ -46,13 +48,16 @@ class EdgeView(SelectableView, ToggleButton):
         self.label = edge_label
         self.rgb = rgb
 
-        self.x_start = cropobject_from.x + (cropobject_from.height / 2)
-        self.y_start = cropobject_from.y + (cropobject_from.width / 2)
+        # Another shitty, shitty x/y switch. Why can't people use
+        # (top, left, bottom, right) names???
+        self.vert_start = cropobject_from.x + (cropobject_from.height / 2)
+        self.horz_start = cropobject_from.y + (cropobject_from.width / 2)
 
-        self.x_end = cropobject_to.x + (cropobject_to.height / 2)
-        self.y_end = cropobject_to.y + (cropobject_to.width / 2)
+        self.vert_end = cropobject_to.x + (cropobject_to.height / 2)
+        self.horz_end = cropobject_to.y + (cropobject_to.width / 2)
 
         self._line_width = 1
+        self._selected_line_width = 2
 
         ##### Handling the button stuff -- temporary...
         alpha = 0.3
@@ -77,13 +82,13 @@ class EdgeView(SelectableView, ToggleButton):
         #  -- this is a bit tricky, though, because this widget is not
         #     a rectangle. It should not react to touches outside
         #     the diagonal. So, we should override collide_point().
-        h = max(max(self.y_start, self.y_end) - min(self.y_start, self.y_end),
+        h = max(max(self.horz_start, self.horz_end) - min(self.horz_start, self.horz_end),
                 self._line_width)
-        w = max(max(self.x_start, self.x_end) - min(self.x_start, self.x_end),
+        w = max(max(self.vert_start, self.vert_end) - min(self.vert_start, self.vert_end),
                 self._line_width)
         self.size = h, w
         self.size_hint = (None, None)
-        self.pos = min(self.y_start, self.y_end), min(self.x_start, self.x_end)
+        self.pos = min(self.horz_start, self.horz_end), min(self.vert_start, self.vert_end)
         # self.pos_hint = (None, None)
 
         # Note: until the edge is added to the widget tree, it does not
@@ -102,7 +107,7 @@ class EdgeView(SelectableView, ToggleButton):
         logging.info('EdgeView: Initialized for edge {0},'
                      ' with pos={1}, size={2}'
                      ''.format(self.edge, self.pos, self.size))
-        #self.do_render()
+        self.do_render()
 
     @property
     def edge(self):
@@ -125,53 +130,88 @@ class EdgeView(SelectableView, ToggleButton):
 
     @property
     def rel_x_start(self):
-        return self.x_start - self.pos[1]
+        return self.vert_start - self.pos[1]
 
     @property
     def rel_y_start(self):
-        return self.y_start - self.pos[0]
+        return self.horz_start - self.pos[0]
 
     @property
     def rel_x_end(self):
-        return self.x_end - self.pos[1]
+        return self.vert_end - self.pos[1]
 
     @property
     def rel_y_end(self):
-        return self.y_end - self.pos[0]
+        return self.horz_end - self.pos[0]
+
+    def select(self, *args):
+        logging.info('EdgeView\t{0}: called selection!'.format(self.edge))
+        self.background_color = self.selected_color
+        if isinstance(self.parent, CompositeListItem):
+            self.parent.select_from_child(self, *args)
+        super(EdgeView, self).select(*args)
+        self.do_render()
+
+    def deselect(self, *args):
+        logging.info('EdgeView\t{0}: called deselection!'
+                      ''.format(self.edge, args))
+        self.background_color = self.deselected_color
+        if isinstance(self.parent, CompositeListItem):
+            self.parent.deselect_from_child(self, *args)
+        super(EdgeView, self).deselect(*args)
+        self.do_render()
+
+    def collide_point(self, x, y):
+        """The edge collides points only along its course, at most
+        self._collide_threshold points away from the line."""
+        _cthr = self._collide_threshold
+        if not ((self.x -  _cthr) <= x <= (self.right + _cthr)
+                and (self.y - _cthr) <= y <= (self.top + _cthr)):
+            return False
+
+        logging.info('EdgeView\t{0}: collide_point({1}, {2}):'
+                     ''.format(self.edge, x, y))
+        logging.info('EdgeView\t{0}:    pos={1}, size={2}'
+                     ''.format(self.edge, self.pos, self.size))
+        logging.info('EdgeView\t{0}:    top={1}, left={2}, bottom={3}, right={4}'
+                     ''.format(self.edge, self.top, self.x, self.y, self.right))
+        logging.info('EdgeView\t{0}:    vert_start={1}, horz_start={2}, vert_end={3}, horz_end={4}'
+                     ''.format(self.edge, self.vert_start, self.horz_start, self.vert_end, self.horz_end))
+        slope = float(self.vert_end - self.vert_start) / float(self.right - self.x)
+        delta_horizontal = x - self.x
+        vert_on_line_at_x = delta_horizontal * slope + self.vert_start
+
+        output =  (((y - vert_on_line_at_x) ** 2) < (self._collide_threshold ** 2))
+        logging.info('EdgeView\t{0}:   slope={0}, delta_horizontal={0}, vert_on_line_at_x={1}, delta_x={2}'
+                     ''.format(slope, vert_on_line_at_x, y - vert_on_line_at_x))
+        logging.info('EdgeView\t{0}:   collide = {0}'.format(output))
+        return output
 
     def render(self):
-        points = [self.rel_y_start, self.rel_x_start,
-                  self.rel_y_end, self.rel_x_end]
-        logging.info('EdgeView: Rendering edge {0} with points {1}'
-                     ''.format(self.edge, points))
-        logging.info('EdgeView: Derived size {0}, self.size {1}, self.pos {2}'
-                     ''.format((points[0] - points[2], points[1] - points[3]),
-                               self.size,
-                               self.pos))
+        # We are rendering directly onto the EdgeListView's container
+        # FloatLayout
+        points = [self.horz_start, self.vert_start,
+                  self.horz_end, self.vert_end]
+        logging.info('EdgeView: Rendering edge {0} with points {1}, selected: {2}'
+                     ''.format(self.edge, points, self.is_selected))
+        # logging.info('EdgeView: Derived size {0}, self.size {1}, self.pos {2}'
+        #              ''.format((points[0] - points[2], points[1] - points[3]),
+        #                        self.size,
+        #                        self.pos))
         self.canvas.clear()
         with self.canvas:
             Color(*self.rgb)
-            Line(points=points)
+            Line(points=points, width=self._line_width)
+            if self.is_selected:
+                logging.info('EdgeView\t{0}: Rendering selected!'.format(self.edge))
+                Color(*self.background_color)
+                Line(points=points, width=self._selected_line_width)
             # Rectangle(pos=self.pos, size=self.size)
 
     def do_render(self):
         logging.info('EdgeView: Requested rendering for edge {0}'
                      ''.format(self.edge))
         self.render()
-
-    def select(self, *args):
-        self.background_color = self.selected_color
-        if isinstance(self.parent, CompositeListItem):
-            self.parent.select_from_child(self, *args)
-        super(EdgeView, self).select(*args)
-
-    def deselect(self, *args):
-        logging.debug('EdgeView\t{0}: called deselection with args {1}'
-                      ''.format(self.edge, args))
-        self.background_color = self.deselected_color
-        if isinstance(self.parent, CompositeListItem):
-            self.parent.deselect_from_child(self, *args)
-        super(EdgeView, self).deselect(*args)
 
 
 class ObjectGraphRenderer(FloatLayout):

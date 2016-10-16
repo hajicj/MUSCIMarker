@@ -1098,8 +1098,8 @@ class MUSCIMarkerApp(App):
         elif 'editor_start_pos' in ud:
             if editor.pos != ud['editor_start_pos']:
                 out = True
-        logging.info('App: Was image moved with touch {0}? {1}'
-                     ''.format(touch, out))
+        #logging.info('App: Was image moved with touch {0}? {1}'
+        #             ''.format(touch, out))
         return out
 
     def is_image_scaled_with_touch(self, touch):
@@ -1114,8 +1114,8 @@ class MUSCIMarkerApp(App):
         elif 'editor_start_scale' in ud:
             if editor.scale != ud['editor_start_scale']:
                 out = True
-        logging.info('App: Was image scaled with touch {0}? {1}'
-                     ''.format(touch, out))
+        #logging.info('App: Was image scaled with touch {0}? {1}'
+        #             ''.format(touch, out))
         return out
 
     def _image_touch_up(self, touch):
