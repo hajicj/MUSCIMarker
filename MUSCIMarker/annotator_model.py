@@ -67,7 +67,7 @@ class ObjectGraph(Widget):
             self.remove_obj_from_graph(v)
 
     def ensure_add_edge(self, edge):
-        logging.info('Model: ensuring edge {0}'.format(edge))
+        logging.info('Graph: ensuring edge {0}'.format(edge))
         if edge not in self.edges:
             self.add_edge(edge)
 
@@ -75,7 +75,7 @@ class ObjectGraph(Widget):
         '''Edge is an ``(a1, a2)`` pair such that ``a1`` is the head
         and ``a2`` is the child CropObject. Our (attachment) dependency edges
         lead from the root down, at least in the model.'''
-        logging.info('Model: adding attachment {0}'.format(edge))
+        logging.info('Graph: adding edge {0}'.format(edge))
         a1 = edge[0]
         a2 = edge[1]
         if a1 not in self.vertices:
@@ -342,7 +342,7 @@ class CropObjectAnnotatorModel(Widget):
         edges = []
         for c in self.cropobjects.values():
             for o in c.outlinks:
-                edges.append((c, o))
+                edges.append((c.objid, o))
             self.graph.add_vertex(c.objid)
 
         for e in edges:

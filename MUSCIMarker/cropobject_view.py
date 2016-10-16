@@ -63,13 +63,6 @@ class CropObjectView(SelectableView, ToggleButton):
     * i: toggle info label
     * c: change class selection
 
-    Export
-    ------
-
-    Note that upon export, it is necessary to somehow recompute the display
-    pixels into the best model pixel bounding box. The priority is to contain
-    the entire symbol; it's not a large problem if the box is slightly larger
-    than the symbol. [NOT IMPLEMENTED]
     """
     selected_color = ListProperty([1., 0., 0., 0.5])
     deselected_color = ListProperty([1., 0., 0., 0.3])
@@ -119,10 +112,7 @@ class CropObjectView(SelectableView, ToggleButton):
         self.cropobject = selectable_cropobject
         self.is_selected = selectable_cropobject.is_selected
 
-        # If the underlying cropobject has a mask, render that mask
-        if self._model_counterpart.mask is not None:
-            self.render_mask()
-
+        # Here, we position the CropObjectView.
         self.size = self.cropobject.width, self.cropobject.height
         self.size_hint = (None, None)
         self.pos = self.cropobject.y, self.cropobject.x
@@ -135,6 +125,10 @@ class CropObjectView(SelectableView, ToggleButton):
         # self.group = self.cropobject.objid
 
         self._editor_scale = App.get_running_app().editor_scale
+
+        # If the underlying cropobject has a mask, render that mask
+        if self._model_counterpart.mask is not None:
+            self.render_mask()
 
         self.register_event_type('on_key_captured')
         self.create_bindings()
@@ -654,8 +648,8 @@ class CropObjectView(SelectableView, ToggleButton):
                 fn_name='CropObjectView.deselect',
                 tracker_name='editing')
     def deselect(self, *args):
-        logging.info('CropObjectView\t{0}: called deselection with args {1}'
-                     ''.format(self.cropobject.objid, args))
+        logging.debug('CropObjectView\t{0}: called deselection with args {1}'
+                      ''.format(self.cropobject.objid, args))
         if self._info_label_shown:
             self.destroy_info_label()
         if self._mlclass_selection_spinner_shown:

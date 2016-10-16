@@ -155,6 +155,7 @@ class CropObjectListView(ListView):
             item_view = self.adapter.get_view(c_idx)
             logging.info('Populating with view that has color {0}'
                          ''.format(item_view.selected_color))
+            # See CropObjectListView key trapping below.
             item_view.bind(on_key_captured=self.set_key_trap)
 
             # Do new objects go into the back, or into the front?
@@ -253,6 +254,8 @@ class CropObjectListView(ListView):
         if self.handle_key_trap(window, key, scancode):
             return True
 
+    ##########################################################################
+    # Operations on lists of selected CropObjects
     def process_attach(self):
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
         if len(cropobjects) != 2:
@@ -369,6 +372,9 @@ class CropObjectRenderer(FloatLayout):
     In order to force rendering the annotations, add 1 to the
     ``rendnerer.redraw`` property, which fires redrawing.
     """
+    # Maybe the ObjectGraphRenderer could be folded into this?
+    # To work above the selectable_cropobjects?
+
     selectable_cropobjects = DictProperty()
 
     adapter = ObjectProperty()

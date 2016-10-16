@@ -353,6 +353,10 @@
         size_hint: 1.0, 0.1
         text: 'CropObjects: {0}'.format(len(app.annot_model.cropobjects))
 
+    Label:
+        size_hint: 1.0, 0.1
+        text: 'Attachments: {0}'.format(len(app.annot_model.graph.edges))
+
     Button:
         id: cropobject_clear_button
         size_hint: 1.0, 0.1

@@ -224,7 +224,7 @@ from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.widget import Widget
 
 import muscimarker_io
-
+from edge_view import ObjectGraphRenderer
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
 from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog
@@ -475,6 +475,10 @@ class MUSCIMarkerApp(App):
     of the annotation as (semi-)transparent bounding boxes overlaid
     over the editor image.'''
 
+    graph_renderer = ObjectProperty()
+    '''The edge renderer is responsible for showing the current state
+    of the object graph as lines overlaid on the editor image.'''
+
     #######################################
     # In-app messages (not working yet)
     message = ObjectProperty(None)
@@ -516,6 +520,17 @@ class MUSCIMarkerApp(App):
         logging.info('Build: Adding renderer to editor widget {0}'
                      ''.format(e))
         e.add_widget(self.cropobject_list_renderer)
+
+        # Rendering ObjectGraph
+        self.graph_renderer = ObjectGraphRenderer(
+            annot_model=self.annot_model,
+            graph=self.annot_model.graph,
+            editor_widget=self._get_editor_widget()
+        )
+        e = self._get_editor_widget()
+        logging.info('Build: Adding graph renderer to editor widget {0}'
+                     ''.format(e))
+        e.add_widget(self.graph_renderer, index=0)
 
         Window.bind(on_resize=self.window_resized)
 

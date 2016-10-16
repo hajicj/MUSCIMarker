@@ -138,7 +138,8 @@ class FileNameLoader(FloatLayout):
             raise ValueError('Selected nonexistent file: {0}'
                              ''.format(full_filename))
         if (self.filename == full_filename) and self.force_change:
-            self.filename = ''
+            self.property('filename').dispatch(self)
+            # self.filename = ''
         self.filename = full_filename
         self.dismiss_popup()
 
