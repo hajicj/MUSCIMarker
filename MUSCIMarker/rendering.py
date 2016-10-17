@@ -243,12 +243,16 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView: detaching selected CropObjects.')
             self.process_detach()
 
+        if dispatch_key == '110':
+            logging.info('CropObjectListView: handling notation tree building')
+            self.current_selection_to_tree()
+
         else:
             logging.info('CropObjectListView: propagating keypress')
             return False
 
         # Things caught in the CropObjectListView do not propagate.
-        logging.info('CropObjectListView: NOT propagating keypress')
+        #logging.info('CropObjectListView: NOT propagating keypress')
         return True
 
     def on_key_up(self, window, key, scancode):
@@ -332,39 +336,35 @@ class CropObjectListView(ListView):
 
         model_cropobjects = None  # Release refs
 
+        self.render_new_to_back = True
         App.get_running_app().add_cropobject_from_model_selection({'top': t,
                                                                    'left': l,
                                                                    'bottom': b,
                                                                    'right': r},
                                                                   mask=mask)
+        self.render_new_to_back = False
 
-        # # Get new bbox coordinates
-        # top = 0
-        # bottom = 100000
-        # left = 1000000
-        # right = 0
-        # for s in self.adapter.selection:
-        #     c = s.cropobject
-        #     if c.x < bottom:
-        #         bottom = c.x
-        #     if c.y < left:
-        #         left = c.y
-        #     if c.x + c.height > top:
-        #         top = c.x + c.height
-        #     if c.y + c.width > right:
-        #         right = c.y + c.width
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # This is very ugly: it presupposes a specific MLClassList and grammar.
+    # The grammar needs to be factored out.
+    def current_selection_to_tree(self):
+        """Adds edges among the current selection that correspond to the objects
+        being a visual object tree corresponding to a note."""
+        logging.warn('Currently, the only available tree is one that has'
+                     ' noteheads as roots and everything else as children'
+                     ' (siblings).')
 
+        def is_head(cropobject):
+            return cropobject.clsname.startswith('notehead')
 
-        # Add the new CropObject.
-        # Needs to come after removing, because the redraw on object addition
-        # unselects everything (...why?) and the selection then does not
-        # get removed.
-        # App.get_running_app().add_cropobject_from_selection(
-        #     {'top': top,
-        #      'left': left,
-        #      'bottom': bottom,
-        #      'right': right}
-        # )
+        cropobjects = [s._model_counterpart for s in self.adapter.selection]
+
+        heads = [c for c in cropobjects if is_head(c)]
+        not_heads = [c for c in cropobjects if c not in heads]
+        for n in heads:
+            for c in not_heads:
+                # Does not overwrite existing edges.
+                self._model.graph.ensure_add_edge((n.objid, c.objid))
 
 
 class CropObjectRenderer(FloatLayout):
