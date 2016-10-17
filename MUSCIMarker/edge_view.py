@@ -5,6 +5,7 @@ import copy
 import logging
 import pprint
 
+import math
 from kivy.adapters.dictadapter import DictAdapter
 from kivy.app import App
 from kivy.core.window import Window
@@ -32,7 +33,7 @@ class EdgeView(SelectableView, ToggleButton):
     vert_end = NumericProperty()
     horz_end = NumericProperty()
 
-    _collide_threshold = NumericProperty(3.0)
+    _collide_threshold = NumericProperty(2.0)
 
     def __init__(self,
                  cropobject_from, cropobject_to, edge_label=None,
@@ -111,6 +112,14 @@ class EdgeView(SelectableView, ToggleButton):
     def graph(self):
         return App.get_running_app().annot_model.graph
 
+    @property
+    def bottom(self):
+        return self.y
+
+    @property
+    def left(self):
+        return self.x
+
     def create_bindings(self):
         logging.info('EdgeView\t{0}: Creating bindings'.format(self.edge))
         Window.bind(on_key_down=self.on_key_down)
@@ -182,31 +191,27 @@ class EdgeView(SelectableView, ToggleButton):
         super(EdgeView, self).deselect(*args)
         self.do_render()
 
-    def collide_point(self, x, y):
+    def collide_point(self, h, v):
         """The edge collides points only along its course, at most
         self._collide_threshold points away from the line."""
         _cthr = self._collide_threshold
-        if not ((self.x -  _cthr) <= x <= (self.right + _cthr)
-                and (self.y - _cthr) <= y <= (self.top + _cthr)):
+        if not ((self.left - _cthr) <= h <= (self.right + _cthr)
+                and (self.bottom - _cthr) <= v <= (self.top + _cthr)):
             return False
 
-        # logging.info('EdgeView\t{0}: collide_point({1}, {2}):'
-        #              ''.format(self.edge, x, y))
-        # logging.info('EdgeView\t{0}:    pos={1}, size={2}'
-        #              ''.format(self.edge, self.pos, self.size))
-        # logging.info('EdgeView\t{0}:    top={1}, left={2}, bottom={3}, right={4}'
-        #              ''.format(self.edge, self.top, self.x, self.y, self.right))
-        # logging.info('EdgeView\t{0}:    vert_start={1}, horz_start={2}, vert_end={3}, horz_end={4}'
-        #              ''.format(self.edge, self.vert_start, self.horz_start, self.vert_end, self.horz_end))
-        slope = float(self.vert_end - self.vert_start) / float(self.right - self.x)
-        delta_horizontal = x - self.x
-        vert_on_line_at_x = delta_horizontal * slope + self.vert_start
+        hA = self.horz_start
+        vA = self.vert_start
+        hB = self.horz_end
+        vB = self.vert_end
 
-        output =  (((y - vert_on_line_at_x) ** 2) < (self._collide_threshold ** 2))
-        # logging.info('EdgeView\t{0}:   slope={0}, delta_horizontal={0}, vert_on_line_at_x={1}, delta_x={2}'
-        #              ''.format(slope, vert_on_line_at_x, y - vert_on_line_at_x))
-        # logging.info('EdgeView\t{0}:   collide = {0}'.format(output))
+        # Thanks, Wolfram Alpha!
+        norm = (hA - hB) ** 2 + (vA - vB) ** 2
+        d_square = (((hA - hB) * (vB - v) - (hB - h) * (vA - vB)) ** 2) / norm
+        logging.warning('EdgeView\t{0}: collision delta_square {1}'.format(self.edge, d_square))
+        output = d_square < (_cthr ** 2)
+
         return output
+
 
     def render(self):
         # We are rendering directly onto the EdgeListView's container
