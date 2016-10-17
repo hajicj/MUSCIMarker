@@ -325,6 +325,10 @@ class CropObjectView(SelectableView, ToggleButton):
     def _model_counterpart(self):
         return self._model.cropobjects[self.cropobject.objid]
 
+    @property
+    def objid(self):
+        return self._model_counterpart.objid
+
     ##########################################################################
     # Class selection
     @tr.Tracker(track_names=['self'],

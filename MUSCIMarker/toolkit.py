@@ -722,7 +722,9 @@ class BaseCropObjectViewsOperationTool(MUSCIMarkerTool):
         self.editor_widgets['line_tracer'].clear()
 
         # Mark their views as selected
-        for c in self.available_views:
+        applicable_views = [v for v in self.available_views
+                             if v.objid in objids]
+        for c in applicable_views:
             self.apply_operation(c)
 
     @property
