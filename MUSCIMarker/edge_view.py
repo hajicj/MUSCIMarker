@@ -32,7 +32,7 @@ class EdgeView(SelectableView, ToggleButton):
     vert_end = NumericProperty()
     horz_end = NumericProperty()
 
-    _collide_threshold = NumericProperty(5.0)
+    _collide_threshold = NumericProperty(3.0)
 
     def __init__(self,
                  cropobject_from, cropobject_to, edge_label=None,
@@ -415,6 +415,8 @@ class EdgeListView(ListView):
             #logging.debug('EdgeListView.populate: Current edges in container: {0}'
             #              ''.format([ww.edge for ww in container.children]))
             w_key = w.edge
+            if w_key in self._graph.edges:
+                continue
             # "Clean up" the EdgeView widget
             w.remove_bindings()
             # Remove from cache
@@ -432,11 +434,15 @@ class EdgeListView(ListView):
         logging.info('EdgeListView.populate: Edges in container after removal: {0}'
                      ''.format([ww.edge for ww in container.children]))
 
+        rendered_edges = set([ww.edge for ww in self.container.children[:]])
+
         # Adapter keys are (from, to), values are True (will be
         # edge classes) -- the adapter is bound to the graph.edges
         # dict.
         for e_key, e in self.adapter.data.iteritems():
-            _, e_label = e  # The adapter has items ((from, to), label)
+            edge, e_label = e  # The adapter has items ((from, to), label)
+            if edge in rendered_edges:
+                continue
             logging.info('EdgeListView.populate: Adding edge from adapter {0}'.format(e))
             e_idx = self._adapter_key2index(e_key)
             if e_idx is None:
