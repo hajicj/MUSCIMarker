@@ -166,6 +166,12 @@ class CropObjectListView(ListView):
             container.add_widget(item_view, index=ins_index)
             self._count += 1
 
+    @property
+    def rendered_views(self):
+        """The list of actual rendered CropObjectViews that
+        the CropObjectListView holds."""
+        return [cv for cv in self.container.children[:]]
+
     def _adapter_key2index(self, key):
         """Converts a key into an adapter index, so that we can request
         views based on the keys from the adapter. This avoids having to
@@ -344,7 +350,7 @@ class CropObjectListView(ListView):
                                                                   mask=mask)
         self.render_new_to_back = False
 
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # This is very ugly: it presupposes a specific MLClassList and grammar.
     # The grammar needs to be factored out.
     def current_selection_to_tree(self):
@@ -365,6 +371,8 @@ class CropObjectListView(ListView):
             for c in not_heads:
                 # Does not overwrite existing edges.
                 self._model.graph.ensure_add_edge((n.objid, c.objid))
+
+##############################################################################
 
 
 class CropObjectRenderer(FloatLayout):

@@ -316,6 +316,34 @@ def compute_connected_components(image):
     return cc, labels, bboxes
 
 
+def image_mask_overlaps_cropobject(mask, cropobject,
+                                   use_cropobject_mask=False):
+    """Determines whether the given image mask overlaps the given CropObject.
+
+    Can either take into account the cropobject's bounding box only, or can
+    also take into account the cropobject's mask, according to the
+    ``disregard_cropobject_mask`` flag.
+
+    :param mask: A 2D numpy array, assumed to be a mask of the source image
+        in which the CropObject was marked.
+
+    :param cropobject: The cropobject for which we want to determine its
+        mask.
+
+    :param use_cropobject_mask: If False, will only check that the
+        mask overlaps the CropObject's bounding box, not necessarily
+        its mask.
+
+    :return: True or False
+    """
+    t, l, b, r = cropobject.bounding_box
+    mask_crop = mask[t:b, l:r]
+    if (not use_cropobject_mask) or (cropobject.mask is None):
+        return mask_crop.any() != 0
+    else:
+        return (mask_crop * cropobject.mask).any() != 0
+
+
 ##############################################################################
 
 

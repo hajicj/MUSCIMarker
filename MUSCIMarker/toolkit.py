@@ -17,7 +17,7 @@ from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 
 from editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, LineTracer
-from utils import bbox_to_integer_bounds
+from utils import bbox_to_integer_bounds, image_mask_overlaps_cropobject
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -106,6 +106,31 @@ class MUSCIMarkerTool(Widget):
         world to the model world."""
         m_t, m_l, m_b, m_r = self.app_ref.image_scaler.bbox_widget2model(ed_t, ed_l, ed_b, ed_r)
         return m_t, m_l, m_b, m_r
+
+    def editor_to_model_points(self, points):
+        """Converts a list of points such as from a LineTracer into a list
+        of (x, y) points in the model world."""
+        point_set_as_tuples = [p for i, p in enumerate(zip(points[:-1], points[1:]))
+                               if i % 2 == 0]
+        m_points = [self.app_ref.image_scaler.point_widget2model(wX, wY)
+                    for wX, wY in point_set_as_tuples]
+        m_points = [(int(x), int(y)) for x, y in m_points]
+        return m_points
+
+    def model_mask_from_points(self, m_points):
+        mask = numpy.zeros(self._model_image.shape, dtype='uint8')
+        m_points_x, m_points_y = zip(*m_points)
+        chi = polygon(m_points_x, m_points_y)
+        mask[chi] = 1.0
+        return mask
+
+    @property
+    def _model(self):
+        return self.app_ref.annot_model
+
+    @property
+    def _model_image(self):
+        return self._model.image
 
 ###############################################################################
 
@@ -329,11 +354,13 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
         mask[img == 0] = 0
         return mask
 
+    # Not used
     def current_selection_from_points(self, instance, pos):
         selection = self.selection_from_points(pos)
         if selection is not None:
             self.current_cropobject_selection = selection
 
+    # Not used
     def current_mask_from_points(self, instance, pos):
         """Computes the lasso mask in model coordinates."""
         mask_uncut = self.mask_uncut_from_points(pos)
@@ -344,6 +371,7 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
             mask = self.cut_mask_to_selection(mask_uncut, selection)
             self.current_cropobject_mask = mask
 
+    # Used (bound when constructing editor widgets)
     def current_selection_and_mask_from_points(self, instance, pos):
         """Triggers adding a CropObject with both bbox and mask."""
         if pos is None:
@@ -667,6 +695,58 @@ class GestureSelectTool(LassoBoundingBoxSelectTool):
 
 ###############################################################################
 
+
+class BaseCropObjectViewsOperationTool(MUSCIMarkerTool):
+    """This is a tool for manipulating CropObjectViews. Override
+    the ``apply_operation`` method to get tools that actually do something
+    to the CropObjectViews that correspond to CropObjects overlapping the
+    lasso-ed area."""
+    use_mask_to_determine_selection = BooleanProperty(False)
+
+    def create_editor_widgets(self):
+        editor_widgets = collections.OrderedDict()
+        editor_widgets['line_tracer'] = LineTracer()
+        editor_widgets['line_tracer'].bind(points=self.select_overlapping_cropobjects)
+        return editor_widgets
+
+    def select_overlapping_cropobjects(self, instance, points):
+        # Get the model mask
+        m_points = self.editor_to_model_points(points)
+        model_mask = self.model_mask_from_points(m_points)
+
+        # Find all CropObjects that overlap
+        objids = [objid for objid, c in self._model.cropobjects.iteritems()
+                  if image_mask_overlaps_cropobject(model_mask, c,
+                    use_cropobject_mask=self.use_mask_to_determine_selection)]
+
+        self.editor_widgets['line_tracer'].clear()
+
+        # Mark their views as selected
+        for c in self.available_views:
+            self.apply_operation(c)
+
+    @property
+    def cropobject_list_view(self):
+        return self.app_ref.cropobject_list_renderer.view
+
+    @property
+    def available_views(self):
+        return self.cropobject_list_view.rendered_views
+
+    def apply_operation(self, cropobject_view):
+        """Override this method in child Tools to make this actually
+        do something to the overlapping CropObjectViews."""
+        pass
+
+
+class CropObjectViewsSelectTool(BaseCropObjectViewsOperationTool):
+    """Select the activated CropObjectViews."""
+    def apply_operation(self, cropobject_view):
+        cropobject_view.select()
+
+###############################################################################
+
+
 # NOT IMPLEMENTED
 class NoteSelectTool(AddSymbolTool):
     """Given a bounding box, splits it into a stem and notehead bounding box.
@@ -697,4 +777,5 @@ tool_dispatch = {
     'lasso_select_tool':  LassoBoundingBoxSelectTool,
     'trimmed_lasso_select_tool': TrimmedLassoBoundingBoxSelectTool,
     'gesture_select_tool': GestureSelectTool,
+    'cropobject_views_select_tool': CropObjectViewsSelectTool,
 }
