@@ -744,7 +744,7 @@ class BaseCropObjectViewsOperationTool(MUSCIMarkerTool):
 class CropObjectViewsSelectTool(BaseCropObjectViewsOperationTool):
     """Select the activated CropObjectViews."""
     def apply_operation(self, cropobject_view):
-        cropobject_view.select()
+        cropobject_view.dispatch('on_release')
 
 ###############################################################################
 

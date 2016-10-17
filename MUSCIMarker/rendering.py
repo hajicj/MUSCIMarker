@@ -360,6 +360,9 @@ class CropObjectListView(ListView):
                      ' noteheads as roots and everything else as children'
                      ' (siblings).')
 
+        logging.info('CropObjectListView: Building tree from {0} selected'
+                     ' primitives.'.format(len(self.adapter.selection)))
+
         def is_head(cropobject):
             return cropobject.clsname.startswith('notehead')
 
@@ -367,6 +370,10 @@ class CropObjectListView(ListView):
 
         heads = [c for c in cropobjects if is_head(c)]
         not_heads = [c for c in cropobjects if c not in heads]
+
+        logging.info('CropObjectListView: Notation tree building: got {0} heads,'
+                     ' {1} non-heads'
+                     ''.format(len(heads), len(not_heads)))
         for n in heads:
             for c in not_heads:
                 # Does not overwrite existing edges.
