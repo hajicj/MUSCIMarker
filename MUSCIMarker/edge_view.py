@@ -3,9 +3,11 @@ from __future__ import print_function, unicode_literals
 
 import copy
 import logging
+import pprint
 
 from kivy.adapters.dictadapter import DictAdapter
 from kivy.app import App
+from kivy.core.window import Window
 from kivy.graphics import Color, Line, Rectangle
 from kivy.properties import ObjectProperty, NumericProperty, BooleanProperty, ListProperty
 from kivy.uix.floatlayout import FloatLayout
@@ -30,7 +32,7 @@ class EdgeView(SelectableView, ToggleButton):
     vert_end = NumericProperty()
     horz_end = NumericProperty()
 
-    _collide_threshold = NumericProperty(10.0)
+    _collide_threshold = NumericProperty(5.0)
 
     def __init__(self,
                  cropobject_from, cropobject_to, edge_label=None,
@@ -89,25 +91,17 @@ class EdgeView(SelectableView, ToggleButton):
         self.size = h, w
         self.size_hint = (None, None)
         self.pos = min(self.horz_start, self.horz_end), min(self.vert_start, self.vert_end)
-        # self.pos_hint = (None, None)
-
-        # Note: until the edge is added to the widget tree, it does not
-        # get rendered.
 
         # Overriding default release
         self.always_release = False
 
-        # Must disappear if object disappears.
-        # Also should bind to changes in the cropobjects' positions...
-        # ...or should that force a redraw on the ListView level?
-        self.create_bindings()
-
-        self.is_selected = False
-
-        logging.info('EdgeView: Initialized for edge {0},'
-                     ' with pos={1}, size={2}'
+        logging.info('EdgeView: Initialized for edge {0}'
+                     #', with pos={1}, size={2}'
                      ''.format(self.edge, self.pos, self.size))
         self.do_render()
+
+        self.register_event_type('on_key_captured')
+        self.create_bindings()
 
     @property
     def edge(self):
@@ -118,34 +112,62 @@ class EdgeView(SelectableView, ToggleButton):
         return App.get_running_app().annot_model.graph
 
     def create_bindings(self):
-        pass
+        logging.info('EdgeView\t{0}: Creating bindings'.format(self.edge))
+        Window.bind(on_key_down=self.on_key_down)
+        Window.bind(on_key_up=self.on_key_up)
+        #logging.info('EdgeView\t{0}: Current on_key_down total observers: {1}, obs:\n{2}'
+        #             ''.format(self.edge, len(Window.get_property_observers('on_key_down')),
+        #                       pprint.pformat(Window.get_property_observers('on_key_down'))))
 
     def remove_bindings(self):
+        logging.info('EdgeView\t{0}: Removing bindings'.format(self.edge))
+        Window.unbind(on_key_down=self.on_key_down)
+        Window.unbind(on_key_up=self.on_key_up)
+
+    def on_key_down(self, window, key, scancode, codepoint, modifier):
+
+        dispatch_key = self.keypress_to_dispatch_key(key, scancode, codepoint, modifier)
+        logging.info('EdgeView\t{0}: Handling key {1}, self.is_selected={2}'
+                     ''.format(self.edge, dispatch_key, self.is_selected))
+
+        if not self.is_selected:
+            return False
+
+        if dispatch_key == '8':
+            self.remove_from_model()
+        elif dispatch_key == '27':
+            self.dispatch('on_release')
+            self.deselect()
+        else:
+            return False
+
+        self.dispatch('on_key_captured')
+        return False
+
+    def on_key_up(self, window, key, scancode):
+        logging.info('EdgeView\t{0}: Handling key_up {1}'.format(self.edge, key))
+        return False
+
+    def on_key_captured(self, *largs):
+        """Default handler for on_key_captured event."""
         pass
+
+    @staticmethod
+    def keypress_to_dispatch_key(key, scancode, codepoint, modifiers):
+        """Converts the key_down event data into a single string for more convenient
+        keyboard shortcut dispatch."""
+        if modifiers:
+            return '{0}+{1}'.format(key, ','.join(sorted(modifiers)))
+        else:
+            return '{0}'.format(key)
 
     def remove_from_model(self):
         self.remove_bindings()
         self.deselect()
         self.graph.ensure_remove_edge(self.start_objid, self.end_objid)
 
-    @property
-    def rel_x_start(self):
-        return self.vert_start - self.pos[1]
-
-    @property
-    def rel_y_start(self):
-        return self.horz_start - self.pos[0]
-
-    @property
-    def rel_x_end(self):
-        return self.vert_end - self.pos[1]
-
-    @property
-    def rel_y_end(self):
-        return self.horz_end - self.pos[0]
-
     def select(self, *args):
-        # logging.info('EdgeView\t{0}: called selection!'.format(self.edge))
+        logging.info('EdgeView\t{0}: called selection!'.format(self.edge))
         self.background_color = self.selected_color
         if isinstance(self.parent, CompositeListItem):
             self.parent.select_from_child(self, *args)
@@ -153,7 +175,7 @@ class EdgeView(SelectableView, ToggleButton):
         self.do_render()
 
     def deselect(self, *args):
-        # logging.info('EdgeView\t{0}: called deselection!'.format(self.edge))
+        logging.info('EdgeView\t{0}: called deselection!'.format(self.edge))
         self.background_color = self.deselected_color
         if isinstance(self.parent, CompositeListItem):
             self.parent.deselect_from_child(self, *args)
@@ -191,8 +213,8 @@ class EdgeView(SelectableView, ToggleButton):
         # FloatLayout
         points = [self.horz_start, self.vert_start,
                   self.horz_end, self.vert_end]
-        logging.info('EdgeView: Rendering edge {0} with points {1}, selected: {2}'
-                     ''.format(self.edge, points, self.is_selected))
+        # logging.debug('EdgeView: Rendering edge {0} with points {1}, selected: {2}'
+        #               ''.format(self.edge, points, self.is_selected))
         # logging.info('EdgeView: Derived size {0}, self.size {1}, self.pos {2}'
         #              ''.format((points[0] - points[2], points[1] - points[3]),
         #                        self.size,
@@ -247,11 +269,15 @@ class ObjectGraphRenderer(FloatLayout):
                                  size_hint=(None, None),
                                  size=self.size,
                                  pos=self.pos)
+
         # Hacking the ListView
-        logging.info('View children: {0}'.format(self.view.children))
+        # logging.debug('View children: {0}'.format(self.view.children))
         self.view.remove_widget(self.view.children[0])
         self.view.container = FloatLayout(pos=self.pos, size=self.size)
         self.view.add_widget(self.view.container)
+
+        Window.bind(on_key_down=self.view.on_key_down)
+        Window.bind(on_key_up=self.view.on_key_up)
 
         # Automating the redraw pipeline:
         #  - when edge data changes, fill in adapter data,
@@ -260,12 +286,6 @@ class ObjectGraphRenderer(FloatLayout):
         self.edge_adapter.bind(data=self.do_redraw)
 
         self.add_widget(self.view)
-
-        # with self.canvas.before:
-        #     Color(0.6, 0, 0, 0.2)
-        #     Rectangle(pos=self.view.pos, size=self.view.size)
-        #     Color(0.0, 0.6, 0.4, 0.2)
-        #     Rectangle(pos=self.pos, size=self.size)
 
     def update_edge_adapter_data(self, instance, edges):
         """Copy the graph's edges to adapter data."""
@@ -289,12 +309,12 @@ class ObjectGraphRenderer(FloatLayout):
                      ' size: {0}'
                      ''.format(self.redraw, self.size))
         self.view.populate()
-        self.view.log_rendered_edges()
+        # self.view.log_rendered_edges()
 
     def edge_converter(self, row_index, rec):
         """Interface between the edge and the EdgeView."""
-        logging.info('EdgeRenderer: Requesting EdgeView kwargs for edge: {0}'
-                     ''.format(rec))
+        # logging.info('EdgeRenderer: Requesting EdgeView kwargs for edge: {0}'
+        #              ''.format(rec))
 
         e = rec[0]
         e_class = rec[1]
@@ -313,9 +333,9 @@ class ObjectGraphRenderer(FloatLayout):
             'cropobject_to': e_obj_to,
             'edge_label': e_class,
         }
-        logging.info('EdgeRenderer: edge_converter fired, output: {0},'
-                     ' class: {1}'
-                     ''.format(output, self.edge_adapter.get_cls()))
+        # logging.info('EdgeRenderer: edge_converter fired, output: {0},'
+        #              ' class: {1}'
+        #              ''.format(output, self.edge_adapter.get_cls()))
         return output
 
     def _cropobject_to_editor_world(self, obj):
@@ -339,14 +359,16 @@ class ObjectGraphRenderer(FloatLayout):
     def scaler(self):
         return App.get_running_app().image_scaler
 
-    def _update_size(self, instance, pos):
-        self.size = pos
+    def _update_size(self, instance, size):
+        self.size = size
         logging.info('ObjectGraphRenderer: setting size to {0}'.format(self.size))
 
     def _update_pos(self, instance, pos):
         self.pos = pos
         logging.info('ObjectGraphRenderer: setting pos to {0}'.format(self.pos))
 
+
+##############################################################################
 
 
 class EdgeListView(ListView):
@@ -386,40 +408,49 @@ class EdgeListView(ListView):
                                len(self.adapter.data)))
         container = self.container
 
-        logging.info('EdgeListView: populating, container pos={0}, size={1}'
-                     ''.format(container.pos, container.size))
+        # logging.debug('EdgeListView: populating, container pos={0}, size={1}'
+        #               ''.format(container.pos, container.size))
 
         for w in container.children[:]:
-            logging.debug('EdgeListView.populate: Current edges in container: {0}'
-                          ''.format([ww.edge for ww in container.children]))
+            #logging.debug('EdgeListView.populate: Current edges in container: {0}'
+            #              ''.format([ww.edge for ww in container.children]))
             w_key = w.edge
+            # "Clean up" the EdgeView widget
             w.remove_bindings()
-            if (w_key is not None) and (w_key in self.adapter.cached_views):
-                del self.adapter.cached_views[w_key]
             # Remove from cache
-            logging.debug('EdgeListView.populate: Removing edge {0}'.format(w_key))
+            #logging.info('EdgeListView.populate: Adapter cache {0}'
+            #             ''.format(self.adapter.cached_views.keys()))
+            w_cache_key = self._adapter_key2index(w_key)
+            if (w_cache_key is not None) and (w_cache_key in self.adapter.cached_views):
+                # logging.info('Removing edge {0} from adapter cache.'.format(w_key))
+                del self.adapter.cached_views[w_cache_key]
+            # logging.debug('EdgeListView.populate: Removing edge {0}'.format(w_key))
             container.remove_widget(w)
             self._count -= 1
-            logging.debug('EdgeListView.populate: Finished removing edge {0}'.format(w_key))
+            # logging.debug('EdgeListView.populate: Finished removing edge {0}'.format(w_key))
 
-        logging.debug('EdgeListView.populate: Edges in container after removal: {0}'
-                      ''.format([ww.edge for ww in container.children]))
+        logging.info('EdgeListView.populate: Edges in container after removal: {0}'
+                     ''.format([ww.edge for ww in container.children]))
 
         # Adapter keys are (from, to), values are True (will be
         # edge classes) -- the adapter is bound to the graph.edges
         # dict.
         for e_key, e in self.adapter.data.iteritems():
             _, e_label = e  # The adapter has items ((from, to), label)
-            logging.debug('EdgeListView.populate: Adding edge {0}'.format(e))
+            logging.info('EdgeListView.populate: Adding edge from adapter {0}'.format(e))
             e_idx = self._adapter_key2index(e_key)
             if e_idx is None:
                 raise ValueError('EdgeListView.populate(): Adapter sorted_keys'
                                  ' out of sync with data.')
             item_view = self.adapter.get_view(e_idx)
-
+            # logging.info('EdgeListView.populate: generated EdgeView {0}'.format(item_view.edge))
             ins_index = 0
             container.add_widget(item_view, index=ins_index)
             self._count += 1
+
+        logging.info('EdgeListView: finished populating, with {0}'
+                     ' current EdgeViews.'
+                     ''.format(len(self.container.children)))
 
     def _adapter_key2index(self, key):
         """Converts a key into an adapter index, so that we can request
@@ -433,3 +464,11 @@ class EdgeListView(ListView):
             if k == key:
                 return i
         return None
+
+    def on_key_down(self, window, key, scancode, codepoint, modifier):
+        logging.info('EdgeListView.on_key_down(): got keypress {0}'
+                     ''.format(key))
+
+    def on_key_up(self, window, key, scancode):
+        logging.info('EdgeListView.on_key_up(): got keypress {0}'
+                     ''.format(key))

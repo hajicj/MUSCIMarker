@@ -498,6 +498,10 @@ class MUSCIMarkerApp(App):
 
         self.init_tracking()
 
+        # Why is this here?
+        Window.bind(on_key_down=self.on_key_down)
+        Window.bind(on_key_up=self.on_key_up)
+
         # Define bindings for compartmentalized portions of the application
         self.mlclass_list_loader.bind(filename=self.import_mlclass_list)
         self.image_loader.bind(filename=self.import_image)
@@ -565,9 +569,6 @@ class MUSCIMarkerApp(App):
         # self._keyboard = Window.request_keyboard(self._keyboard_close, self.root)
         # self._keyboard.bind(on_key_down=self._on_key_down)
         # self._keyboard.bind(on_key_up=self._on_key_up)
-
-        Window.bind(on_key_down=self.on_key_down)
-        Window.bind(on_key_up=self.on_key_up)
 
         # Finally, swap around order of tool selection sidebar & editor cell.
         main_area = self.root.ids['main_area']
@@ -876,10 +877,10 @@ class MUSCIMarkerApp(App):
         self._keyboard = None
 
     def on_key_down(self, window, key, scancode, codepoint, modifier):
-        logging.info('Keyboard: Down {0}'.format((key, scancode, codepoint, modifier)))
+        logging.info('App: Keyboard: Down {0}'.format((key, scancode, codepoint, modifier)))
 
     def on_key_up(self, window, key, scancode):
-        logging.info('Keyboard: Up {0}'.format((key, scancode)))
+        logging.info('App: Keyboard: Up {0}'.format((key, scancode)))
 
     ##########################################################################
     # Importing methods: interfacing the raw data to the model

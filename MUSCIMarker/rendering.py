@@ -214,6 +214,7 @@ class CropObjectListView(ListView):
         logging.info('CropObjectListView.on_key_down(): trap {0}'
                      ''.format(self._trap_key))
         if self.handle_key_trap(window, key, scancode, codepoint, modifier):
+            logging.info('CropObjectListView: NOT propagating keypress')
             return True
 
         # Keyboard shortcuts that affect the current selection:
@@ -243,15 +244,18 @@ class CropObjectListView(ListView):
             self.process_detach()
 
         else:
+            logging.info('CropObjectListView: propagating keypress')
             return False
 
         # Things caught in the CropObjectListView do not propagate.
+        logging.info('CropObjectListView: NOT propagating keypress')
         return True
 
     def on_key_up(self, window, key, scancode):
         logging.info('CropObjectListView.on_key_up(): trap {0}'
                      ''.format(self._trap_key))
         if self.handle_key_trap(window, key, scancode):
+            logging.info('CropObjectListView: NOT propagating keypress')
             return True
 
     ##########################################################################
