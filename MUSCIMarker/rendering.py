@@ -373,7 +373,7 @@ class CropObjectListView(ListView):
         for s in self.adapter.selection:
             s.set_mlclass(clsid=clsid, clsname=clsname)
 
-    def parse_selection(self):
+    def parse_selection(self, unselect_at_end=True):
         """Adds edges among the current selection according to the model's
         grammar and parser."""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
@@ -389,6 +389,8 @@ class CropObjectListView(ListView):
         for e in edges:
             self._model.graph.ensure_add_edge(e)
 
+        if unselect_at_end:
+            self.unselect_all()
 
 ##############################################################################
 
