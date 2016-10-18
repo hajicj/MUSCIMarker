@@ -376,6 +376,12 @@ class ObjectGraphRenderer(FloatLayout):
         return obj_updated
 
     @property
+    def rendered_views(self):
+        """The list of actual rendered CropObjectViews that
+        the CropObjectListView holds."""
+        return [cv for cv in self.container.children[:]]
+
+    @property
     def scaler(self):
         return App.get_running_app().image_scaler
 

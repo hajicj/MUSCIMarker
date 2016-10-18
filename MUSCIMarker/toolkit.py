@@ -12,7 +12,7 @@ from skimage.draw import polygon, line
 # simport matplotlib.pyplot as plt
 
 from kivy.core.window import Window
-from kivy.properties import ObjectProperty, DictProperty, BooleanProperty
+from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 
@@ -696,20 +696,48 @@ class GestureSelectTool(LassoBoundingBoxSelectTool):
 ###############################################################################
 
 
-class BaseCropObjectViewsOperationTool(MUSCIMarkerTool):
-    """This is a tool for manipulating CropObjectViews. Override
-    the ``apply_operation`` method to get tools that actually do something
-    to the CropObjectViews that correspond to CropObjects overlapping the
-    lasso-ed area."""
+class BaseListItemViewsOperationTool(MUSCIMarkerTool):
+    """This is a base class for tools manipulating ListItemViews.
+
+    Override select_applicable_objects to define how the ListItemViews
+    should be selected.
+
+    Override ``@property list_view`` to point to the desired ListView.
+
+    Override ``@property available_views`` if the default
+    ``self.list_view.container.children[:]`` is not correct.
+
+    Override the ``apply_operation`` method to get tools that actually do
+    something to the CropObjectViews that correspond to CropObjects
+    overlapping the lasso-ed area."""
     use_mask_to_determine_selection = BooleanProperty(False)
 
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
-        editor_widgets['line_tracer'].bind(points=self.select_overlapping_cropobjects)
+        editor_widgets['line_tracer'].bind(points=self.select_applicable_objects)
         return editor_widgets
 
-    def select_overlapping_cropobjects(self, instance, points):
+    def select_applicable_objects(self, instance, points):
+        raise NotImplementedError()
+
+    @property
+    def list_view(self):
+        raise NotImplementedError()
+
+    @property
+    def available_views(self):
+        return [c for c in self.list_view.container.children[:]]
+
+    def apply_operation(self, cropobject_view):
+        """Override this method in child Tools to make this actually
+        do something to the overlapping CropObjectViews."""
+        pass
+
+
+class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
+    """Select the activated CropObjectViews."""
+    def select_applicable_objects(self, instance, points):
         # Get the model mask
         m_points = self.editor_to_model_points(points)
         model_mask = self.model_mask_from_points(m_points)
@@ -727,24 +755,52 @@ class BaseCropObjectViewsOperationTool(MUSCIMarkerTool):
         for c in applicable_views:
             self.apply_operation(c)
 
+
+    def apply_operation(self, view):
+        view.dispatch('on_release')
+
     @property
-    def cropobject_list_view(self):
+    def list_view(self):
         return self.app_ref.cropobject_list_renderer.view
 
+    #@property
+    #def available_views(self):
+    #    return self.list_view.rendered_views
+
+
+class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
+    """Selects all edges that lead to/from CropObjects overlapped
+    by the selection."""
+    def select_applicable_objects(self, instance, points):
+        # Get the model mask
+        m_points = self.editor_to_model_points(points)
+        model_mask = self.model_mask_from_points(m_points)
+
+        # Find all CropObjects that overlap
+        objids = [objid for objid, c in self._model.cropobjects.iteritems()
+                  if image_mask_overlaps_cropobject(model_mask, c,
+                    use_cropobject_mask=self.use_mask_to_determine_selection)]
+
+        self.editor_widgets['line_tracer'].clear()
+
+        # Mark their views as selected
+        applicable_views = [v for v in self.available_views
+                             if (v.edge[0] in objids) or (v.edge[1] in objids)]
+        for c in applicable_views:
+            self.apply_operation(c)
+
+
+    def apply_operation(self, view):
+        view.dispatch('on_release')
+
     @property
-    def available_views(self):
-        return self.cropobject_list_view.rendered_views
+    def list_view(self):
+        return self.app_ref.graph_renderer.view
 
-    def apply_operation(self, cropobject_view):
-        """Override this method in child Tools to make this actually
-        do something to the overlapping CropObjectViews."""
-        pass
+    #@property
+    #def available_views(self):
+    #    return self.list_view.rendered_views
 
-
-class CropObjectViewsSelectTool(BaseCropObjectViewsOperationTool):
-    """Select the activated CropObjectViews."""
-    def apply_operation(self, cropobject_view):
-        cropobject_view.dispatch('on_release')
 
 ###############################################################################
 
@@ -780,4 +836,5 @@ tool_dispatch = {
     'trimmed_lasso_select_tool': TrimmedLassoBoundingBoxSelectTool,
     'gesture_select_tool': GestureSelectTool,
     'cropobject_views_select_tool': CropObjectViewsSelectTool,
+    'edge_views_select_tool': EdgeViewsSelectTool,
 }

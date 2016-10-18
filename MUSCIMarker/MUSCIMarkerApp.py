@@ -902,6 +902,9 @@ class MUSCIMarkerApp(App):
         if dispatch_key == '27':  # Escape
             self.currently_selected_tool_name = '_default'
 
+        if dispatch_key in self.keyboard_dispatch:
+            self.keyboard_dispatch[dispatch_key].action()
+
         else:
             return False
 
