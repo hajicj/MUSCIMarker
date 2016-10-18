@@ -33,7 +33,7 @@ stem | tremolo_mark single-note_tremolo multiple-note_tremolo
 ##############################################################################
 # Notations
 
-repeat | repeat-dot
+repeat | repeat-dot thin_barline thick_barline
 
 trill | trill_"wobble"
 

@@ -413,7 +413,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     def create_info_label(self):
         info_label = Label(text=self.get_info_label_text())
-        info_label.size_hint = (1.0, 1.0)
+        info_label.size_hint = (1.0, 0.1)
 
         self.info_label = info_label
         App.get_running_app()._get_tool_info_palette().add_widget(self.info_label)
@@ -423,7 +423,7 @@ class CropObjectView(SelectableView, ToggleButton):
         App.get_running_app()._get_tool_info_palette().remove_widget(self.info_label)
         self._info_label_shown = False
 
-    def get_info_label_text(self):
+    def get_debug_info_label_text(self):
         e_cropobject = self.cropobject
         output_lines = list()
         output_lines.append('objid:            {0}'.format(e_cropobject.objid))
@@ -448,6 +448,11 @@ class CropObjectView(SelectableView, ToggleButton):
                             ''.format(self._height_scaling_factor,
                                       self._width_scaling_factor))
         return '\n'.join(output_lines)
+
+    def get_info_label_text(self):
+        c = self._model_counterpart
+        text = 'ID: {0}    cls: {1}'.format(c.objid, c.clsname)
+        return text
 
     def update_info_label(self, *args):
         if self.info_label is not None:

@@ -11,11 +11,14 @@ Here is an overview of all the things you can do with MUSCIMarker.
 
 We'll organize this description into some groups:
 
-#. Control the application using fixed interface elements (mostly buttons)
-#. Move and zoom the annotated image
-#. Use tools to create annotations
-#. Interact with annotations
+#. :ref:`controls_fixed`: Control the application using fixed interface
+   elements (mostly buttons)
+#. :ref:`controls_navigation`: Move and zoom the annotated image
+#. :ref:`controls_tools`: Use tools to create and edit annotations
+#. :ref:`control_editing`: Interact with annotations
 
+
+.. _controls_fixed:
 
 Fixed interface elements
 ------------------------
@@ -226,6 +229,7 @@ This is useful for mass-editing Relationships.
 Selecting annotations
 ---------------------
 
+**Click an annotation.**
 
 
 .. _controls_selection_shortcuts_cropobjects:
