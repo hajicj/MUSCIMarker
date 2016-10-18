@@ -287,7 +287,12 @@
     FileLoadButton:
         id: mlclass_list_load_button
         text: 'Select MLClassList file'
-        on_release: app.mlclass_list_loader.show_load(path=app.mlclass_list_loader.filename)
+        on_release: app.mlclass_list_loader.show_load(path=os.path.dirname(app.mlclass_list_loader.filename))
+
+    FileLoadButton:
+        id: grammar_load_button
+        text: 'Select Grammar file'
+        on_release: app.grammar_loader.show_load(path=os.path.dirname(app.grammar_loader.filename))
 
     Label:
         # width: 400

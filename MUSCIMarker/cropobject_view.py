@@ -192,9 +192,9 @@ class CropObjectView(SelectableView, ToggleButton):
         # ------------
         dispatch_key = self.keypress_to_dispatch_key(key, scancode, codepoint, modifier)
 
-        logging.info('CropObjectView: Handling key {0}, self.is_selected={1},'
-                     ' self.cropobject={2}'
-                     ''.format(dispatch_key, self.is_selected, str(self.cropobject.objid)))
+        #logging.info('CropObjectView: Handling key {0}, self.is_selected={1},'
+        #             ' self.cropobject={2}'
+        #             ''.format(dispatch_key, self.is_selected, str(self.cropobject.objid)))
 
         # At most one CropObject may be selected.
         if not self.is_selected:

@@ -33,7 +33,12 @@ class EdgeView(SelectableView, ToggleButton):
     vert_end = NumericProperty()
     horz_end = NumericProperty()
 
-    _collide_threshold = NumericProperty(2.0)
+    _collide_threshold = NumericProperty(20.0)
+    '''Distance from the edge line at which to collide touch events
+    with the EdgeView. Given in *screen* pixels, to behave consistently
+    regardless of editor scale.'''
+
+    _start_node_size = 2.0
 
     def __init__(self,
                  cropobject_from, cropobject_to, edge_label=None,
@@ -136,8 +141,8 @@ class EdgeView(SelectableView, ToggleButton):
     def on_key_down(self, window, key, scancode, codepoint, modifier):
 
         dispatch_key = self.keypress_to_dispatch_key(key, scancode, codepoint, modifier)
-        logging.info('EdgeView\t{0}: Handling key {1}, self.is_selected={2}'
-                     ''.format(self.edge, dispatch_key, self.is_selected))
+        #logging.info('EdgeView\t{0}: Handling key {1}, self.is_selected={2}'
+        #             ''.format(self.edge, dispatch_key, self.is_selected))
 
         if not self.is_selected:
             return False
@@ -194,7 +199,10 @@ class EdgeView(SelectableView, ToggleButton):
     def collide_point(self, h, v):
         """The edge collides points only along its course, at most
         self._collide_threshold points away from the line."""
-        _cthr = self._collide_threshold
+        _m_cthr = self._collide_threshold
+
+        # Cheating to recompute threshold to actual on-screen pixels
+        _cthr = _m_cthr / App.get_running_app()._get_editor_scatter_container_widget().scale
         if not ((self.left - _cthr) <= h <= (self.right + _cthr)
                 and (self.bottom - _cthr) <= v <= (self.top + _cthr)):
             return False
@@ -212,7 +220,6 @@ class EdgeView(SelectableView, ToggleButton):
 
         return output
 
-
     def render(self):
         # We are rendering directly onto the EdgeListView's container
         # FloatLayout
@@ -228,10 +235,18 @@ class EdgeView(SelectableView, ToggleButton):
         with self.canvas:
             Color(*self.rgb)
             Line(points=points, width=self._line_width)
+            # Draw a little square node at the starting point
+            _sns = self._start_node_size
+            _delta_start = _sns / 2.0
+            Rectangle(pos=(self.horz_start - _delta_start,
+                           self.vert_start - _delta_start),
+                      size=(_sns, _sns))
+
             if self.is_selected:
                 # logging.info('EdgeView\t{0}: Rendering selected!'.format(self.edge))
                 Color(*self.background_color)
                 Line(points=points, width=self._selected_line_width)
+
             # Rectangle(pos=self.pos, size=self.size)
 
     def do_render(self):

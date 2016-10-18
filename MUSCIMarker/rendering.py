@@ -166,6 +166,9 @@ class CropObjectListView(ListView):
             container.add_widget(item_view, index=ins_index)
             self._count += 1
 
+        logging.info('CropObjectListView.populate(): finished, available'
+                     ' CropObjects: {0}'.format([c.objid for c in self.rendered_views]))
+
     @property
     def rendered_views(self):
         """The list of actual rendered CropObjectViews that
@@ -249,9 +252,14 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView: detaching selected CropObjects.')
             self.process_detach()
 
+        # N for crude note parsing
         if dispatch_key == '110':
             logging.info('CropObjectListView: handling notation tree building')
             self.current_selection_to_tree()
+        # P for actual parsing
+        if dispatch_key == '112':
+            logging.info('CropObjectListView: handling parse')
+            self.parse_selection()
 
         else:
             logging.info('CropObjectListView: propagating keypress')
@@ -378,6 +386,23 @@ class CropObjectListView(ListView):
             for c in not_heads:
                 # Does not overwrite existing edges.
                 self._model.graph.ensure_add_edge((n.objid, c.objid))
+
+    def parse_selection(self):
+        """Adds edges among the current selection according to the model's
+        grammar and parser."""
+        cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        parser = self._model.parser
+        if parser is None:
+            return
+
+        names = [c.clsname for c in cropobjects]
+        edges_idxs = parser.parse(names)
+        edges = [(cropobjects[i].objid, cropobjects[j].objid)
+                 for i, j in edges_idxs]
+
+        for e in edges:
+            self._model.graph.ensure_add_edge(e)
+
 
 ##############################################################################
 

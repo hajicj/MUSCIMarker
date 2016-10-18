@@ -224,6 +224,8 @@ from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.widget import Widget
 
 import muscimarker_io
+from syntax.dependency_grammar import DependencyGrammar
+from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from edge_view import ObjectGraphRenderer
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
@@ -461,6 +463,8 @@ class MUSCIMarkerApp(App):
     mlclass_list_loader = ObjectProperty(FileNameLoader())
     '''Handler for reloading the MLClassList definition.'''
 
+    grammar_loader = ObjectProperty(FileNameLoader())
+
     mlclass_list_length = NumericProperty(0)
     '''Current number of MLClasses. Not essential.'''
 
@@ -506,6 +510,8 @@ class MUSCIMarkerApp(App):
         self.mlclass_list_loader.bind(filename=self.import_mlclass_list)
         self.image_loader.bind(filename=self.import_image)
         self.cropobject_list_loader.bind(filename=self.import_cropobject_list)
+
+        self.grammar_loader.bind(filename=self.import_grammar)
 
         # Resuming annotation from previous state
         conf = self.config
@@ -560,6 +566,13 @@ class MUSCIMarkerApp(App):
         logging.info('Build: Setting default export dir to the cropobject list dir: {0}'
                      ''.format(saver_output_path))
         self.cropobject_list_saver.last_output_path = saver_output_path
+
+        logging.info('Build: started loading grammar from config')
+        _grammar_abspath = os.path.abspath(conf.get('default_input_files',
+                                                    'grammar_file'))
+        self.grammar_loader.filename = _grammar_abspath
+        logging.info('Build: Finished loading grammar from config: {0}'
+                     ''.format(self.grammar_loader.filename))
 
         # self.cropobject_list_loader.bind(filename=self.cropobject_list_renderer.clear)
         self.mlclass_list_loader.bind(filename=self.cropobject_list_renderer.clear)
@@ -627,12 +640,14 @@ class MUSCIMarkerApp(App):
                 'mlclass_list_file': os.path.abspath('data/mff-muscima-mlclasses-annot.xml'),
                 'cropobject_list_file': os.path.abspath('test_data/empty_cropobject_list.xml'),
                 'image_file': os.path.abspath('static/default_score_image.png'),
+                'grammar_file': os.path.abspath('data/grammars/mff-muscima-mlclasses-annot.deprules')
             })
         config.setdefaults('default_input_files',
             {
                 'mlclass_list_file': os.path.abspath('data/mff-muscima-mlclasses-annot.xml'),
                 'cropobject_list_file': os.path.abspath('test_data/empty_cropobject_list.xml'),
                 'image_file': os.path.abspath('static/default_score_image.png'),
+                'grammar_file': os.path.abspath('data/grammars/mff-muscima-mlclasses-annot.deprules')
             })
         config.setdefaults('recovery',
             {
@@ -680,6 +695,7 @@ class MUSCIMarkerApp(App):
         return recovery_path
 
     def _get_app_state(self):
+        self.annot_model.ensure_consistent()
         state = {
             # Need the image filename to force reloading, so that all scalers
             # are set correctly.
@@ -974,6 +990,15 @@ class MUSCIMarkerApp(App):
 
         # move image to middle
         self.do_center_and_rescale_current_image()
+
+    @tr.Tracker(track_names=['pos'],
+                transformations={'pos': [lambda x: ('grammar_file', x)]},
+                tracker_name='commands')
+    def import_grammar(self, instance, pos):
+        logging.info('App: === Got grammar file: {0}'.format(pos))
+        g = DependencyGrammar(grammar_filename=pos,
+                              mlclasses=self.annot_model.mlclasses)
+        self.annot_model.grammar = g
 
     ##########################################################################
     # Centering the current image (e.g. if you get lost during high-scale work)

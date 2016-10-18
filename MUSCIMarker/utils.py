@@ -10,6 +10,7 @@ import skimage.measure
 from kivy.core.window import Window
 from kivy.properties import ObjectProperty, StringProperty, BooleanProperty, NumericProperty
 from kivy.uix.behaviors import FocusBehavior
+from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
@@ -36,7 +37,6 @@ scancode2codepoint = {
 }
 
 ##############################################################################
-
 
 class KeypressBubblingStopperBehavior(object):
     """When mixed into a Widget, will stop Window keypress events

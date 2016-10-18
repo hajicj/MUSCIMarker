@@ -11,6 +11,7 @@ from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListP
 from kivy.uix.widget import Widget
 
 import muscimarker_io
+from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from utils import compute_connected_components
 from tracker import Tracker
 
@@ -213,6 +214,9 @@ class CropObjectAnnotatorModel(Widget):
 
     graph = ObjectProperty()
 
+    parser = ObjectProperty(None, allownone=True)
+    grammar = ObjectProperty(None, allownone=True)
+
     def __init__(self, image=None, cropobjects=None, mlclasses=None, **kwargs):
         super(CropObjectAnnotatorModel, self).__init__(**kwargs)
 
@@ -293,6 +297,8 @@ class CropObjectAnnotatorModel(Widget):
         one active at the same time.
 
         Note that this may invalidate all of the CropObjects in memory.
+
+        Note that this also invalidates the current grammar.
         """
         self.mlclasses = {m.clsid: m for m in mlclasses}
         self.mlclasses_by_name = {m.name: m for m in mlclasses}
@@ -348,6 +354,11 @@ class CropObjectAnnotatorModel(Widget):
         for e in edges:
             self.graph.add_edge(e)
 
+    def ensure_consistent(self):
+        """Make sure that the model is in a consistent state.
+        (Fires all lazy synchronization routines between model components.)"""
+        self.sync_graph_to_cropobjects()
+
     ##########################################################################
     # Integrity
     def validate_cropobjects(self):
@@ -376,7 +387,26 @@ class CropObjectAnnotatorModel(Widget):
         return True
 
     ##########################################################################
-    # Connected components: a useful thing to have
+    # Keeping the model in a consistent state
+    def on_grammar(self, instance, g):
+        if g is None:
+            return
+
+        if self.parser is None:
+            self.parser = SimpleDeterministicDependencyParser(grammar=g)
+        else:
+            self.parser.set_grammar(g)
+
+    def on_mlclasses(self, instance, mlclasses):
+        # Invalidate grammar and parser
+        logging.warn('Model: MLClasses changed, invalidating grammar & parser!')
+        self.parser = None
+        self.grammar = None
+        logging.warn('Model: MLClasses changed, invalidating objgraph!')
+        self.graph.clear()
+
+    ##########################################################################
+    # Connected components: a useful thing to keep track of
     def _compute_cc_cache(self):
         logging.info('AnnotModel: Computing connected components...')
         cc, labels, bboxes = compute_connected_components(self.image)

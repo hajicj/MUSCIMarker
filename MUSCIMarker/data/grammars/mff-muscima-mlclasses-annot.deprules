@@ -1,0 +1,53 @@
+##############################################################################
+This is the dependency grammar for the default annotations symbols.
+
+##############################################################################
+# Notes
+# (no notehead-to-text attachment)
+
+notehead-* | sharp flat natural double_sharp double_flat ledger_line stem
+notehead-full | *_flag beam
+
+notehead-* | staccato-dot other-dot tenuto accent strong_accent
+notehead-* | curved-line_(tie-or-slur) slur tie hairpin-cresc. hairpin-decr.
+notehead-* | ornament(s)
+notehead-* | trill_"wobble" trill arpeggio_"wobble" glissando fermata
+notehead-* | tuple
+notehead-* | instrument_specific
+
+whole_rest half_rest *th_rest | duration-dot
+
+##############################################################################
+# Stem modifiers
+
+stem | grace_strikethrough
+stem | tremolo_mark single-note_tremolo multiple-note_tremolo
+
+##############################################################################
+# Notations
+
+repeat | repeat-dot
+
+trill | trill_"wobble"
+
+tuple | tuple_bracket/line numeral_*
+
+
+##############################################################################
+# Part defaults
+
+key_signature | sharp flat double_sharp double_flat natural
+time_signature | whole-time_mark alla_breve other_time_signature numeral_*
+
+
+##############################################################################
+# Text rules
+
+dynamics_text | letter_p letter_f letter_m letter_s letter_z letter_r
+tempo_text | letter_* numeral_*
+instrument_name | letter_* numeral_*
+rehearsal_mark | letter_* numeral_*
+other_text | letter_* numeral_*
+
+bar_number | numeral_*
+other_numeric_sign | numeral_*
