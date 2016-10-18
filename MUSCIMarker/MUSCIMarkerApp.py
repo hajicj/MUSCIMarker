@@ -239,7 +239,7 @@ import kivy
 
 kivy.require('1.9.1')
 
-__version__ = "0.0.1"
+__version__ = "1.0a"
 __author__ = "Jan Hajic jr."
 
 
