@@ -6,7 +6,7 @@ import logging
 
 # import cv2
 # import matplotlib.pyplot as plt
-
+from kivy.app import App
 from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty
 from kivy.uix.widget import Widget
 
@@ -249,7 +249,9 @@ class CropObjectAnnotatorModel(Widget):
 
     @Tracker(track_names=['cropobject'],
              transformations={'cropobject': [lambda c: ('objid', c.objid),
-                                             lambda c: ('clsid', c.clsid)]},
+                                             lambda c: ('clsid', c.clsid),
+                                             lambda c: ('tool_used', App.get_running_app().currently_selected_tool_name)]
+                              },
              fn_name='model.add_cropobject',
              tracker_name='model')
     def add_cropobject(self, cropobject):
