@@ -64,6 +64,9 @@ class EdgeView(SelectableView, ToggleButton):
         self.vert_end = cropobject_to.x + (cropobject_to.height / 2)
         self.horz_end = cropobject_to.y + (cropobject_to.width / 2)
 
+        if self._start_and_end_invisibly_close():
+            self._adjust_for_invisible_end()
+
         self._line_width = 1
         self._selected_line_width = 2
 
@@ -124,6 +127,15 @@ class EdgeView(SelectableView, ToggleButton):
     @property
     def left(self):
         return self.x
+
+    def _start_and_end_invisibly_close(self):
+        delta_h = self.horz_end - self.horz_start
+        delta_v = self.vert_end - self.vert_start
+        return (delta_h ** 2 + delta_v ** 2) < (self._start_node_size * 1.615)
+
+    def _adjust_for_invisible_end(self):
+        self.horz_end += self._start_node_size * 1.1
+        self.vert_end -= self._start_node_size * 0.45
 
     def create_bindings(self):
         logging.info('EdgeView\t{0}: Creating bindings'.format(self.edge))
@@ -214,17 +226,26 @@ class EdgeView(SelectableView, ToggleButton):
 
         # Thanks, Wolfram Alpha!
         norm = (hA - hB) ** 2 + (vA - vB) ** 2
-        d_square = (((hA - hB) * (vB - v) - (hB - h) * (vA - vB)) ** 2) / norm
-        # logging.warning('EdgeView\t{0}: collision delta_square {1}'.format(self.edge, d_square))
-        output = d_square < (_cthr ** 2)
+        if norm == 0.0:
+            # We are within _cthr
+            output = True
+        else:
+            d_square = (((hA - hB) * (vB - v) - (hB - h) * (vA - vB)) ** 2) / norm
+            # logging.warning('EdgeView\t{0}: collision delta_square {1}'.format(self.edge, d_square))
+            output = d_square < (_cthr ** 2)
 
         return output
 
     def render(self):
         # We are rendering directly onto the EdgeListView's container
         # FloatLayout
+        # If the start and end are the same:
+        if self._start_and_end_invisibly_close():
+            self._adjust_for_invisible_end()
+
         points = [self.horz_start, self.vert_start,
                   self.horz_end, self.vert_end]
+
         # logging.debug('EdgeView: Rendering edge {0} with points {1}, selected: {2}'
         #               ''.format(self.edge, points, self.is_selected))
         # logging.info('EdgeView: Derived size {0}, self.size {1}, self.pos {2}'
