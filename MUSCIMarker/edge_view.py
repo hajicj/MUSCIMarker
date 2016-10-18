@@ -159,7 +159,7 @@ class EdgeView(SelectableView, ToggleButton):
         return False
 
     def on_key_up(self, window, key, scancode):
-        logging.info('EdgeView\t{0}: Handling key_up {1}'.format(self.edge, key))
+        # logging.info('EdgeView\t{0}: Handling key_up {1}'.format(self.edge, key))
         return False
 
     def on_key_captured(self, *largs):

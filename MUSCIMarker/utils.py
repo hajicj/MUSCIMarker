@@ -67,6 +67,15 @@ class KeypressBubblingStopperBehavior(object):
 
 
 
+def keypress_to_dispatch_key(key, scancode, codepoint, modifiers):
+    """Converts the key_down event data into a single string for more convenient
+    keyboard shortcut dispatch."""
+    if modifiers:
+        return '{0}+{1}'.format(key, ','.join(sorted(modifiers)))
+    else:
+        return '{0}'.format(key)
+
+
 ##############################################################################
 # File choosing.
 # Implementation derived from example at:

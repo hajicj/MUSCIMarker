@@ -229,7 +229,7 @@ from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from edge_view import ObjectGraphRenderer
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
-from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog
+from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
 import tracker as tr
@@ -895,6 +895,18 @@ class MUSCIMarkerApp(App):
     def on_key_down(self, window, key, scancode, codepoint, modifier):
         logging.info('App: Keyboard: Down {0}'.format((key, scancode, codepoint, modifier)))
 
+        dispatch_key = keypress_to_dispatch_key(key, scancode, codepoint, modifier)
+
+        logging.info('App: processing on_key_down(), dispatch_key: {0}'
+                     ''.format(dispatch_key))
+        if dispatch_key == '27':  # Escape
+            self.currently_selected_tool_name = '_default'
+
+        else:
+            return False
+
+        return True   # Stop bubbling
+
     def on_key_up(self, window, key, scancode):
         logging.info('App: Keyboard: Up {0}'.format((key, scancode)))
 
@@ -1437,6 +1449,12 @@ class MUSCIMarkerApp(App):
         if pos == '_default':
             logging.info('App.on_currently_selected_tool: Selected _default, no tool'
                          ' will be active.')
+            # Make sure no tool buttons are selected
+            tool_sidebar = self._get_tool_selection_sidebar()
+            for tb in [b for b in tool_sidebar.children[1:-1]]:
+                if tb.state is not 'normal':
+                    tb.state = 'normal'
+
             return
 
         # The tool is a controller...
@@ -1475,6 +1493,8 @@ class MUSCIMarkerApp(App):
     def _get_tool_info_palette(self):
         return self.root.ids['command_sidebar'].ids['info_panel']
 
+    def _get_tool_selection_sidebar(self):
+        return self.root.ids['tool_selection_sidebar']
 
     ##########################################################################
     # Cleanup.
