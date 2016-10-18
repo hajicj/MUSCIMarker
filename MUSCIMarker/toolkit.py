@@ -12,7 +12,7 @@ from skimage.draw import polygon, line
 # simport matplotlib.pyplot as plt
 
 from kivy.core.window import Window
-from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty
+from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty, ListProperty
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 
@@ -712,9 +712,12 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
     overlapping the lasso-ed area."""
     use_mask_to_determine_selection = BooleanProperty(False)
 
+    line_color = ListProperty([0.6, 0.6, 0.6])
+
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
+        editor_widgets['line_tracer'].line_color = self.line_color
         editor_widgets['line_tracer'].bind(points=self.select_applicable_objects)
         return editor_widgets
 
@@ -741,6 +744,8 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
     forgetful = BooleanProperty(True)
     '''If True, will always forget prior selection. If False, will
     be "additive".'''
+
+    line_color = ListProperty([1.0, 0.5, 1.0])
 
     def select_applicable_objects(self, instance, points):
         # Get the model mask
@@ -782,6 +787,8 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
 class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
     """Selects all edges that lead to/from CropObjects overlapped
     by the selection."""
+    line_color = ListProperty([1.0, 0.0, 0.0])
+
     def select_applicable_objects(self, instance, points):
         # Get the model mask
         m_points = self.editor_to_model_points(points)

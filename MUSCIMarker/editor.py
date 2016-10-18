@@ -385,6 +385,9 @@ class LineTracer(FloatLayout):
     """Used for tracing a line."""
     points = ObjectProperty()
 
+    line_color = ListProperty([1.0, 0.5, 0.5])
+    line_width = NumericProperty(1.0)
+
     @tr.Tracker(track_names=['touch'],
                 transformations={'touch': [
                     lambda t: ('x', t.x),
@@ -403,8 +406,10 @@ class LineTracer(FloatLayout):
         ud['start_time'] = time.time()
 
         with self.canvas:
-            Color(1.0, 0.5, 0.5)
-            ud['line'] = Line(points=(touch.x, touch.y))
+            r, g, b = self.line_color
+            Color(r, g, b)
+            ud['line'] = Line(points=(touch.x, touch.y),
+                              width=self.line_width)
 
         touch.grab(self)
         return True
