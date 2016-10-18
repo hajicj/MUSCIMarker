@@ -6,6 +6,7 @@ This is the dependency grammar for the default annotations symbols.
 # (no notehead-to-text attachment)
 
 notehead-* grace-notehead-* | sharp flat natural double_sharp double_flat ledger_line stem
+notehead-* grace-notehead-* | duration-dot
 notehead-full grace-notehead-full | *_flag beam
 
 notehead-* grace-notehead-* | staccato-dot other-dot tenuto accent strong_accent
