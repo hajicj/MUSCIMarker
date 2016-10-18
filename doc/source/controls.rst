@@ -135,6 +135,41 @@ on the relationships. Useful if the Relationships get in the way of working
 with CropObjects.
 
 
+.. _control_action_bar:
+
+Action Bar
+^^^^^^^^^^
+
+The *Action bar* on the bottom provides some convenience commands that do not
+interact with the state of the annotation. Going from left to right:
+
+**Center** If you get lost while zooming around the image, this button
+will center the image and scale it back to its initial size.
+
+**Backup** Manually create a snapshot of the current state of the application.
+Backups happen automatically in the background every 20 seconds (you can change
+that in the Settings).
+
+.. warning::
+
+    **This is not a substitute for saving your work!** Backup and Recover
+    are here to help with application crashes. There is only ever one snapshot
+    saved deep among the internal files of MUSCIMarker, so it's not a poor
+    man's Undo, either!
+
+**Recover** Load the annotation state from the snapshot. Try to do this when
+you re-open MUSCIMarker after a crash - it might help you not lose some work
+you didn't save using the "Export CropObjectList file" dialog. However,
+there is no guarantee that this will work! Perhaps the auto-snapshot was
+being saved while MUSCIMarker was crashing, so it can't be recovered!
+**The Backup/Recover mechanism is not a substitute for saving your work.**
+
+**Settings** Opens the Settings panel. Currently, you do not ever need to go
+there.
+
+**Exit** This is the correct way of exiting the application.
+
+
 .. _control_tools:
 
 Tools
@@ -144,26 +179,65 @@ The *Tool sidebar* lists the available annotation tools. Tools allow you
 to add objects and relationships and other interaction with the image
 and annotations.
 
-We will now describe the available tools.
+.. tip::
 
+    If you are not sure how a tool works from the description,
+    experiment with it on the default image.
+
+We will now describe the available tools. Going from the top down:
+
+**Trimmed Lasso** Draw a lasso around an object in the image. Once you release,
+adds the selection as a new CropObject annotation. Ignores background (black):
+you do *not* have to accurately trace around an object's border with
+the background. However, you need to be accurate when objects overlap.
+See the :ref:`guidelines`.
+
+**Connected Component** Draw a rectangle. Upon release, will add a CropObject
+that consists of all "connected components" of the foreground: contignuous
+non-black segments. This allows quickly adding CropObjects when the visual
+object that you want to mark does not overlap any other visual objects
+in the image. If it does overlap, however, you will need to use the Trimmed
+Lasso tool, because the object needs to be accurately marked in the overlapping
+part.
+
+.. note::
+
+    When you first use this tool after loading an image, it will take
+    a while to pre-compute where the connected components are. Subsequent
+    uses, however, will be quick.
+
+**Object Selection** Draw a rectangle and select all CropObjects that overlap
+this rectangle. Handy for parsing: quickly select groups of CropObjects
+over which you want MUSCIMarker to create relationships.
+
+**Relationship Selection** Draw a rectangle, find all CropObjects that overlap
+this rectangle (like the Object Selection tool), and select their *Relationships*.
+This is useful for mass-editing Relationships.
+
+.. note::
+
+    It's not quite perfect: this way, it only allows you to select either
+    *all* the relationships of an object, or *none* of them.
 
 
 
 .. _controls_selection:
 
 Selecting annotations
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
+
 
 
 .. _controls_selection_shortcuts_cropobjects:
 
 Editing a selection of CropObjects
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
+
 
 
 
 .. _controls_selection_shortcuts_graph:
 
 Editing a selection of Attachments
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 
