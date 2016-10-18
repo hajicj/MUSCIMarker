@@ -757,7 +757,8 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
 
 
     def apply_operation(self, view):
-        view.dispatch('on_release')
+        if not view.is_selected:
+            view.dispatch('on_release')
 
     @property
     def list_view(self):
