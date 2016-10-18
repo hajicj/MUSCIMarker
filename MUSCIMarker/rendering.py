@@ -191,6 +191,7 @@ class CropObjectListView(ListView):
     def unselect_all(self):
         container = self.container
         for w in container.children:
+            w.deselect()
             if hasattr(w, 'is_selected'):
                 w.is_selected = False
 

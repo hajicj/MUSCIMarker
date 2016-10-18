@@ -737,6 +737,11 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
 
 class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
     """Select the activated CropObjectViews."""
+
+    forgetful = BooleanProperty(True)
+    '''If True, will always forget prior selection. If False, will
+    be "additive".'''
+
     def select_applicable_objects(self, instance, points):
         # Get the model mask
         m_points = self.editor_to_model_points(points)
@@ -749,12 +754,16 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
 
         self.editor_widgets['line_tracer'].clear()
 
+        # Unselect
+        if self.forgetful:
+            for v in self.available_views:
+                v.deselect()
+
         # Mark their views as selected
         applicable_views = [v for v in self.available_views
                              if v.objid in objids]
         for c in applicable_views:
             self.apply_operation(c)
-
 
     def apply_operation(self, view):
         if not view.is_selected:
