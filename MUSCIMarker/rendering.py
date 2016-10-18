@@ -243,6 +243,17 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView: sending selected CropObjects'
                          ' to the back of the view stack.')
             self.send_current_selection_back()
+
+        # C+shift+ctrl to apply current class to selection
+        if dispatch_key == '99+ctrl,shift':
+            logging.info('CropObjectListView: applying current MLClass to '
+                         'selection.')
+            clsname = App.get_running_app().currently_selected_mlclass_name
+            self.apply_mlclass_to_selection(
+                clsid=self._model.mlclasses_by_name[clsname].clsid,
+                clsname=clsname
+            )
+
         # A for attaching
         if dispatch_key == '97':
             logging.info('CropObjectListView: attaching selected CropObjects.')
@@ -357,6 +368,10 @@ class CropObjectListView(ListView):
                                                                    'right': r},
                                                                   mask=mask)
         self.render_new_to_back = False
+
+    def apply_mlclass_to_selection(self, clsid, clsname):
+        for s in self.adapter.selection:
+            s.set_mlclass(clsid=clsid, clsname=clsname)
 
     def parse_selection(self):
         """Adds edges among the current selection according to the model's

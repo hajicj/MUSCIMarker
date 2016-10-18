@@ -274,6 +274,9 @@ class CropObjectView(SelectableView, ToggleButton):
         elif dispatch_key == '99':  # c
             logging.info('CropObjectView: handling mlclass selection')
             self.toggle_class_selection()
+        elif dispatch_key == '99+shift':
+            logging.info('CropObjectView: cloning mlclass to app')
+            self.clone_class_to_app()
 
         # Show/hide info panel
         elif dispatch_key == '105':  # i
@@ -376,15 +379,22 @@ class CropObjectView(SelectableView, ToggleButton):
         clsid = self._model.mlclasses_by_name[text].clsid
 
         if clsid != self.cropobject.clsid:
-            self._model_counterpart.clsid = clsid
-            self.cropobject.clsid = clsid
-            self.update_info_label()
-
-            # Update color
-            rgb = tuple([float(x) for x in self._model.mlclasses[clsid].color])
-            self.update_color(rgb)
-
+            self.set_mlclass(clsid=clsid, clsname=text)
         self.destroy_mlclass_selection_spinner()
+
+    def set_mlclass(self, clsid, clsname):
+        # This should be wrapped in some cropobject's set_class method.
+        self._model_counterpart.clsid = clsid
+        self._model_counterpart.clsname = clsname
+        self.cropobject.clsid = clsid
+        self.cropobject.clsname = clsname
+        # We should also check that the new class name is consistent
+        # with the edges...
+        self.update_info_label()
+
+        # Update color
+        rgb = tuple([float(x) for x in self._model.mlclasses[clsid].color])
+        self.update_color(rgb)
 
     def destroy_mlclass_selection_spinner(self, *args, **kwargs):
         self.remove_widget(self.mlclass_selection_spinner)
@@ -590,7 +600,8 @@ class CropObjectView(SelectableView, ToggleButton):
     # Split
     @tr.Tracker(track_names=['self', 'ratio'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsid', s._model_counterpart.clsid),
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.split',
                 tracker_name='editing')
     def split(self, ratio=0.5):
@@ -631,6 +642,18 @@ class CropObjectView(SelectableView, ToggleButton):
         App.get_running_app().add_cropobject_from_selection(coords_2, clsid=clsid)
 
         self.remove_from_model()
+
+    ##########################################################################
+    # Clone class
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid),
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
+                fn_name='CropObjectView.clone_class_to_app',
+                tracker_name='editing')
+    def clone_class_to_app(self):
+        App.get_running_app().currently_selected_mlclass_name = self._model_counterpart.clsname
+
 
     ##########################################################################
     # Copied over from ListItemButton
