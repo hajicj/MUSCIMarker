@@ -127,7 +127,17 @@ class ObjectGraph(Widget):
 
     def remove_obj_from_graph(self, objid):
         """Clears out the given CropObject from the attachments
-        graph."""
+        graph.
+
+        DO NOT USE THIS if you only want to clear out the object's
+        edges. This is used when the object disappears from the
+        vertices as well.
+        """
+        self.remove_obj_edges(objid)
+        del self.vertices[objid]
+
+    def remove_obj_edges(self, objid):
+        """Clears all edges in which the object participates."""
         if objid in self._inlinks:
             inlinks = self._inlinks[objid]
             for a in inlinks:
@@ -139,7 +149,6 @@ class ObjectGraph(Widget):
                 del self.edges[objid, a]
 
         self._remove_obj_from_edges_index(objid)
-        del self.vertices[objid]
 
     def _remove_obj_from_edges_index(self, objid):
         """Remove all of this node's inlinks and outlinks,

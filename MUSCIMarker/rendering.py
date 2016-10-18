@@ -307,14 +307,18 @@ class CropObjectListView(ListView):
 
         # How to achieve sending them back?
         # The selected CropObjectView needs to become a new child.
-        cropobjects = [s._model_counterpart for s in self.adapter.selection]
-        for s in self.adapter.selection:
-            s.remove_from_model()
+        #cropobjects = [s._model_counterpart for s in self.adapter.selection]
 
-        self.render_new_to_back = True
-        for c in cropobjects:
-            App.get_running_app().annot_model.add_cropobject(c)
-        self.render_new_to_back = False
+        for s in self.adapter.selection:
+            # Remove from children and add to children end
+            self.container.remove_widget(s)
+            self.container.add_widget(s, index=len(self.container.children[:]))
+            #s.remove_from_model()
+
+        #self.render_new_to_back = True
+        #for c in cropobjects:
+        #    App.get_running_app().annot_model.add_cropobject(c)
+        #self.render_new_to_back = False
 
     def merge_current_selection(self, destructive=True):
         """Take all the selected items and merge them into one.

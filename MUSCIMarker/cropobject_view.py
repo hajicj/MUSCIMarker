@@ -203,6 +203,8 @@ class CropObjectView(SelectableView, ToggleButton):
         # Deletion
         if dispatch_key == '8':  # Delete
             self.remove_from_model()
+        elif dispatch_key == '8+alt': # Delete attachments
+            self._model.graph.remove_obj_edges(self.objid)
 
         # Unselect
         elif dispatch_key == '27':  # Escape
