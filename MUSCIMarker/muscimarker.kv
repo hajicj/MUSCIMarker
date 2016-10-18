@@ -116,10 +116,10 @@
         id: connected_select_tool
         text: 'Conn.\nComp.'
 
-    ToolSelectionButton:
-        name: 'gesture_select_tool'
-        id: gesture_select_tool,
-        text: 'Gesture'
+    # ToolSelectionButton:
+    #     name: 'gesture_select_tool'
+    #     id: gesture_select_tool,
+    #     text: 'Gesture'
 
     ToolSelectionButton:
         name: 'cropobject_views_select_tool'
@@ -288,32 +288,36 @@
     Label:
         # width: 400
         size_hint: 1.0, 0.1
-        text: 'Source files:'
+        text: ''
+        # text: 'Source files:'
+        # color: 0.9, 0.9, 0.9, 1
 
     FileLoadButton:
         id: mlclass_list_load_button
-        text: 'Select MLClassList file'
+        text: 'Select MLClassList'
         on_release: app.mlclass_list_loader.show_load(path=os.path.dirname(app.mlclass_list_loader.filename))
 
     FileLoadButton:
         id: grammar_load_button
-        text: 'Select Grammar file'
+        text: 'Select Grammar'
         on_release: app.grammar_loader.show_load(path=os.path.dirname(app.grammar_loader.filename))
 
     Label:
         # width: 400
         size_hint: 1.0, 0.1
         text: os.path.basename(app.mlclass_list_loader.filename)
+        color: 0.7, 0.7, 0.7, 1
 
     Label:
         # width: 400
         size_hint: 1.0, 0.1
-        text: 'MLClasses: {0}'.format(app.mlclass_list_length)
+        text: ''
 
     Label:
         # width: 400
         size_hint: 1.0, 0.1
         text: 'Select MLClass'
+        # color: 0.9, 0.9, 0.9, 1
 
     Spinner:
         id: mlclass_selection_spinner
@@ -330,7 +334,7 @@
 
     Label:
         size_hint: 1.0, 0.1
-        text: '_____________'
+        text: ''
 
     FileLoadButton:
         id: image_load_button
@@ -341,10 +345,12 @@
         # width: 400
         size_hint: 1.0, 0.1
         text: os.path.basename(app.image_loader.filename)
+        color: 0.7, 0.7, 0.7, 1
 
     Label:
         size_hint: 1.0, 0.1
-        text: '_____________'
+        # text: '_____________'
+        text: ''
 
     FileLoadButton:
         id: cropobject_list_load_button
@@ -359,11 +365,14 @@
 
     Label:
         size_hint: 1.0, 0.1
-        text: 'Last import: {0}'.format(os.path.basename(app.cropobject_list_loader.filename))
+        text: 'Last imp.: {0}'.format(os.path.basename(app.cropobject_list_loader.filename))
+        color: 0.7, 0.7, 0.7, 1
 
     Label:
         size_hint: 1.0, 0.1
-        text: 'Last export dir: {0}'.format(os.path.basename(app.cropobject_list_saver.last_output_path))
+        text: ''
+        # text: 'Last export dir: {0}'.format(os.path.basename(app.cropobject_list_saver.last_output_path))
+        color: 0.7, 0.7, 0.7, 1
 
     Label:
         size_hint: 1.0, 0.1
@@ -372,6 +381,10 @@
     Label:
         size_hint: 1.0, 0.1
         text: 'Attachments: {0}'.format(len(app.annot_model.graph.edges))
+
+    Label:
+        size_hint: 1.0, 0.1
+        text: ''
 
     Button:
         id: cropobject_clear_button
@@ -390,6 +403,23 @@
         size_hint: 1.0, 0.1
         text: 'Show CropObjects'
         on_release: app.cropobject_list_renderer.unmask_all()
+
+    Label:
+        size_hint: 1.0, 0.1
+        text: ''
+
+    Button:
+        id: graph_mask_button
+        size_hint: 1.0, 0.1
+        text: 'Hide Attachments'
+        on_release: app.graph_renderer.mask_all()
+
+    Button:
+        id: graph_unmask_button
+        size_hint: 1.0, 0.1
+        text: 'Show Attachments'
+        on_release: app.graph_renderer.unmask_all()
+
 
     Label:
         size_hint: 1.0, 0.1

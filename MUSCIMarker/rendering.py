@@ -649,7 +649,7 @@ class CropObjectRenderer(FloatLayout):
 
     def mask_all(self):
         logging.info('Render: mask() called')
-        self.view.unselect_all()
+        self.view.unselect_all()  # ...but they disappear anyway?
         self.cropobject_keys_mask = {objid: False
                                      for objid in self.selectable_cropobjects}
         self.redraw += 1

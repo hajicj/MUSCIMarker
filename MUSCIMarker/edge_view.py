@@ -10,7 +10,7 @@ from kivy.adapters.dictadapter import DictAdapter
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.graphics import Color, Line, Rectangle
-from kivy.properties import ObjectProperty, NumericProperty, BooleanProperty, ListProperty
+from kivy.properties import ObjectProperty, NumericProperty, BooleanProperty, ListProperty, DictProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.listview import SelectableView, ListView, CompositeListItem
 from kivy.uix.togglebutton import ToggleButton
@@ -215,7 +215,7 @@ class EdgeView(SelectableView, ToggleButton):
         # Thanks, Wolfram Alpha!
         norm = (hA - hB) ** 2 + (vA - vB) ** 2
         d_square = (((hA - hB) * (vB - v) - (hB - h) * (vA - vB)) ** 2) / norm
-        logging.warning('EdgeView\t{0}: collision delta_square {1}'.format(self.edge, d_square))
+        # logging.warning('EdgeView\t{0}: collision delta_square {1}'.format(self.edge, d_square))
         output = d_square < (_cthr ** 2)
 
         return output
@@ -260,6 +260,10 @@ class ObjectGraphRenderer(FloatLayout):
     # So far has no capability to handle window/editor rescaling.
     # Maybe fold into CropObjectRenderer?
 
+    views_mask = DictProperty(dict())
+    '''If an edge is in the views mask and its entry is False,
+    it will not be passed to the adapter for rendering.'''
+
     redraw = NumericProperty(0)
     '''Change this property to force redraw.'''
 
@@ -290,6 +294,8 @@ class ObjectGraphRenderer(FloatLayout):
                                  size=self.size,
                                  pos=self.pos)
 
+        self.views_mask = dict()
+
         # Hacking the ListView
         # logging.debug('View children: {0}'.format(self.view.children))
         self.view.remove_widget(self.view.children[0])
@@ -308,16 +314,46 @@ class ObjectGraphRenderer(FloatLayout):
         self.add_widget(self.view)
 
     def update_edge_adapter_data(self, instance, edges):
-        """Copy the graph's edges to adapter data."""
+        """Copy the graph's edges to adapter data.
+
+        Also updates the mask.
+        """
+        self._update_views_mask(edges)
+
         self.edge_adapter.cached_views = dict()
         new_data = {}
+
         for e, e_class in edges.iteritems():
+            if (e in self.views_mask) and (self.views_mask[e] is False):
+                logging.info('ObjGraphRenderer: edge {0} masked out.'
+                             ''.format(e))
+                continue
             # The adapter creates its Views from the *values* of
             # its `data` dict. So, we must supply the edge as a part
             # of the dict value, not just the key.
             new_data[e] = (e, e_class)
         # This fires self.do_redraw():
         self.edge_adapter.data = new_data
+
+    def _update_views_mask(self, edges, show_new=True):
+        """
+
+        All edges that were previously not in the mask are added,
+        with the ``show_new`` argument controlling whether they will
+        be shown or hidden by default.
+
+        All edges that were in the mask and are not in the data anymore
+        will be removed from the mask.
+
+        All edges that were already in the mask have their status unchanged.
+        """
+        new_mask = dict()
+        for e, e_class in edges.iteritems():
+            if e in self.views_mask:
+                new_mask[e] = self.views_mask[e]
+            else:
+                new_mask[e] = show_new
+        self.views_mask = new_mask
 
     def on_redraw(self, instance, pos):
         self.do_redraw()
@@ -379,7 +415,7 @@ class ObjectGraphRenderer(FloatLayout):
     def rendered_views(self):
         """The list of actual rendered CropObjectViews that
         the CropObjectListView holds."""
-        return [cv for cv in self.container.children[:]]
+        return [cv for cv in self.view.container.children[:]]
 
     @property
     def scaler(self):
@@ -393,6 +429,17 @@ class ObjectGraphRenderer(FloatLayout):
         self.pos = pos
         logging.info('ObjectGraphRenderer: setting pos to {0}'.format(self.pos))
 
+    def mask_all(self):
+        new_mask = {e: False for e in self.graph.edges}
+        self.views_mask = new_mask
+        self.update_edge_adapter_data(instance=None,
+                                      edges=self.graph.edges)
+
+    def unmask_all(self):
+        new_mask = {e: True for e in self.graph.edges}
+        self.views_mask = new_mask
+        self.update_edge_adapter_data(instance=None,
+                                      edges=self.graph.edges)
 
 ##############################################################################
 
@@ -434,6 +481,10 @@ class EdgeListView(ListView):
                                len(self.adapter.data)))
         container = self.container
 
+        ###########################
+        # The *adapter* represents the "truth" that should be rendered.
+        #
+
         # logging.debug('EdgeListView: populating, container pos={0}, size={1}'
         #               ''.format(container.pos, container.size))
 
@@ -441,8 +492,10 @@ class EdgeListView(ListView):
             #logging.debug('EdgeListView.populate: Current edges in container: {0}'
             #              ''.format([ww.edge for ww in container.children]))
             w_key = w.edge
-            if w_key in self._graph.edges:
+            # if w_key in self._graph.edges:
+            if w_key in self.adapter.data:
                 continue
+
             # "Clean up" the EdgeView widget
             w.remove_bindings()
             # Remove from cache
