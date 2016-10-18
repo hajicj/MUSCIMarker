@@ -2,18 +2,24 @@
 This is the dependency grammar for the default annotations symbols.
 
 ##############################################################################
-# Notes
+# Notes and grace notes
 # (no notehead-to-text attachment)
 
-notehead-* | sharp flat natural double_sharp double_flat ledger_line stem
-notehead-full | *_flag beam
+notehead-* grace-notehead-* | sharp flat natural double_sharp double_flat ledger_line stem
+notehead-full grace-notehead-full | *_flag beam
 
-notehead-* | staccato-dot other-dot tenuto accent strong_accent
-notehead-* | curved-line_(tie-or-slur) slur tie hairpin-cresc. hairpin-decr.
-notehead-* | ornament(s)
-notehead-* | trill_"wobble" trill arpeggio_"wobble" glissando fermata
-notehead-* | tuple
-notehead-* | instrument_specific
+notehead-* grace-notehead-* | staccato-dot other-dot tenuto accent strong_accent
+notehead-* grace-notehead-* | curved-line_(tie-or-slur) slur tie hairpin-cresc. hairpin-decr.
+notehead-* grace-notehead-* | ornament(s)
+notehead-* grace-notehead-* | trill_"wobble" trill arpeggio_"wobble" glissando fermata
+notehead-* grace-notehead-* | tuple
+notehead-* grace-notehead-* | instrument_specific
+
+notehead-full | grace-notehead-full grace-notehead-empty
+notehead-empty | grace-notehead-full grace-notehead-empty
+
+##############################################################################
+# Rests
 
 whole_rest half_rest *th_rest | duration-dot
 

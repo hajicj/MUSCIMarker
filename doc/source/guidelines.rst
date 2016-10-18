@@ -75,7 +75,7 @@ a mistake.
 
 .. image:: images/guidelines/spurious_pixels.png
 
-**Layered annotation.** Often (e.g. notes, key signatures),
+**Layered annotation.** Sometimes (e.g. text, key signatures),
 you will be asked to annotated the same thing with more markings.
 For instance, a correct annotation of the  key signature for A major
 has three ``sharp`` annotations and a ``key_signature`` annotation
