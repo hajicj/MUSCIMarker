@@ -208,11 +208,13 @@ class CropObjectView(SelectableView, ToggleButton):
 
         # Unselect
         elif dispatch_key == '27':  # Escape
-            logging.info('CropObjectView: handling deselect + state to \'normal\'')
+            logging.info('CropObjectView\t{0}: handling deselect + state to \'normal\''
+                         ''.format(self.objid))
             # Simple deselection is not enough because of the adapter handle_selection()
             # method.
-            self.dispatch('on_release')
-            self.deselect()  # ...called from the adapter's handle_selection()
+            if self.is_selected:
+                self.dispatch('on_release')
+            # self.deselect()  # ...called from the adapter's handle_selection()
 
         # Moving around
         elif dispatch_key == '273':  # Up arrow
@@ -668,6 +670,8 @@ class CropObjectView(SelectableView, ToggleButton):
                 fn_name='CropObjectView.select',
                 tracker_name='editing')
     def select(self, *args):
+        logging.info('CropObjectView\t{0}: called selection'
+                      ''.format(self.cropobject.objid))
         self.background_color = self.selected_color
         if not self._info_label_shown:
             self.create_info_label()
@@ -682,8 +686,11 @@ class CropObjectView(SelectableView, ToggleButton):
                 fn_name='CropObjectView.deselect',
                 tracker_name='editing')
     def deselect(self, *args):
-        logging.debug('CropObjectView\t{0}: called deselection with args {1}'
-                      ''.format(self.cropobject.objid, args))
+        """Only handles self.is_selected, not the 'on_release'
+        dispatch that the ListAdapter uses to maintain selection!
+        Use do_deselect()."""
+        logging.info('CropObjectView\t{0}: called deselection'
+                      ''.format(self.cropobject.objid))
         if self._info_label_shown:
             self.destroy_info_label()
         if self._mlclass_selection_spinner_shown:
@@ -694,6 +701,12 @@ class CropObjectView(SelectableView, ToggleButton):
         if isinstance(self.parent, CompositeListItem):
             self.parent.deselect_from_child(self, *args)
         super(CropObjectView, self).deselect(*args)
+
+    def do_deselect(self):
+        """Proper deselection that will be reflected in a ListAdapter
+        containing this view."""
+        if self.is_selected:
+            self.dispatch('do_release')
 
     def select_from_composite(self, *args):
         self.background_color = self.selected_color

@@ -732,7 +732,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
     def available_views(self):
         return [c for c in self.list_view.container.children[:]]
 
-    def apply_operation(self, cropobject_view):
+    def apply_operation(self, item_view):
         """Override this method in child Tools to make this actually
         do something to the overlapping CropObjectViews."""
         pass
@@ -762,7 +762,8 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
         # Unselect
         if self.forgetful:
             for v in self.available_views:
-                v.deselect()
+                if v.is_selected:
+                    v.dispatch('on_release')
 
         # Mark their views as selected
         applicable_views = [v for v in self.available_views
@@ -770,10 +771,10 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
         for c in applicable_views:
             self.apply_operation(c)
 
-    def apply_operation(self, view):
-        if not view.is_selected:
-            view.select()
-            #view.dispatch('on_release')
+    def apply_operation(self, item_view):
+        if not item_view.is_selected:
+            #item_view.select()
+            item_view.dispatch('on_release')
 
     @property
     def list_view(self):
@@ -808,9 +809,9 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
             self.apply_operation(c)
 
 
-    def apply_operation(self, view):
-        if not view.is_selected:
-            view.dispatch('on_release')
+    def apply_operation(self, item_view):
+        if not item_view.is_selected:
+            item_view.dispatch('on_release')
 
     @property
     def list_view(self):

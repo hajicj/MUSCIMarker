@@ -190,10 +190,13 @@ class CropObjectListView(ListView):
 
     def unselect_all(self):
         container = self.container
-        for w in container.children:
-            w.deselect()
-            if hasattr(w, 'is_selected'):
-                w.is_selected = False
+        for w in container.children[:]:
+            # This binds to the adapter's handle_selection
+            if w.is_selected is True:
+                w.dispatch('on_release')
+            #w.deselect()
+            #if hasattr(w, 'is_selected'):
+            #    w.is_selected = False
 
     ##########################################################################
     # Keyboard event trapping
@@ -378,14 +381,20 @@ class CropObjectListView(ListView):
         """Adds edges among the current selection according to the model's
         grammar and parser."""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        logging.info('CropObjectListView.parse_selection(): {0} cropobjects selected'
+                     ''.format(len(cropobjects)))
+
         parser = self._model.parser
         if parser is None:
+            logging.info('CropObjectListView.parse_selection(): No parser found!')
             return
 
         names = [c.clsname for c in cropobjects]
         edges_idxs = parser.parse(names)
         edges = [(cropobjects[i].objid, cropobjects[j].objid)
                  for i, j in edges_idxs]
+        logging.info('CropObjectListView.parse_selection(): {0} edges to add'
+                     ''.format(len(edges)))
 
         for e in edges:
             self._model.graph.ensure_add_edge(e)
