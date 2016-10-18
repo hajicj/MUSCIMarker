@@ -252,10 +252,6 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView: detaching selected CropObjects.')
             self.process_detach()
 
-        # N for crude note parsing
-        if dispatch_key == '110':
-            logging.info('CropObjectListView: handling notation tree building')
-            self.current_selection_to_tree()
         # P for actual parsing
         if dispatch_key == '112':
             logging.info('CropObjectListView: handling parse')
@@ -357,35 +353,6 @@ class CropObjectListView(ListView):
                                                                    'right': r},
                                                                   mask=mask)
         self.render_new_to_back = False
-
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # This is very ugly: it presupposes a specific MLClassList and grammar.
-    # The grammar needs to be factored out.
-    def current_selection_to_tree(self):
-        """Adds edges among the current selection that correspond to the objects
-        being a visual object tree corresponding to a note."""
-        logging.warn('Currently, the only available tree is one that has'
-                     ' noteheads as roots and everything else as children'
-                     ' (siblings).')
-
-        logging.info('CropObjectListView: Building tree from {0} selected'
-                     ' primitives.'.format(len(self.adapter.selection)))
-
-        def is_head(cropobject):
-            return cropobject.clsname.startswith('notehead')
-
-        cropobjects = [s._model_counterpart for s in self.adapter.selection]
-
-        heads = [c for c in cropobjects if is_head(c)]
-        not_heads = [c for c in cropobjects if c not in heads]
-
-        logging.info('CropObjectListView: Notation tree building: got {0} heads,'
-                     ' {1} non-heads'
-                     ''.format(len(heads), len(not_heads)))
-        for n in heads:
-            for c in not_heads:
-                # Does not overwrite existing edges.
-                self._model.graph.ensure_add_edge((n.objid, c.objid))
 
     def parse_selection(self):
         """Adds edges among the current selection according to the model's
