@@ -166,6 +166,12 @@ primitive (``notehead-full``, ``notehead-empty``, ``grace-notehead-full``,
 .. tip:: The fastest way of selecting a bunch of primitives is to use
          the **Obj. Select** tool.
 
+...
+
+...
+
+...
+
 
 .. danger:: The rest of the instructions is obsolete! Ignore them! We're working
             on the new ones.

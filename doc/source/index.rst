@@ -68,7 +68,7 @@ Contents:
    Installation <installation>
    Tutorial <tutorial>
    Starting MUSCIMarker <running>
-   Annotation guidelines <instructions>
+   Annotation instructions <instructions>
    MUSCIMarker complete interface <controls>
 
 
