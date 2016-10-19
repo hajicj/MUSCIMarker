@@ -16,7 +16,8 @@ purpose of the app is to mark locations of notation symbols
 in images of musical scores. (Although it can in principle support
 any kind of 2-D object marking.)
 
-.. todo:: Fancy screenshot
+.. image:: images/screenshots/fancy_screenshot.png
+
 
 Installation
 ------------
@@ -27,20 +28,24 @@ The instructions are here: :ref:`installation`.
           work for people who don't have Python. We're working on it, though.
 
 .. note:: You need Python 2.7 -- although most of MUSCIMarker should
-          be compatible with Python 3, we haven't yet tested this.
+          be compatible with Python 3, we haven't yet tested this. (It's fine
+          if you have a Python 2 virtual environment such as conda -- see
+          :ref:`installation`.)
 
 
 What now?
 ---------
 
 Once you install MUSCIMarker, go through the :ref:`tutorial`.
-It will teach you how to use MUSCIMarker, and introduce the most
+It will gently teach you how to use MUSCIMarker, and introduce the most
 important concepts.
 
-Once you are done with the tutorial, the :ref:`guidelines` will
-give you detailed instructions on how to annotate music notation symbols.
+Once you are done with the tutorial, the :ref:`instructions` will
+give you the details of how to annotate music notation symbols.
 
-.. The `User Manual`_ then contains details.
+A complete description of what can be done with MUSCIMarker is available
+in :ref:`controls`.
+
 
 Contact
 -------
@@ -63,7 +68,7 @@ Contents:
    Installation <installation>
    Tutorial <tutorial>
    Starting MUSCIMarker <running>
-   Annotation guidelines <guidelines>
+   Annotation guidelines <instructions>
    MUSCIMarker complete interface <controls>
 
 

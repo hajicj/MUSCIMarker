@@ -2,10 +2,10 @@
 
 .. include:: shortcuts
 
-.. _guidelines:
+.. _instructionss:
 
-Annotation Guidelines
-=====================
+Annotation Instructions
+=======================
 
 We learned in the :ref:`tutorial` how to control the MUSCIMarker
 application and use it to annotate objects in images. Now, we will

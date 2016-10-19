@@ -18,9 +18,8 @@ We'll organize this description into some groups:
 #. :ref:`controls_editing`: Interact with annotations
 
 
-.. note::
 
-    **Quick Refresher**
+**Quick Refresher:**
 
     There are two kinds of annotations in MUSCIMarker: *objects* (CropObjects,
     displayed as colored rectangles) and *relationships* (displayed as lines
