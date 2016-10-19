@@ -11,9 +11,9 @@ Here is an overview of all the things you can do with MUSCIMarker.
 
 We'll organize this description into some groups:
 
+#. :ref:`controls_navigation`: Move and zoom the annotated image
 #. :ref:`controls_fixed`: Control the application using fixed interface
    elements (mostly buttons)
-#. :ref:`controls_navigation`: Move and zoom the annotated image
 #. :ref:`controls_tools`: Use tools to create and edit annotations
 #. :ref:`controls_editing`: Interact with annotations
 
@@ -24,10 +24,44 @@ We'll organize this description into some groups:
 
     There are two kinds of annotations in MUSCIMarker: *objects* (CropObjects,
     displayed as colored rectangles) and *relationships* (displayed as lines
-    connecting the CropObjects). Relationships connect objects.
+    connecting the CropObjects), which connect objects. Relationships
+    have an orientation: they go *from* one object *to* another. (The "from"
+    object gets a little square on its end of the relationship.)
 
-    The annotations can be *selected*. If an object is selected, it looks
+    Adding objects is done primarily through *tools*, like the Trimmed Lasso
+    or Connected Components. Generally, one click & drag action
+    (or a one-finger touch action, on a device with a touchscreen)
+    will create one new object.
+
+    The annotations can then be *selected*. If an object is selected, it looks
     brighter. If a relationship is selected, it gets emphasized.
+
+    New relationships can be added through keyboard shortcuts
+
+.. _controls_navigation:
+
+Navigating the image
+--------------------
+
+The image is your main workspace: it's where annotating *happens*.
+You will need to move around the image and zoom it.
+(This was covered in the tutorial. Here, we're just giving a complete verions.)
+
+**Move.** Left-click and drag the image. The initial click must be in the black:
+*outside* any annotation, in order to affect the image. (If you press down inside
+the area of an annotation, that annotation will "eat" the click.)
+
+**Zoom.** Two steps with a laptop/dekstop computer:
+
+#. Right-click the image. A red dot will appear.
+#. Left-click & Drag to zoom. It works like a pinch-to-zoom gesture: the further
+   you go from the red dot, the more the image zooms in.
+
+With a touch screen, simply use the normal pinch-to-zoom gesture. (The red dot
+is like a "fake finger".)
+
+**Center.** If you get lost or need to quickly get to a different area of the
+image, click the "CENTER" button on the action bar along the bottom of the screen.
 
 
 .. _controls_fixed:
@@ -330,6 +364,8 @@ The following keyboard shortcuts work on selected objects:
 
 .. _controls_selection_shortcuts_graph:
 
-Editing a selection of Attachments
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Editing a selection of Relationships
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+There are currently no keyboard shortcuts available for manipulating
+selected relationships.
