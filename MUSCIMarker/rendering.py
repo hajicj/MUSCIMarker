@@ -251,13 +251,14 @@ class CropObjectListView(ListView):
             # anything selected.
             # We know the merge is non-destructive, so we can count on these
             # model CropObjects to exist after the merge as well as now.
-            _selected_cropobjects = [v._model_counterpart
+            _selected_cropobjects = [copy.deepcopy(v._model_counterpart)
                                      for v in self.adapter.selection]
-            c = self.merge_current_selection(destructive=False, deselect=False)
+            c = self.merge_current_selection(destructive=False, deselect=True)
             # Now we can parse.
             # We need to add the new CropObject to the parsing inputs, though:
             # otherwise, of course the parser wouldn't find its edges.
             self._parse_cropobjects(_selected_cropobjects + [c])
+            self.unselect_all()
         # B for sending selection to back (for clickability)
         if dispatch_key == '98':
             logging.info('CropObjectListView: sending selected CropObjects'
@@ -378,9 +379,10 @@ class CropObjectListView(ListView):
             for s in self.adapter.selection:
                 s.remove_from_model()
         elif deselect:
-            for s in self.adapter.selection:
-                # Force the proper deselection that dispatches on_release
-                s.do_deselect()
+            self.unselect_all()
+            #for w in self.container.children[:]:
+            #    # Force the proper deselection that dispatches on_release
+            #    w.do_deselect()
 
         model_cropobjects = None  # Release refs
 
