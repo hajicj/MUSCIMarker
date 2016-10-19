@@ -121,6 +121,10 @@ class EdgeView(SelectableView, ToggleButton):
         return App.get_running_app().annot_model.graph
 
     @property
+    def edge_label(self):
+        return self.graph.edges[self.edge]
+
+    @property
     def bottom(self):
         return self.y
 
@@ -457,7 +461,7 @@ class ObjectGraphRenderer(FloatLayout):
                                       edges=self.graph.edges)
 
     def unmask_all(self):
-        new_mask = {e: True for e in self.graph.edges}
+        new_mask = {e: e_label for e, e_label in self.graph.edges.iteritems()}
         self.views_mask = new_mask
         self.update_edge_adapter_data(instance=None,
                                       edges=self.graph.edges)
