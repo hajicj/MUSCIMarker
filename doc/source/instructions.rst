@@ -80,6 +80,14 @@ questions to is ``hajicj@ufal.mff.cuni.cz``
     the new key and time signatures, these primitives together should
     be marked as a ``repeat`` symbol.
 
+    **New tuple supersymbol.** Tuples consist of a numeral primitive,
+    and potentially brace/line primitives (like tuples for quarter notes).
+    Their supersymbol is the ``tuple``.
+
+    **New ossia supersymbol.** In case you see an *ossia*, annotate it
+    as usual and then apply the ``ossia`` supersymbol over all of the
+    primitives.
+
     **Nondestructive merge.** For the "supersymbols" like text, time/key
     signatures and repeats, you can select all their component primitives,
     select the appropriate symbol class, and then press **shift+m**. This
@@ -142,12 +150,11 @@ thinking about it and reviewing these guidelines, then send us an email
 to ``hajicj@ufal.mff.cuni.cz``!
 
 
-Specific symbol rules
----------------------
-
 We now give the instructions for individual symbol classes. Make sure
 you understand these. If you don't, ask! (``hajicj@ufal.mff.cuni.cz``)
 
+
+.. _instructions_notes:
 
 Notes
 -----
@@ -157,11 +164,17 @@ is marking the notation primitives: notehead, stem, flags/beams.
 
 Then, add the note primitive relationships. Select ``notehead``-class
 primitive (``notehead-full``, ``notehead-empty``, ``grace-notehead-full``,
-``grace-nothead-empty``) and all other
+``grace-nothead-empty``) and all other objects that are attached to the
+notehead: stem, flag/beams, dots, sharps/flats, slurs/ties,
+grace noteheads, articulations, tremolo marks, dynamics, etc.
+Do not forget tuple markings.
 
 .. caution:: Do not have more than one notehead selected when auto-adding
              relationships with **p**. It can very easily lead to spurious
              edges (see :ref:`tutorial_relationships` in the Tutorial).
+
+For slurs and dynamic hairpins (cresc./decr.), attach them to *all* the noteheads
+that they affect, not just the first and last one.
 
 .. tip:: The fastest way of selecting a bunch of primitives is to use
          the **Obj. Select** tool.

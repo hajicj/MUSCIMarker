@@ -159,6 +159,8 @@ you want it. Accuracy matters.
 
 Try annotating a bunch of objects!
 
+.. tip:: Find out more about the available tools here: :ref:`controls_tools`
+
 
 Save and load your work
 -----------------------
@@ -254,6 +256,9 @@ leading to problems is obvious.)
 
 .. note:: By the way, a rule saying "only one stem per notehead" would not
           be correct. Can you figure out why?
+
+.. tip:: Building musiclal notation relationships correctly is described in
+         the :ref:`instructions_notes` section of the :ref:`instructions`.
 
 
 Delete an annotation
