@@ -235,6 +235,9 @@ and annotations.
 Only one tool can be selected at a time. If there are no selected annotations,
 pressing "Escape" unselects the current tool.
 
+**Keyboard shortcuts.** You can use the numbers 1, 2, etc. to select the first,
+second, etc.-th tool from the top.
+
 We will now describe the available tools. Going from the top down:
 
 **Trimmed Lasso** Draw a lasso around an object in the image. Once you release,
