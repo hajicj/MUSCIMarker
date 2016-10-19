@@ -276,6 +276,7 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
+        editor_widgets['line_tracer'].do_helper_line = True
         editor_widgets['line_tracer'].bind(points=self.current_selection_and_mask_from_points)
         return editor_widgets
 

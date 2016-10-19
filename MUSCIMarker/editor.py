@@ -388,6 +388,9 @@ class LineTracer(FloatLayout):
     line_color = ListProperty([1.0, 0.5, 0.5])
     line_width = NumericProperty(1.0)
 
+    do_helper_line = BooleanProperty(False)
+    _helper_line_threshold = NumericProperty(100.0)
+
     @tr.Tracker(track_names=['touch'],
                 transformations={'touch': [
                     lambda t: ('x', t.x),
@@ -418,6 +421,46 @@ class LineTracer(FloatLayout):
         ud = touch.ud
         ud['stop'] = (touch.x, touch.y)
         ud['line'].points += [touch.x, touch.y]
+
+        # Helper line connects the ends if they are further
+        # from each other than the threshold.
+        points = ud['line'].points
+        if self.do_helper_line:
+            if self._endpoints_beyond_threshold(points):
+                self._render_helper_line(ud=ud)
+            else:
+                self._destroy_helper_line(ud=ud)
+
+    def _render_helper_line(self, ud):
+        points = ud['line'].points
+        helper_line_points = [points[0], points[1], points[-2], points[-1]]
+
+        if 'helper_line' not in ud:
+            with self.canvas:
+                r, g, b = self.line_color
+                Color(r, g, b)
+                ud['helper_line'] = Line(points=helper_line_points,
+                                         width=1.0,  # To enable dashes via OpenGL
+                                         dash_offset=1,
+                                         dash_length=1)
+        else:
+            ud['helper_line'].points = helper_line_points
+
+    def _destroy_helper_line(self, ud):
+        if 'helper_line' in ud:
+            with self.canvas:
+                ud['helper_line'].points = []
+
+    def _endpoint_sq_distance(self, points):
+        x_start, y_start = points[0], points[1]
+        x_end, y_end = points[-2], points[-1]
+        dist_sq = (x_start - x_end) ** 2 + (y_start - y_end) ** 2
+        return dist_sq
+
+    def _endpoints_beyond_threshold(self, points):
+        dist_sq = self._endpoint_sq_distance(points)
+        scale = App.get_running_app()._get_editor_scatter_container_widget().scale
+        return dist_sq > ((self._helper_line_threshold / scale) ** 2)
 
     def on_touch_up(self, touch):
         if touch.grab_current is not self:
