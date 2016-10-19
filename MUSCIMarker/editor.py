@@ -382,7 +382,12 @@ class ConnectedComponentBoundingBoxTracer(BoundingBoxTracer):
 
 
 class LineTracer(FloatLayout):
-    """Used for tracing a line."""
+    """Used for tracing a line.
+
+    If ``do_helper_line`` property is True, will render a dashed
+    straight line to connect the endpoints of the line. The threshold
+    for displaying the line is 100 Window pts.
+    """
     points = ObjectProperty()
 
     line_color = ListProperty([1.0, 0.5, 0.5])
@@ -438,13 +443,32 @@ class LineTracer(FloatLayout):
         if 'helper_line' not in ud:
             with self.canvas:
                 r, g, b = self.line_color
+                _scale = self._estimate_scale()
+                # Aesthetics...
+                _dash_offset = (20 / _scale) # * (3./4.)
+                _dash_length = (20 / _scale) * (3./2.)
+                logging.info('LineTracer._render_helper: scale {0},'
+                             ' dash_offset {1}, dash_length {2}'
+                             ''.format(_scale, _dash_offset, _dash_length))
                 Color(r, g, b)
                 ud['helper_line'] = Line(points=helper_line_points,
                                          width=1.0,  # To enable dashes via OpenGL
-                                         dash_offset=1,
-                                         dash_length=1)
+                                         dash_offset=_dash_offset,
+                                         dash_length=_dash_length
+                                         )
         else:
             ud['helper_line'].points = helper_line_points
+
+    def _estimate_scale(self):
+        x, y = self.to_widget(100.0, 100.0)
+        window_ax, window_ay = self.to_window(x, y, relative=True)
+        window_zx, window_zy = self.to_window(0, 0, relative=True)
+        window_x = window_ax - window_zx
+        window_y = window_ay - window_zy
+
+        est_scale = (window_x / x + window_y / y) / 2.0
+        return est_scale
+
 
     def _destroy_helper_line(self, ud):
         if 'helper_line' in ud:
@@ -452,14 +476,14 @@ class LineTracer(FloatLayout):
                 ud['helper_line'].points = []
 
     def _endpoint_sq_distance(self, points):
-        x_start, y_start = points[0], points[1]
-        x_end, y_end = points[-2], points[-1]
+        x_start, y_start = self.to_window(points[0], points[1])
+        x_end, y_end = self.to_window(points[-2], points[-1])
         dist_sq = (x_start - x_end) ** 2 + (y_start - y_end) ** 2
         return dist_sq
 
     def _endpoints_beyond_threshold(self, points):
         dist_sq = self._endpoint_sq_distance(points)
-        scale = App.get_running_app()._get_editor_scatter_container_widget().scale
+        scale = 1.0# App.get_running_app()._get_editor_scatter_container_widget().scale
         return dist_sq > ((self._helper_line_threshold / scale) ** 2)
 
     def on_touch_up(self, touch):
