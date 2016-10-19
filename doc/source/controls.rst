@@ -325,6 +325,7 @@ A few work on both:
 =============      ===========================================================
 **Escape**         De-select everything in the selection.
 **Backspace**      Delete the selected annotations. (Careful! No Undo!)
+=============      ===========================================================
 
 
 .. note::
@@ -339,18 +340,28 @@ Editing a selection of objects
 
 The following keyboard shortcuts work on selected objects:
 
-=================   ===========================================================
+=================   ================================================================
 **alt+Backspace**   Delete all relationships of selected objects.
 **p**               Find all possible relationships among the selected objects.
-**m**               Merge: adds a new object with the current label, and deletes the selected objects. (Useful for annotating large objects as parts.)
-**shift+m**         Merge (safe): adds a new object with the current label and does *not* delete the selected objects. Also automatically attempts discovering relationships, like pressing **p**. (Useful for key signatures, repeats, texts, etc.)
+**m**               Merge: adds a new object with the current label, and deletes
+                    the selected objects. (Useful for annotating large objects
+                    as parts.)
+**shift+m**         Merge (safe): adds a new object with the current label and
+                    does *not* delete the selected objects. Also automatically
+                    attempts discovering relationships, like pressing **p**.
+                    (Useful for key signatures, repeats, texts, etc.)
 **c**               Manually change the class of a selected object.
 **shift+c**         Sets the app's current class to the class of a selected object.
 **ctrl+shift+c**    Apply the app's current class to all selected objects.
-**a**               Create a relationship from the first to the second selected object.
-**d**               Remove a relationship from the first to the second selected object.
-**b**               Send selected objects backward, so that it exposes the objects that were lying underneath. (Useful when a large object overlaps smaller ones, like text.)
+**a**               Create a relationship from the first to the second
+                    selected object.
+**d**               Remove a relationship from the first to the second
+                    selected object.
+**b**               Send selected objects backward, so that it exposes the objects
+                    that were lying underneath. (Useful when a large object
+                    overlaps smaller ones, like text.)
 **i**               Toggle the selected objects' *info labels*.
+=================   ================================================================
 
 .. note::
 
