@@ -69,7 +69,7 @@ classes are. This button shows a file loading dialog where you can choose
 which set of symbol classes to use. (The name of the last loaded MLClass list
 file is displayed in grey beneath the topmost buttons.)
 
-.. warning::
+.. danger::
 
     Changing the MLClassList invalidates all of the current annotation!
     Do not do this unless explicitly instructed to. MUSCIMarker ships with
@@ -79,7 +79,7 @@ file is displayed in grey beneath the topmost buttons.)
 possible. This button shows a file loading dialog where you can choose
 which set of rules to use.
 
-.. warning::
+.. danger::
 
     Changing the grammar invalidates all the current relationships between
     the annotated objects! Do not do this unless explicitly instructed to.
@@ -100,7 +100,7 @@ you already annotated and set *its* class as the current class
 click this button. A file loading dialog will appear; navigate to the desired
 image and select Load (or double-click the filename).
 
-.. warning::
+.. caution::
 
     Loading a new image will clear all current annotations. Make sure
     you have exported your work!
@@ -111,12 +111,12 @@ and relationships between them. This button opens a file loading dialog
 that allows you to import a CropObject list file; navigate to the desired
 file and select Load (or double-click the filename).
 
-.. note:: **This is the way to load your previous work.**
+.. important:: **This is the way to load your previous work.**
 
 The name of the last loaded MLClass list file is displayed in grey beneath
 the CropObjectList import/export buttons.
 
-.. warning::
+.. caution::
 
     Loading a new CropObject list will clear all current annotations. Make
     sure you have exported your work!
@@ -127,7 +127,7 @@ A file save dialog will appear. A file name is suggested automatically
 (in the white text input field, bottom of the dialog), to correspond to the
 filename of the current image.
 
-.. note:: **This is the way to save your work.** Do this often.
+.. important:: **This is the way to save your work.** Do this often.
 
 
 **Counters.** Next, you see how may objects and relationships between
@@ -244,12 +244,19 @@ This is useful for mass-editing Relationships.
 Selecting annotations
 ---------------------
 
+Annotations - both objects and relationships - can be selected.
+Selecting an annotation (or several) opens up new actions that
+can be applied to the selected annotations: these range from a simple
+delete to "guessing" new relationships.
+
+How to control what is selected and what isn't?
+
 **Click an annotation.** This is the basic operation that applies to both
 objects and relationships. Clicking toggles whether an annotation is selected
 (clicking a not-selected annotation selects it, clicking a selected annotation
 unselects it).
 
-.. note::
+.. tip::
 
     As the objects are heaped one on top of the other, sometimes
     you cannot click an object because it is entirely hidden by another
@@ -259,18 +266,21 @@ unselects it).
     If *relationships* are what makes the annotation un-clickable, you can
     hide them with the "Hide Relationships" button in the command sidebar.
 
-
 **Tools for selecting.** The "Obj. Select" and "Rel. Select" tools are good
 for mass-selecting objects and relationships in a given region.
 
 **Deselecting** Press "Escape" to deselect all annotations. (Pressing it again
 will attempt to unselect the current tool as well.)
 
+Once you select an object, a brief description appears in the bottom part
+of the command sidebar - the *info panel*. There, you can verify whether
+you really selected what you wanted to select -- or, that *nothing* is selected,
+in which case the info panel will be empty.
 
 .. _controls_editing:
 
-Editing selectied annotations
------------------------------
+Editing selected annotations
+----------------------------
 
 Once you are happy with which annotations are selected, you can use some
 keyboard shortcuts that act on the selected annotations. Some keyboard
@@ -295,9 +305,27 @@ Editing a selection of objects
 
 The following keyboard shortcuts work on selected objects:
 
-===========         ===========================================================
-**p**               Find all possible relationships among the selected objects.
+=================   ===========================================================
 **alt+Backspace**   Delete all relationships of selected objects.
+**p**               Find all possible relationships among the selected objects.
+**m**               Merge: adds a new object with the current label, and deletes the selected objects. (Useful for annotating large objects as parts.)
+**shift+m**         Merge (safe): adds a new object with the current label and does *not* delete the selected objects. Also automatically attempts discovering relationships, like pressing **p**. (Useful for key signatures, repeats, texts, etc.)
+**c**               Manually change the class of a selected object.
+**shift+c**         Sets the app's current class to the class of a selected object.
+**ctrl+shift+c**    Apply the app's current class to all selected objects.
+**a**               Create a relationship from the first to the second selected object.
+**d**               Remove a relationship from the first to the second selected object.
+**b**               Send selected objects backward, so that it exposes the objects that were lying underneath. (Useful when a large object overlaps smaller ones, like text.)
+**i**               Toggle the selected objects' *info labels*.
+
+.. note::
+
+    Also, notice what you *cannot* do with annotations: move and stretch them!
+
+    (There are good reasons why this is not possible: if we allowed these actions,
+    we would often get into situations where we would have to guess which pixels
+    should be a part of the manipulated object and which should not. This would
+    greatly deteriorate the quality of the data.)
 
 
 .. _controls_selection_shortcuts_graph:

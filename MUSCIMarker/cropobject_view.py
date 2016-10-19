@@ -218,17 +218,17 @@ class CropObjectView(SelectableView, ToggleButton):
 
         # Moving around
         elif dispatch_key == '273':  # Up arrow
-            logging.info('CropObjectView: handling move up')
-            self.move(vertical=1)
+            logging.info('CropObjectView: handling move up: DISABLED')
+            #self.move(vertical=1)
         elif dispatch_key == '274':  # Down arrow
-            logging.info('CropObjectView: handling move down')
-            self.move(vertical=-1)
+            logging.info('CropObjectView: handling move down: DISABLED')
+            #self.move(vertical=-1)
         elif dispatch_key == '275':  # Right arrow
-            logging.info('CropObjectView: handling move right')
-            self.move(horizontal=1)
+            logging.info('CropObjectView: handling move right: DISABLED')
+            #self.move(horizontal=1)
         elif dispatch_key == '276':  # Left arrow
-            logging.info('CropObjectView: handling move left')
-            self.move(horizontal=-1)
+            logging.info('CropObjectView: handling move left: DISABLED')
+            #self.move(horizontal=-1)
 
         # Fine-grained moving around
         elif dispatch_key == '273+alt':  # Up arrow
@@ -246,17 +246,17 @@ class CropObjectView(SelectableView, ToggleButton):
 
         # Coarse-grained stretching
         elif dispatch_key == '273+shift':  # Up arrow
-            logging.info('CropObjectView: handling stretch up')
-            self.stretch(vertical=1)
+            logging.info('CropObjectView: handling stretch up: DISABLED')
+            #self.stretch(vertical=1)
         elif dispatch_key == '274+shift':  # Down arrow
-            logging.info('CropObjectView: handling stretch down')
-            self.stretch(vertical=-1)
+            logging.info('CropObjectView: handling stretch down: DISABLED')
+            #self.stretch(vertical=-1)
         elif dispatch_key == '275+shift':  # Right arrow
-            logging.info('CropObjectView: handling stretch right')
-            self.stretch(horizontal=1)
+            logging.info('CropObjectView: handling stretch right: DISABLED')
+            #self.stretch(horizontal=1)
         elif dispatch_key == '276+shift':  # Left arrow
-            logging.info('CropObjectView: handling stretch left')
-            self.stretch(horizontal=-1)
+            logging.info('CropObjectView: handling stretch left: DISABLED')
+            #self.stretch(horizontal=-1)
 
         # Fine-grained stretching
         elif dispatch_key == '273+alt,shift':  # Up arrow
@@ -285,7 +285,7 @@ class CropObjectView(SelectableView, ToggleButton):
             logging.info('CropObjectView: handling info panel')
             self.toggle_info_panel()
 
-        elif dispatch_key == '120':
+        elif dispatch_key == '120':  # x
             logging.info('CropObjectView: handling split')
             self.split()
 
