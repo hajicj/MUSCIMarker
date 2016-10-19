@@ -8,13 +8,13 @@ Tutorial
 Welcome to the MUSCIMarker tutorial! Here, you will learn
 how to use MUSCIMarker to annotate symbols in a musical score.
 
-.. note:: The app is in its alpha stage. There are inconveniencies,
-          bugs, weird behavior, etc. -- we'd be happy if you report
-          these to |contact_email|.
+.. .. note:: The app is in its alpha stage. There are inconveniencies,
+              bugs, weird behavior, etc. -- we'd be happy if you report
+              these to |contact_email|.
 
 .. note::
 
-    The interface in the screenshots is a little outdated (back to v0.9),
+    The interface in some screenshots is a little outdated (back to v0.9),
     but all the interface elements that the tutorial mentions are still
     available and in the same space.
 
@@ -65,8 +65,8 @@ Explore the image
 You can zoom and move the image around. MUSCIMarker works both on a desktop
 and on a smartphone or tablet, but the usage is a little different.
 
-.. warning:: There is currently no tested implementation of keyboard shortcuts
-             on mobile platforms!
+.. .. warning:: There is currently no tested implementation of keyboard shortcuts
+               on mobile platforms!
 
 On a tablet, the image responds to the usual touch commands: drag to move
 and pinch to zoom. On a desktop, you can drag & drop to move the image around
