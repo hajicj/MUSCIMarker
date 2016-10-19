@@ -96,6 +96,8 @@ class CropObjectListView(ListView):
     def populate(self, istart=None, iend=None):
 
         logging.info('CropObjectListView.populate(): started')
+        logging.info('CropObjectListView.populate(): selection size: {0}'
+                     ''.format(len(self.adapter.selection)))
         container = self.container
 
         widgets_rendered = {}
@@ -168,6 +170,8 @@ class CropObjectListView(ListView):
 
         logging.info('CropObjectListView.populate(): finished, available'
                      ' CropObjects: {0}'.format([c.objid for c in self.rendered_views]))
+        logging.info('CropObjectListView.populate(): selection size: {0}'
+                     ''.format(len(self.adapter.selection)))
 
     @property
     def rendered_views(self):
@@ -241,7 +245,19 @@ class CropObjectListView(ListView):
         # M+shift for non-destrcutive merge
         if dispatch_key == '109+shift':
             logging.info('CropObjectListView: handling non-destructive merge')
-            self.merge_current_selection(destructive=False)
+            # We need to remember the selection, because the merge updates
+            # the adapter data, and on a data update, the adapter forgets
+            # its selection. So after the merge, the parser wouldn't see
+            # anything selected.
+            # We know the merge is non-destructive, so we can count on these
+            # model CropObjects to exist after the merge as well as now.
+            _selected_cropobjects = [v._model_counterpart
+                                     for v in self.adapter.selection]
+            c = self.merge_current_selection(destructive=False, deselect=False)
+            # Now we can parse.
+            # We need to add the new CropObject to the parsing inputs, though:
+            # otherwise, of course the parser wouldn't find its edges.
+            self._parse_cropobjects(_selected_cropobjects + [c])
         # B for sending selection to back (for clickability)
         if dispatch_key == '98':
             logging.info('CropObjectListView: sending selected CropObjects'
@@ -270,7 +286,7 @@ class CropObjectListView(ListView):
         # P for actual parsing
         if dispatch_key == '112':
             logging.info('CropObjectListView: handling parse')
-            self.parse_selection()
+            self.parse_current_selection(unselect_at_end=True)
 
         else:
             logging.info('CropObjectListView: propagating keypress')
@@ -335,13 +351,15 @@ class CropObjectListView(ListView):
         #    App.get_running_app().annot_model.add_cropobject(c)
         #self.render_new_to_back = False
 
-    def merge_current_selection(self, destructive=True):
+    def merge_current_selection(self, destructive=True, deselect=True):
         """Take all the selected items and merge them into one.
         Uses the current MLClass.
 
         :param destructive: If set to True, will remove the selected
             CropObjects from the model. If False, will only unselect
             them.
+
+        :returns: The newly created CropObject.
         """
         logging.info('CropObjectListView.merge(): selection {0}'
                      ''.format(self.adapter.selection))
@@ -354,34 +372,47 @@ class CropObjectListView(ListView):
         mask = cropobjects_merge_mask(model_cropobjects)
 
         # Remove the merged CropObjects
-        logging.info('CropObjectListView.merge(): Removing selection {0}'
+        logging.info('CropObjectListView.merge(): Removing/deselecting selection {0}'
                      ''.format(self.adapter.selection))
         if destructive:
             for s in self.adapter.selection:
                 s.remove_from_model()
-        else:
+        elif deselect:
             for s in self.adapter.selection:
-                s.deselect()
+                # Force the proper deselection that dispatches on_release
+                s.do_deselect()
 
         model_cropobjects = None  # Release refs
 
         self.render_new_to_back = True
-        App.get_running_app().add_cropobject_from_model_selection({'top': t,
+        c = App.get_running_app().generate_cropobject_from_model_selection({'top': t,
                                                                    'left': l,
                                                                    'bottom': b,
                                                                    'right': r},
                                                                   mask=mask)
+        self._model.add_cropobject(c)
+        # Problem with retaining selection: this triggers repopulation
         self.render_new_to_back = False
+
+        return c
 
     def apply_mlclass_to_selection(self, clsid, clsname):
         for s in self.adapter.selection:
             s.set_mlclass(clsid=clsid, clsname=clsname)
 
-    def parse_selection(self, unselect_at_end=True):
+    def parse_current_selection(self, unselect_at_end=True):
         """Adds edges among the current selection according to the model's
         grammar and parser."""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
-        logging.info('CropObjectListView.parse_selection(): {0} cropobjects selected'
+        self._parse_cropobjects(cropobjects)
+
+        if unselect_at_end:
+            self.unselect_all()
+
+    def _parse_cropobjects(self, cropobjects):
+        """Adds edges among the given cropobjects according to the model's
+        grammar and parser."""
+        logging.info('CropObjectListView.parse_selection(): {0} cropobjects'
                      ''.format(len(cropobjects)))
 
         parser = self._model.parser
@@ -398,9 +429,6 @@ class CropObjectListView(ListView):
 
         for e in edges:
             self._model.graph.ensure_add_edge(e)
-
-        if unselect_at_end:
-            self.unselect_all()
 
 ##############################################################################
 

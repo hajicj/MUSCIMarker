@@ -447,9 +447,9 @@ class LineTracer(FloatLayout):
                 # Aesthetics...
                 _dash_offset = (20 / _scale) # * (3./4.)
                 _dash_length = (20 / _scale) * (3./2.)
-                logging.info('LineTracer._render_helper: scale {0},'
-                             ' dash_offset {1}, dash_length {2}'
-                             ''.format(_scale, _dash_offset, _dash_length))
+                # logging.info('LineTracer._render_helper: scale {0},'
+                #              ' dash_offset {1}, dash_length {2}'
+                #              ''.format(_scale, _dash_offset, _dash_length))
                 Color(r, g, b)
                 ud['helper_line'] = Line(points=helper_line_points,
                                          width=1.0,  # To enable dashes via OpenGL
