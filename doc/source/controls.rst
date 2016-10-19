@@ -15,7 +15,7 @@ We'll organize this description into some groups:
    elements (mostly buttons)
 #. :ref:`controls_navigation`: Move and zoom the annotated image
 #. :ref:`controls_tools`: Use tools to create and edit annotations
-#. :ref:`control_editing`: Interact with annotations
+#. :ref:`controls_editing`: Interact with annotations
 
 
 .. note::
@@ -24,9 +24,11 @@ We'll organize this description into some groups:
 
     There are two kinds of annotations in MUSCIMarker: *objects* (CropObjects,
     displayed as colored rectangles) and *relationships* (displayed as lines
-    connecting the CropObjects).
+    connecting the CropObjects). Relationships connect objects.
 
-    The
+    The annotations can be *selected*. If an object is selected, it looks
+    brighter. If a relationship is selected, it gets emphasized.
+
 
 .. _controls_fixed:
 
@@ -148,7 +150,7 @@ on the relationships. Useful if the Relationships get in the way of working
 with CropObjects.
 
 
-.. _control_action_bar:
+.. _controls_action_bar:
 
 Action Bar
 ^^^^^^^^^^
@@ -183,7 +185,7 @@ there.
 **Exit** This is the correct way of exiting the application.
 
 
-.. _control_tools:
+.. _controls_tools:
 
 Tools
 ^^^^^
@@ -196,6 +198,9 @@ and annotations.
 
     If you are not sure how a tool works from the description,
     experiment with it on the default image.
+
+Only one tool can be selected at a time. If there are no selected annotations,
+pressing "Escape" unselects the current tool.
 
 We will now describe the available tools. Going from the top down:
 
@@ -220,8 +225,8 @@ part.
     uses, however, will be quick.
 
 **Object Selection** Draw a rectangle and select all CropObjects that overlap
-this rectangle. Handy for parsing: quickly select groups of CropObjects
-over which you want MUSCIMarker to create relationships.
+this rectangle. Handy for adding relationships: quickly select groups
+of CropObjects with this tool and press "p" to create relationships.
 
 **Relationship Selection** Draw a rectangle, find all CropObjects that overlap
 this rectangle (like the Object Selection tool), and select their *Relationships*.
@@ -240,19 +245,63 @@ Selecting annotations
 ---------------------
 
 **Click an annotation.** This is the basic operation that applies to both
-objects and relationships. Clicking toggles the
+objects and relationships. Clicking toggles whether an annotation is selected
+(clicking a not-selected annotation selects it, clicking a selected annotation
+unselects it).
+
+.. note::
+
+    As the objects are heaped one on top of the other, sometimes
+    you cannot click an object because it is entirely hidden by another
+    one. However, if you select the top annotation and pres "b", it gets sent
+    to the bottom and you will be able to click the annotation you want.
+
+    If *relationships* are what makes the annotation un-clickable, you can
+    hide them with the "Hide Relationships" button in the command sidebar.
+
+
+**Tools for selecting.** The "Obj. Select" and "Rel. Select" tools are good
+for mass-selecting objects and relationships in a given region.
+
+**Deselecting** Press "Escape" to deselect all annotations. (Pressing it again
+will attempt to unselect the current tool as well.)
+
+
+.. _controls_editing:
+
+Editing selectied annotations
+-----------------------------
+
+Once you are happy with which annotations are selected, you can use some
+keyboard shortcuts that act on the selected annotations. Some keyboard
+shortcuts only work on *objects*, and some only work on *relationships*.
+A few work on both:
+
+
+=============      ===========================================================
+**Escape**         De-select everything in the selection.
+**Backspace**      Delete the selected annotations. (Careful! No Undo!)
+
+
+.. note::
+
+    Deleting an object also deletes all its relationships.
 
 
 .. _controls_selection_shortcuts_cropobjects:
 
-Editing a selection of CropObjects
-----------------------------------
+Editing a selection of objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The following keyboard shortcuts work on selected objects:
 
+===========         ===========================================================
+**p**               Find all possible relationships among the selected objects.
+**alt+Backspace**   Delete all relationships of selected objects.
 
 
 .. _controls_selection_shortcuts_graph:
 
 Editing a selection of Attachments
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
