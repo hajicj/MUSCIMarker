@@ -2,10 +2,10 @@
 
 .. include:: shortcuts
 
-.. _guidelines:
+.. _instructionss:
 
-Annotation Guidelines
-=====================
+Annotation Instructions
+=======================
 
 We learned in the :ref:`tutorial` how to control the MUSCIMarker
 application and use it to annotate objects in images. Now, we will
@@ -18,7 +18,7 @@ experiments.
     Whereas the rest of the MUSCIMarker documentation technically applies
     to any ``MLClassList`` you might annotate, this section is specifically
     designed to cover how to properly annotate the musical notation primitives
-    supplied with the annotation packages: ``mff-muscima-mlclasses-primitives.xml``.
+    supplied with the annotation packages: ``mff-muscima-mlclasses-annot.xml``.
 
 **Accurate annotation is absolutely critical to the success of our research.**
 Therefore, you are expected to understand these guidelines fully.
@@ -32,14 +32,59 @@ by pictures of the problematic area) and generally communicating
 with us will never be discouraged. The e-mail address to direct
 questions to is ``hajicj@ufal.mff.cuni.cz``
 
-.. note::
+.. caution::
 
     The following changes have been made to the original instructions,
     based on the testing round:
 
+    **Aside from objects, we also have Relationships.** Go re-read
+    the :ref:`tutorial`, please, and read these instructions thoroughly
+    for how to apply relationships correctly to music notation primitives.
+
+    **Dots have meaning.** We now distinguish duration, staccato,
+    repeat dots, and other dots.
+
+    **Grace noteheads instead of grace notes.** Where we originally
+    annotated a grace note as its primitives and then added a "grace note"
+    overlay, now we just annotate the primitives -- but the notehead
+    of a grace note is not a normal ``notehead-full``, there is a new
+    ``grace-notehead-full`` (or ``-empty``) category.
+
+    **Clefs are just one symbol.** Dots are no longer marked separately
+    for the F-clef (or any other clef that might come with dots). Just
+    mark the clef.
+
+    **Ties and slurs are marked separately.** We had a ``curved-line``
+    category for both ties and slurs, but from now on, we will mark
+    slurs as ``slur`` and ties as ``tie``.
+
+    **Key signatures and time signatures.** Just like texts consisted
+    of letters and an overlapping ``text_box``, time signatures and key
+    signatures now have their overlapping symbol as well. Mark the
+    primitives (sharps/flats/etc. for key signatures, numerals/other
+    time signature marks like *alla breve* for time signature) as usual,
+    and analogous to text boxes, add the ``key_signature`` or ``time_signature``
+    "supersymbol".
+
+    **New text categories.** Dynamics, tempo, instrument names, lyrics,
+    and rehearsal marks now have their own text category. Other texts
+    are, well, ``other_text``. The rules for letters are still the same,
+    but instead of a general ``text_box``, use the new text categories.
+
     **New symbols for articulation.** Turns out we missed symbols like
     *tenuto*, accents, etc. -- they have now been added to the class
     list.
+
+    **New repeat supersymbol.** Repeats are marked as ``thin-barline``,
+    ``thick-barline``, a bunch of ``repeat-dots``, and then just like
+    the new key and time signatures, these primitives together should
+    be marked as a ``repeat`` symbol.
+
+    **Nondestructive merge.** For the "supersymbols" like text, time/key
+    signatures and repeats, you can select all their component primitives,
+    select the appropriate symbol class, and then press **shift+m**. This
+    will save you some time, as the relationships between the supersymbol
+    and its component primitives will be added automatically.
 
 
 Guiding principles
@@ -109,6 +154,26 @@ Notes
 
 **Primitives and note symbols.** The first part of annotating notes
 is marking the notation primitives: notehead, stem, flags/beams.
+
+Then, add the note primitive relationships. Select ``notehead``-class
+primitive (``notehead-full``, ``notehead-empty``, ``grace-notehead-full``,
+``grace-nothead-empty``) and all other
+
+.. caution:: Do not have more than one notehead selected when auto-adding
+             relationships with **p**. It can very easily lead to spurious
+             edges (see :ref:`tutorial_relationships` in the Tutorial).
+
+.. tip:: The fastest way of selecting a bunch of primitives is to use
+         the **Obj. Select** tool.
+
+
+.. danger:: The rest of the instructions is obsolete! Ignore them! We're working
+            on the new ones.
+
+
+
+
+
 Then, mark the entire note using the appropriate category: ``solitary_note``,
 ``solitary_chord``, ``beamed_group``, ``grace_note``, ``grace_beamed_group``,
 or ``other_note`` for cases that do not fall into either of these

@@ -72,11 +72,11 @@ class ObjectGraph(Widget):
         if edge not in self.edges:
             self.add_edge(edge)
 
-    def add_edge(self, edge):
+    def add_edge(self, edge, label='Attachment'):
         '''Edge is an ``(a1, a2)`` pair such that ``a1`` is the head
         and ``a2`` is the child CropObject. Our (attachment) dependency edges
         lead from the root down, at least in the model.'''
-        logging.info('Graph: adding edge {0}'.format(edge))
+        logging.info('Graph: adding edge {0} with label {1}'.format(edge, label))
         a1 = edge[0]
         a2 = edge[1]
         if a1 not in self.vertices:
@@ -86,7 +86,7 @@ class ObjectGraph(Widget):
             raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
                              ''.format(edge, a2))
 
-        self.edges[edge] = True
+        self.edges[edge] = label
         self.add_to_edges_index(a1, a2)
 
     def add_to_edges_index(self, a1, a2):

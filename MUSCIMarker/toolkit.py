@@ -12,7 +12,7 @@ from skimage.draw import polygon, line
 # simport matplotlib.pyplot as plt
 
 from kivy.core.window import Window
-from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty
+from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty, ListProperty
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 
@@ -276,6 +276,7 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
+        editor_widgets['line_tracer'].do_helper_line = True
         editor_widgets['line_tracer'].bind(points=self.current_selection_and_mask_from_points)
         return editor_widgets
 
@@ -712,9 +713,12 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
     overlapping the lasso-ed area."""
     use_mask_to_determine_selection = BooleanProperty(False)
 
+    line_color = ListProperty([0.6, 0.6, 0.6])
+
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
+        editor_widgets['line_tracer'].line_color = self.line_color
         editor_widgets['line_tracer'].bind(points=self.select_applicable_objects)
         return editor_widgets
 
@@ -729,7 +733,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
     def available_views(self):
         return [c for c in self.list_view.container.children[:]]
 
-    def apply_operation(self, cropobject_view):
+    def apply_operation(self, item_view):
         """Override this method in child Tools to make this actually
         do something to the overlapping CropObjectViews."""
         pass
@@ -737,6 +741,13 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
 
 class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
     """Select the activated CropObjectViews."""
+
+    forgetful = BooleanProperty(True)
+    '''If True, will always forget prior selection. If False, will
+    be "additive".'''
+
+    line_color = ListProperty([1.0, 0.5, 1.0])
+
     def select_applicable_objects(self, instance, points):
         # Get the model mask
         m_points = self.editor_to_model_points(points)
@@ -749,15 +760,22 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
 
         self.editor_widgets['line_tracer'].clear()
 
+        # Unselect
+        if self.forgetful:
+            for v in self.available_views:
+                if v.is_selected:
+                    v.dispatch('on_release')
+
         # Mark their views as selected
         applicable_views = [v for v in self.available_views
                              if v.objid in objids]
         for c in applicable_views:
             self.apply_operation(c)
 
-
-    def apply_operation(self, view):
-        view.dispatch('on_release')
+    def apply_operation(self, item_view):
+        if not item_view.is_selected:
+            #item_view.select()
+            item_view.dispatch('on_release')
 
     @property
     def list_view(self):
@@ -771,6 +789,8 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
 class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
     """Selects all edges that lead to/from CropObjects overlapped
     by the selection."""
+    line_color = ListProperty([1.0, 0.0, 0.0])
+
     def select_applicable_objects(self, instance, points):
         # Get the model mask
         m_points = self.editor_to_model_points(points)
@@ -790,8 +810,9 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
             self.apply_operation(c)
 
 
-    def apply_operation(self, view):
-        view.dispatch('on_release')
+    def apply_operation(self, item_view):
+        if not item_view.is_selected:
+            item_view.dispatch('on_release')
 
     @property
     def list_view(self):

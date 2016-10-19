@@ -86,25 +86,25 @@
     ToolSelectionLabel:
         text: 'Tools'
 
-    ToolSelectionButton:
-        name: 'viewing_tool'
-        id: viewing_tool
-        text: 'View'
+    # ToolSelectionButton:
+    #     name: 'viewing_tool'
+    #     id: viewing_tool
+    #     text: 'View'
 
-    ToolSelectionButton:
-        name: 'add_symbol_tool'
-        id: add_symbol_tool
-        text: 'Add S.'
+    # ToolSelectionButton:
+    #     name: 'add_symbol_tool'
+    #     id: add_symbol_tool
+    #     text: 'Add S.'
 
-    ToolSelectionButton:
-        name: 'trimmed_select_tool'
-        id: trimmed_select_tool
-        text: 'Trim'
+    # ToolSelectionButton:
+    #     name: 'trimmed_select_tool'
+    #     id: trimmed_select_tool
+    #     text: 'Trim'
 
-    ToolSelectionButton:
-        name: 'lasso_select_tool'
-        id: lasso_select_tool
-        text: 'Lasso'
+    # ToolSelectionButton:
+    #     name: 'lasso_select_tool'
+    #     id: lasso_select_tool
+    #     text: 'Lasso'
 
     ToolSelectionButton:
         name: 'trimmed_lasso_select_tool'
@@ -129,7 +129,7 @@
     ToolSelectionButton:
         name: 'edge_views_select_tool'
         id: edge_views_select_tool,
-        text: 'Edge\nSelect'
+        text: 'Rel.\nSelect'
 
 
     BoxLayout:
@@ -380,7 +380,7 @@
 
     Label:
         size_hint: 1.0, 0.1
-        text: 'Attachments: {0}'.format(len(app.annot_model.graph.edges))
+        text: 'Relationships: {0}'.format(len(app.annot_model.graph.edges))
 
     Label:
         size_hint: 1.0, 0.1
@@ -411,13 +411,13 @@
     Button:
         id: graph_mask_button
         size_hint: 1.0, 0.1
-        text: 'Hide Attachments'
+        text: 'Hide Relationships'
         on_release: app.graph_renderer.mask_all()
 
     Button:
         id: graph_unmask_button
         size_hint: 1.0, 0.1
-        text: 'Show Attachments'
+        text: 'Show Relationships'
         on_release: app.graph_renderer.unmask_all()
 
 
@@ -429,9 +429,10 @@
         id: command_palette
         orientation: 'vertical'
 
-    BoxLayout:
+    GridLayout:
         id: info_panel
         orientation: 'vertical'
+        cols: 1
 
     BoxLayout:
         id: command_sidebar_filler

@@ -80,7 +80,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     _editor_scale = NumericProperty(1.0)
 
-    def __init__(self, selectable_cropobject, rgb, alpha=0.3, **kwargs):
+    def __init__(self, selectable_cropobject, rgb, alpha=0.25, **kwargs):
         """
         :param selectable_cropobject: The intermediate-level CropObject represnetation,
             with recomputed dimension.
@@ -96,7 +96,7 @@ class CropObjectView(SelectableView, ToggleButton):
         self.text = ''   # We don't want any text showing up
 
         r, g, b = rgb
-        self.selected_color = r, g, b, min([1.0, alpha * 1.8])
+        self.selected_color = r, g, b, min([1.0, alpha * 3.0])
         self.deselected_color = r, g, b, alpha
         self.alpha = alpha  # Recorded for future color changes on class change
 
@@ -157,7 +157,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     def update_color(self, rgb):
         r, g, b = rgb
-        self.selected_color = r, g, b, min([1.0, self.alpha * 1.8])
+        self.selected_color = r, g, b, min([1.0, self.alpha * 3.0])
         self.deselected_color = r, g, b, self.alpha
         if self.is_selected:
             self.background_color = self.selected_color
@@ -208,25 +208,27 @@ class CropObjectView(SelectableView, ToggleButton):
 
         # Unselect
         elif dispatch_key == '27':  # Escape
-            logging.info('CropObjectView: handling deselect + state to \'normal\'')
+            logging.info('CropObjectView\t{0}: handling deselect + state to \'normal\''
+                         ''.format(self.objid))
             # Simple deselection is not enough because of the adapter handle_selection()
             # method.
-            self.dispatch('on_release')
-            self.deselect()  # ...called from the adapter's handle_selection()
+            if self.is_selected:
+                self.dispatch('on_release')
+            # self.deselect()  # ...called from the adapter's handle_selection()
 
         # Moving around
         elif dispatch_key == '273':  # Up arrow
-            logging.info('CropObjectView: handling move up')
-            self.move(vertical=1)
+            logging.info('CropObjectView: handling move up: DISABLED')
+            #self.move(vertical=1)
         elif dispatch_key == '274':  # Down arrow
-            logging.info('CropObjectView: handling move down')
-            self.move(vertical=-1)
+            logging.info('CropObjectView: handling move down: DISABLED')
+            #self.move(vertical=-1)
         elif dispatch_key == '275':  # Right arrow
-            logging.info('CropObjectView: handling move right')
-            self.move(horizontal=1)
+            logging.info('CropObjectView: handling move right: DISABLED')
+            #self.move(horizontal=1)
         elif dispatch_key == '276':  # Left arrow
-            logging.info('CropObjectView: handling move left')
-            self.move(horizontal=-1)
+            logging.info('CropObjectView: handling move left: DISABLED')
+            #self.move(horizontal=-1)
 
         # Fine-grained moving around
         elif dispatch_key == '273+alt':  # Up arrow
@@ -244,17 +246,17 @@ class CropObjectView(SelectableView, ToggleButton):
 
         # Coarse-grained stretching
         elif dispatch_key == '273+shift':  # Up arrow
-            logging.info('CropObjectView: handling stretch up')
-            self.stretch(vertical=1)
+            logging.info('CropObjectView: handling stretch up: DISABLED')
+            #self.stretch(vertical=1)
         elif dispatch_key == '274+shift':  # Down arrow
-            logging.info('CropObjectView: handling stretch down')
-            self.stretch(vertical=-1)
+            logging.info('CropObjectView: handling stretch down: DISABLED')
+            #self.stretch(vertical=-1)
         elif dispatch_key == '275+shift':  # Right arrow
-            logging.info('CropObjectView: handling stretch right')
-            self.stretch(horizontal=1)
+            logging.info('CropObjectView: handling stretch right: DISABLED')
+            #self.stretch(horizontal=1)
         elif dispatch_key == '276+shift':  # Left arrow
-            logging.info('CropObjectView: handling stretch left')
-            self.stretch(horizontal=-1)
+            logging.info('CropObjectView: handling stretch left: DISABLED')
+            #self.stretch(horizontal=-1)
 
         # Fine-grained stretching
         elif dispatch_key == '273+alt,shift':  # Up arrow
@@ -283,7 +285,7 @@ class CropObjectView(SelectableView, ToggleButton):
             logging.info('CropObjectView: handling info panel')
             self.toggle_info_panel()
 
-        elif dispatch_key == '120':
+        elif dispatch_key == '120':  # x
             logging.info('CropObjectView: handling split')
             self.split()
 
@@ -413,17 +415,20 @@ class CropObjectView(SelectableView, ToggleButton):
 
     def create_info_label(self):
         info_label = Label(text=self.get_info_label_text())
-        info_label.size_hint = (1.0, 1.0)
+        _info_palette = App.get_running_app()._get_tool_info_palette()
+
+        info_label.size_hint = (1.0, None)
+        info_label.size = (self.parent.size[0], 35)
 
         self.info_label = info_label
-        App.get_running_app()._get_tool_info_palette().add_widget(self.info_label)
+        _info_palette.add_widget(self.info_label)
         self._info_label_shown = True
 
     def destroy_info_label(self, *args, **kwargs):
         App.get_running_app()._get_tool_info_palette().remove_widget(self.info_label)
         self._info_label_shown = False
 
-    def get_info_label_text(self):
+    def get_debug_info_label_text(self):
         e_cropobject = self.cropobject
         output_lines = list()
         output_lines.append('objid:            {0}'.format(e_cropobject.objid))
@@ -448,6 +453,11 @@ class CropObjectView(SelectableView, ToggleButton):
                             ''.format(self._height_scaling_factor,
                                       self._width_scaling_factor))
         return '\n'.join(output_lines)
+
+    def get_info_label_text(self):
+        c = self._model_counterpart
+        text = '({0})  {1}'.format(c.objid, c.clsname)
+        return text
 
     def update_info_label(self, *args):
         if self.info_label is not None:
@@ -663,6 +673,8 @@ class CropObjectView(SelectableView, ToggleButton):
                 fn_name='CropObjectView.select',
                 tracker_name='editing')
     def select(self, *args):
+        logging.info('CropObjectView\t{0}: called selection'
+                      ''.format(self.cropobject.objid))
         self.background_color = self.selected_color
         if not self._info_label_shown:
             self.create_info_label()
@@ -677,8 +689,11 @@ class CropObjectView(SelectableView, ToggleButton):
                 fn_name='CropObjectView.deselect',
                 tracker_name='editing')
     def deselect(self, *args):
-        logging.debug('CropObjectView\t{0}: called deselection with args {1}'
-                      ''.format(self.cropobject.objid, args))
+        """Only handles self.is_selected, not the 'on_release'
+        dispatch that the ListAdapter uses to maintain selection!
+        Use do_deselect()."""
+        logging.info('CropObjectView\t{0}: called deselection'
+                      ''.format(self.cropobject.objid))
         if self._info_label_shown:
             self.destroy_info_label()
         if self._mlclass_selection_spinner_shown:
@@ -689,6 +704,12 @@ class CropObjectView(SelectableView, ToggleButton):
         if isinstance(self.parent, CompositeListItem):
             self.parent.deselect_from_child(self, *args)
         super(CropObjectView, self).deselect(*args)
+
+    def do_deselect(self):
+        """Proper deselection that will be reflected in a ListAdapter
+        containing this view."""
+        if self.is_selected:
+            self.dispatch('do_release')
 
     def select_from_composite(self, *args):
         self.background_color = self.selected_color
