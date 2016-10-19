@@ -221,6 +221,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.scatterlayout import ScatterLayout
+from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
 import muscimarker_io
@@ -625,6 +626,8 @@ class MUSCIMarkerApp(App):
         #              ''.format(_scatter.parent.parent.parent.pos))
 
         self._enforce_center_current_image_once()
+        self.init_tool_selection_keyboard_dispatch()
+        #Clock.schedule_once(lambda *args, **kwargs: self.init_tool_selection_keyboard_dispatch)
 
     def build_config(self, config):
         config.setdefaults('kivy',
@@ -902,8 +905,13 @@ class MUSCIMarkerApp(App):
         if dispatch_key == '27':  # Escape
             self.currently_selected_tool_name = '_default'
 
+        logging.info('App: Checking keyboard dispatch, {0}'
+                     ''.format(self.keyboard_dispatch.keys()))
         if dispatch_key in self.keyboard_dispatch:
-            self.keyboard_dispatch[dispatch_key].action()
+            action = self.keyboard_dispatch[dispatch_key]
+            logging.info('App: \t Found dispatch key! Action: {0}'
+                         ''.format(action))
+            action()
 
         else:
             return False
@@ -1419,6 +1427,34 @@ class MUSCIMarkerApp(App):
 
     ##########################################################################
     # Tool selection
+    @property
+    def available_tool_buttons(self):
+        tool_sidebar = self.root.ids['tool_selection_sidebar']
+        tool_buttons = [b for b in tool_sidebar.children[:]
+                        if isinstance(b, ToggleButton)
+                        and b.group == 'tool_selection_button_group']
+        return list(reversed(tool_buttons))
+
+    @property
+    def available_tool_names(self):
+        tool_names = [b.name for b in self.available_tool_buttons]
+        return tool_names
+
+    def init_tool_selection_keyboard_dispatch(self):
+
+        logging.info('App: Initializing tool selection keyboard dispatch.')
+        logging.info('App:\t Available tools: {0}'.format(self.available_tool_names))
+
+        key_0 = 48
+        for i, (n, b) in enumerate(zip(self.available_tool_names,
+                                       self.available_tool_buttons)):
+            k = key_0 + i + 1    # Starting at 1
+            str_k = unicode(k)
+            action = lambda button=b: self.process_tool_selection(button)
+            logging.info('App:\t Key {0}: tool {1} with action {2}'
+                         ''.format(str_k, n, action))
+            self.keyboard_dispatch[str_k] = action
+
     def process_tool_selection(self, tool_selection_button):
         """Sets the variable that contains the tool name. This could be even
         handled directly in the *.kv file, because everything else is being
@@ -1446,7 +1482,8 @@ class MUSCIMarkerApp(App):
             self.tool.deactivate()
             logging.info('App.on_currently_selected_tool: ...success!')
         except AttributeError:
-            logging.info('App.on_currently_selected_tool: Failed on AttributeError, assuming tool was None.')
+            logging.info('App.on_currently_selected_tool: Failed on AttributeError,'
+                         ' assuming tool was None & continuing.')
             pass
 
         if pos == '_default':
@@ -1474,6 +1511,14 @@ class MUSCIMarkerApp(App):
         tool.init_keyboard_shortcuts()
 
         self.tool = tool
+
+        # Make sure the right button is *shown* as pressed
+        for tb in self.available_tool_buttons:
+            if tb.name == self.currently_selected_tool_name:
+                tb.state = 'down'
+            else:
+                tb.state = 'normal'
+
         logging.info('App.on_currently_selected_tool: Loaded tool: {0}'.format(pos))
 
     ##########################################################################
