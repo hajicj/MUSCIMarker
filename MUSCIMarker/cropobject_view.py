@@ -80,7 +80,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     _editor_scale = NumericProperty(1.0)
 
-    def __init__(self, selectable_cropobject, rgb, alpha=0.3, **kwargs):
+    def __init__(self, selectable_cropobject, rgb, alpha=0.25, **kwargs):
         """
         :param selectable_cropobject: The intermediate-level CropObject represnetation,
             with recomputed dimension.
@@ -96,7 +96,7 @@ class CropObjectView(SelectableView, ToggleButton):
         self.text = ''   # We don't want any text showing up
 
         r, g, b = rgb
-        self.selected_color = r, g, b, min([1.0, alpha * 1.8])
+        self.selected_color = r, g, b, min([1.0, alpha * 2.0])
         self.deselected_color = r, g, b, alpha
         self.alpha = alpha  # Recorded for future color changes on class change
 
@@ -415,10 +415,13 @@ class CropObjectView(SelectableView, ToggleButton):
 
     def create_info_label(self):
         info_label = Label(text=self.get_info_label_text())
-        info_label.size_hint = (1.0, 0.1)
+        _info_palette = App.get_running_app()._get_tool_info_palette()
+
+        info_label.size_hint = (1.0, None)
+        info_label.size = (self.parent.size[0], 35)
 
         self.info_label = info_label
-        App.get_running_app()._get_tool_info_palette().add_widget(self.info_label)
+        _info_palette.add_widget(self.info_label)
         self._info_label_shown = True
 
     def destroy_info_label(self, *args, **kwargs):
@@ -453,7 +456,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     def get_info_label_text(self):
         c = self._model_counterpart
-        text = 'ID: {0}    cls: {1}'.format(c.objid, c.clsname)
+        text = '({0})  {1}'.format(c.objid, c.clsname)
         return text
 
     def update_info_label(self, *args):

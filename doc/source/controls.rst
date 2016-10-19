@@ -18,6 +18,16 @@ We'll organize this description into some groups:
 #. :ref:`control_editing`: Interact with annotations
 
 
+.. note::
+
+    **Quick Refresher**
+
+    There are two kinds of annotations in MUSCIMarker: *objects* (CropObjects,
+    displayed as colored rectangles) and *relationships* (displayed as lines
+    connecting the CropObjects).
+
+    The
+
 .. _controls_fixed:
 
 Fixed interface elements
@@ -229,7 +239,8 @@ This is useful for mass-editing Relationships.
 Selecting annotations
 ---------------------
 
-**Click an annotation.**
+**Click an annotation.** This is the basic operation that applies to both
+objects and relationships. Clicking toggles the
 
 
 .. _controls_selection_shortcuts_cropobjects:
