@@ -64,6 +64,7 @@ Contents:
    Tutorial <tutorial>
    Starting MUSCIMarker <running>
    Annotation guidelines <guidelines>
+   MUSCIMarker complete interface <controls>
 
 
 Indices and tables
