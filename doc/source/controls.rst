@@ -8,6 +8,9 @@ Controlling MUSCIMarker
 =======================
 
 Here is an overview of all the things you can do with MUSCIMarker.
+This is a UI reference document -- it describes how you can interact
+with MUSCIMarker, but not how to use these possibilities to get
+the desired results. For that, read the :ref:`tutorial` and :ref:`instructions`.
 
 We'll organize this description into some groups:
 
