@@ -192,12 +192,12 @@ to each other. For instance, a notehead may have an attached stem, a staccato
 dot, or it may also come with a beam that you need to be aware of in order
 to interpret the note correctly.
 
-Let's annotate an object relationship. Choose two objects that you have
-annotated by clicking on them.
+Let's annotate a relationship of objects. Choose two objects that you have
+annotated by clicking on them:
 
 .. image:: images/screenshots/ui_annot_clicktoselect.png
 
-The selected objects will brighten up. Now, press "a":
+The selected objects will brighten up. Now, press **a**:
 
 .. image:: images/screenshots/ui_annot_relationship.png
 
@@ -206,20 +206,45 @@ A relationship was formed between the two symbols!
 Note the little square in one of the symbols. A relationship leads *from*
 one object *to* another -- it has an *orientation*, like an arrow.
 The "from" object is the one with the square (the imaginary arrow is pointing
-*away* from the square).
+*away* from the square). The order of objects on the info panel is also
+a hint about how the relationship forms.
 
 .. image:: images/screenshots/ui_annot_relationshipdirection.png
 
-..  Relationships with Rules
-    ^^^^^^^^^^^^^^^^^^^^^^^^
+Relationships with Rules
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-    For instance, the standard rules of music notation say that
-    a stem cannot live without a notehead.
+Although you could use what you learned to just connect everything,
+that would not be particularly helpful. Object sets come with some
+rules that describe how objects form relationships.
+For instance, the standard rules of writing music notation say that
+a stem should be connected to a notehead, or that a repeat sign consists of
+a thin barline, a thick barline, and some dots. For the default set
+of musical symbols, these rules also come built-in with MUSCIMarker.
+
+There is a lot of relationships involved in music notation, so in order
+to make it quicker to annotate, you can add many at once! Go ahead and
+select all symbols that are related to our notehead:
+
+.. image:: images/screenshots/ui_annot_allrelated.png
+
+
+Now, press **p**:
+
+.. image:: images/screenshots/ui_annot_parsed.png
+
+MUSCIMarker checked which selected symbol pairs can form
+a relationship, and added all these potential relationships.
+(The objects automatically unselect. That's to make workflow easier:
+after creating relationships among one set of symbols, you
+will probably be creating relationships for a different group
+of symbols.)
+
 
 Delete an annotation
 --------------------
 
-If you make a mistake, don't panic! The symbols can be removed.
+If you make a mistake, don't panic! The annotations can be removed.
 Unselect any tool you're using and left-click on the symbol.
 This will mark the symbol as *selected*.
 On the screen, it will become highlighted, and some information about the
@@ -235,13 +260,17 @@ and the CropObject counter on the right will go down by 1.
    Whenver a tool is selected, all mouse activity inside the image
    is handled by the tool. So if you hadn't deactivated the tool before
    selecting the object, the click would be caught and interpreted as
-   a very small lasso. This behavior ensures that when you want to annotate
-   a symbol, nothing you have previously done will get in the way.
+   a very small lasso. (This is because when you want to annotate
+   a symbol, nothing you have previously done should get in the way.)
+
+Just like objects, you can also select relationships by clicking on them.
+
 
 
 Other stuff
 -----------
 
+There are some other useful operations MUSCIMarker allows you to do:
 
 
 Annotate things that don't fit on the screen

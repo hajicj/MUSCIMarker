@@ -96,7 +96,7 @@ class CropObjectView(SelectableView, ToggleButton):
         self.text = ''   # We don't want any text showing up
 
         r, g, b = rgb
-        self.selected_color = r, g, b, min([1.0, alpha * 2.0])
+        self.selected_color = r, g, b, min([1.0, alpha * 3.0])
         self.deselected_color = r, g, b, alpha
         self.alpha = alpha  # Recorded for future color changes on class change
 
@@ -157,7 +157,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     def update_color(self, rgb):
         r, g, b = rgb
-        self.selected_color = r, g, b, min([1.0, self.alpha * 1.8])
+        self.selected_color = r, g, b, min([1.0, self.alpha * 3.0])
         self.deselected_color = r, g, b, self.alpha
         if self.is_selected:
             self.background_color = self.selected_color
