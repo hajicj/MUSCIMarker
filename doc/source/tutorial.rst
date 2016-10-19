@@ -240,6 +240,21 @@ after creating relationships among one set of symbols, you
 will probably be creating relationships for a different group
 of symbols.)
 
+The **p** is mighty useful for adding the right relationships, and adding
+many of them with one keystroke. However, take care not to create
+*extra* relationships that should not be there! MUSCIMarker only knows
+"noteheads connect to stems", but not "only one stem per notehead"
+so if you select two noteheads and two stems in hopes of doing more at once,
+this will happen:
+
+.. image:: images/screenshots/ui_annot_extrarelationships.png
+
+(This screenshot is done with auto-deselection off, so that the selection
+leading to problems is obvious.)
+
+.. note:: By the way, a rule saying "only one stem per notehead" would not
+          be correct. Can you figure out why?
+
 
 Delete an annotation
 --------------------
