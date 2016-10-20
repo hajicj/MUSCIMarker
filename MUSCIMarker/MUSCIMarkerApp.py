@@ -641,14 +641,14 @@ class MUSCIMarkerApp(App):
         config.setdefaults('current_input_files',
             {
                 'mlclass_list_file': os.path.abspath('data/mff-muscima-mlclasses-annot.xml'),
-                'cropobject_list_file': os.path.abspath('test_data/empty_cropobject_list.xml'),
+                'cropobject_list_file': os.path.abspath('static/example_annotation.xml'),
                 'image_file': os.path.abspath('static/default_score_image.png'),
                 'grammar_file': os.path.abspath('data/grammars/mff-muscima-mlclasses-annot.deprules')
             })
         config.setdefaults('default_input_files',
             {
                 'mlclass_list_file': os.path.abspath('data/mff-muscima-mlclasses-annot.xml'),
-                'cropobject_list_file': os.path.abspath('test_data/empty_cropobject_list.xml'),
+                'cropobject_list_file': os.path.abspath('static/example_annotation.xml'),
                 'image_file': os.path.abspath('static/default_score_image.png'),
                 'grammar_file': os.path.abspath('data/grammars/mff-muscima-mlclasses-annot.deprules')
             })
