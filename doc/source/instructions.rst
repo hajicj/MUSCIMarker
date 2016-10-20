@@ -190,7 +190,22 @@ that they affect, not just the first and last one.
             on the new ones.
 
 
+...
 
+...
+
+...
+
+**Seriously! Ignore everything from now on down! We just don't want
+to delete all the text, because some of it will stay relevant, but it's
+work-in-progress.**
+
+
+...
+
+...
+
+...
 
 
 Then, mark the entire note using the appropriate category: ``solitary_note``,
@@ -203,6 +218,9 @@ three categories.
 **What constitutes an entire note?** (Or, a beamed group?)
 In the previous paragraph, you were instructed to assign a label
 to an "entire note". However, this needs further clarification.
+
+**If you're still reading this, stop! Now! This part is obsolete!**
+**Go re-read the "Changes" red box instead**
 
 *Attached* to a note means a symbol that pertains specifically
 to the given note. So, ledger lines are attached to a note. Duration
