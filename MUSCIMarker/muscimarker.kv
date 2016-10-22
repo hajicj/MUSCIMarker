@@ -292,21 +292,21 @@
         # text: 'Source files:'
         # color: 0.9, 0.9, 0.9, 1
 
+    Label:
+        # width: 400
+        size_hint: 1.0, 0.1
+        text: 'Select MLClassList'
+        # color: 0.7, 0.7, 0.7, 1
+
     FileLoadButton:
         id: mlclass_list_load_button
-        text: 'Select MLClassList'
+        text: os.path.basename(app.mlclass_list_loader.filename)
         on_release: app.mlclass_list_loader.show_load(path=os.path.dirname(app.mlclass_list_loader.filename))
 
     FileLoadButton:
         id: grammar_load_button
         text: 'Select Grammar'
         on_release: app.grammar_loader.show_load(path=os.path.dirname(app.grammar_loader.filename))
-
-    Label:
-        # width: 400
-        size_hint: 1.0, 0.1
-        text: os.path.basename(app.mlclass_list_loader.filename)
-        color: 0.7, 0.7, 0.7, 1
 
     Label:
         # width: 400
@@ -336,16 +336,20 @@
         size_hint: 1.0, 0.1
         text: ''
 
+    Label:
+        size_hint: 1.0, 0.1
+        text: 'Select image file'
+
     FileLoadButton:
         id: image_load_button
-        text: 'Select image file'
+        text: os.path.basename(app.image_loader.filename)
         on_release: app.image_loader.show_load(path=os.path.dirname(app.image_loader.filename))
 
-    Label:
-        # width: 400
-        size_hint: 1.0, 0.1
-        text: os.path.basename(app.image_loader.filename)
-        color: 0.7, 0.7, 0.7, 1
+    #Label:
+    #    # width: 400
+    #    size_hint: 1.0, 0.1
+    #    text: os.path.basename(app.image_loader.filename)
+    #    color: 0.7, 0.7, 0.7, 1
 
     Label:
         size_hint: 1.0, 0.1
