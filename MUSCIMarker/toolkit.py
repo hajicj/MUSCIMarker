@@ -823,6 +823,13 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
     #    return self.list_view.rendered_views
 
 
+
+class CropObjectViewsParseTool(CropObjectViewsSelectTool):
+
+    def select_applicable_objects(self, instance, points):
+        super(CropObjectViewsParseTool, self).select_applicable_objects(instance, points)
+        self.list_view.parse_current_selection()
+
 ###############################################################################
 
 
@@ -858,4 +865,5 @@ tool_dispatch = {
     'gesture_select_tool': GestureSelectTool,
     'cropobject_views_select_tool': CropObjectViewsSelectTool,
     'edge_views_select_tool': EdgeViewsSelectTool,
+    'cropobject_views_parse_tool': CropObjectViewsParseTool,
 }

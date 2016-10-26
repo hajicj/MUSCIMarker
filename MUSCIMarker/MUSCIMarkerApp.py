@@ -627,6 +627,8 @@ class MUSCIMarkerApp(App):
 
         self._enforce_center_current_image_once()
         self.init_tool_selection_keyboard_dispatch()
+        # Needs re-doing on init: centering is called before the sidebars
+        # have widths
         #Clock.schedule_once(lambda *args, **kwargs: self.init_tool_selection_keyboard_dispatch)
 
     def build_config(self, config):
@@ -1040,9 +1042,34 @@ class MUSCIMarkerApp(App):
         self.center_current_image()
         self.rescale_current_image()
 
-    def rescale_current_image(self):
+    def rescale_current_image(self, padding=0.02):
+        """Scales current image to fit into the editor area of the screen."""
+
+        # Compute available width.
+        w = self.root.width
+        _r_margin_size = max(100, self.root.ids['command_sidebar'].width)
+        _l_margin_size = max(400, self.root.ids['tool_selection_sidebar'].width)
+        available_width = w - (_r_margin_size + _l_margin_size)
+        padded_width = available_width - 2 * (padding * available_width)
+
+        image_width = self.annot_model.image.shape[1]
+
+
+        # Determine the scale so that the image fits onto the screen
         scatter = self._get_editor_scatter_container_widget()
-        scatter.scale = 1.0
+        _scatter_width = scatter.width
+        scale = float(padded_width) / float(_scatter_width)
+
+        logging.info('App: Scaling image: root width = {0},'
+                     'lmargin = {1}, rmargin = {2}, scatter = {3}'
+                     ''.format(w, _l_margin_size, _r_margin_size, _scatter_width))
+        logging.info('App: Scaling image: available_width = {0}, padded_width = {1},'
+                     ' image_width = {2}, scale = {3}'
+                     ''.format(available_width, padded_width, image_width, scale))
+
+
+        scatter.scale = scale
+        # scatter.scale = 1.0
 
     #@tr.Tracker(tracker_name='view')
     def center_current_image(self):
