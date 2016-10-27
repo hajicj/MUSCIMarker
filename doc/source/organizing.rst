@@ -26,6 +26,7 @@ The structure of the package, when you get it, will be like this::
                  + music2.png
                  + music3.png
       + mff-muscima-mlclasses-annot.xml
+
 The annotations that you create will gradually fill the ``annotations/``
 subdirectory (though you currently have to navigate there manually for the first
 image after opening MUSCIMarker). The name of the annotation file is derived

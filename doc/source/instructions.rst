@@ -32,6 +32,14 @@ by pictures of the problematic area) and generally communicating
 with us will never be discouraged. The e-mail address to direct
 questions to is ``hajicj@ufal.mff.cuni.cz``
 
+.. note::
+
+    To learn how to properly receive data to annotate and submit
+    your work, see :ref:`organizing`.
+
+Changes in 1.0
+--------------
+
 .. caution::
 
     The following changes have been made to the original instructions,
