@@ -39,6 +39,8 @@ trill | trill_"wobble"
 
 tuple | tuple_bracket/line numeral_*
 
+volta | numeral_*
+
 
 ##############################################################################
 # Part defaults
