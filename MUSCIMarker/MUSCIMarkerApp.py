@@ -201,6 +201,8 @@ import time
 # from random import random
 # from math import sqrt
 
+from functools import partial
+
 import cPickle
 # import cv2  # -- trying to remove troublesome OpenCV dependency
 #import skimage
@@ -947,6 +949,19 @@ class MUSCIMarkerApp(App):
     def import_cropobject_list(self, instance, pos):
         logging.info('App: === Reloading CropObjectList fired with file \'{0}\''
                      ''.format(pos))
+
+        # Check for XML
+        if not pos.endswith('xml'):
+            logging.info('App: Detected non-XML file in import_cropobject_list request!')
+            confirmation = ConfirmationDialog(text='We detected a non-XML file when'
+                                                   ' loading annotations: are'
+                                                   ' you trying to load'
+                                                   ' an image?')
+            confirmation.bind(on_ok=lambda x: self.import_image(instance, pos))
+            confirmation.open()
+            return
+
+
         try:
             cropobject_list, mfile, ifile = muscimarker_io.parse_cropobject_list(pos,
                                                                                  with_refs=True,
@@ -982,6 +997,19 @@ class MUSCIMarkerApp(App):
     def import_image(self, instance, pos):
 
         logging.info('App: === Got image file: {0}'.format(pos))
+
+        # Check for XML
+        if pos.endswith('xml'):
+            logging.info('App: Detected XML file in import_image request!')
+            confirmation = ConfirmationDialog(text='We detected a XML file when'
+                                                   ' loading an image: are'
+                                                   ' you trying to load'
+                                                   ' an annotation file?')
+            #p = partial(self.import_cropobject_list, instance, pos)
+            confirmation.bind(on_ok=lambda x: self.import_cropobject_list(instance, pos))
+            confirmation.open()
+            return
+
         try:
             # img = bb.load_rgb(pos)
             #logging.warn('App: skimage available imread plugins: {0}'.format(find_available_plugins()))
