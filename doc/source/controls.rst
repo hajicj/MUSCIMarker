@@ -263,11 +263,11 @@ part.
     a while to pre-compute where the connected components are. Subsequent
     uses, however, will be quick.
 
-**Object Selection** Draw a rectangle and select all CropObjects that overlap
+**Object Selection** Draw a lasso and select all CropObjects that overlap
 this rectangle. Handy for adding relationships: quickly select groups
 of CropObjects with this tool and press "p" to create relationships.
 
-**Relationship Selection** Draw a rectangle, find all CropObjects that overlap
+**Relationship Selection** Draw a lasso, find all CropObjects that overlap
 this rectangle (like the Object Selection tool), and select their *Relationships*.
 This is useful for mass-editing Relationships.
 
@@ -276,6 +276,9 @@ This is useful for mass-editing Relationships.
     It's not quite perfect: this way, it only allows you to select either
     *all* the relationships of an object, or *none* of them.
 
+**Parse** Draw a rectangle and apply relationships to the set of all CropObjects
+that overlap this rectangle. Handy for adding relationships without having
+to press "p" over and over again.
 
 
 .. _controls_selection:
