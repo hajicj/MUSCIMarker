@@ -62,6 +62,38 @@ class DependencyGrammar(object):
     symbols, which can also occur on the left-hand side. They are implemented
     in the class ``ConstituencyGrammar``.
 
+    Cardinality rules
+    -----------------
+
+    [NOT IMPLEMENTED]
+
+    We can also specify in the grammar the minimum and/or maximum amount
+    of relationships, both inlinks and outlinks, that an object can form
+    with other objects of given types::
+
+      # One notehead may have up to two stems attached.
+      # We also allow for stemless full noteheads.
+      # One stem can be attached to multiple noteheads, but at least one.
+      notehead-*{,2} | stem{1,}
+
+      # The relationship of noteheads to ledger lines is generally m:n
+      notehead-full | ledger_line
+
+      # A time signature may consist of multiple numerals, but only one
+      # other symbol.
+      time_signature{1,} | numeral_*{1}
+      time_signature{1} | whole-time_mark alla_breve other_time_signature
+
+      # A key signature may have any number of sharps and flats.
+      # A sharp or flat can only belong to one key signature. However,
+      # not every sharp belongs to a key signature.
+      key_signature | sharp{,1} flat{,1} natural{,1} double_sharp{,1} double_flat{,1}
+
+    For the left-hand side of the rule, the cardinality restrictions apply to
+    outlinks towards symbols of classes on the right-hand side of the rule.
+    For the right-hand side, the cardinality restrictions apply to inlinks
+    from symbols of left-hand side classes.
+
     Interface
     ---------
 
@@ -89,12 +121,19 @@ class DependencyGrammar(object):
     """
     WILDCARD = '*'
 
+    _MAX_CARD = 10000
+
     def __init__(self, grammar_filename, mlclasses):
         """Initialize the Grammar: fill in alphabet and parse rules."""
         self.alphabet = {m.name: m for m in mlclasses.values()}
         logging.info('DependencyGrammar: got alphabet:\n{0}'
                      ''.format(pprint.pformat(self.alphabet)))
         self.rules = []
+        self.inlink_cardinalities = {}
+        '''Keys: classes, values: dict of {from: (min, max)}'''
+
+        self.outlink_cardinalities = {}
+        '''Keys: classes, values: dict of {to: (min, max)}'''
 
         rules = self.parse_dependency_grammar_rules(grammar_filename)
         if self._validate_rules(rules):
@@ -111,15 +150,27 @@ class DependencyGrammar(object):
     def parse_dependency_grammar_rules(self, filename):
         """Returns the Rules stored in the given rule file."""
         rules = []
+        inlink_cardinalities = {}
+        outlink_cardinalities = {}
+
         _invalid_lines = []
         with codecs.open(filename, 'r', 'utf-8') as hdl:
             for line_no, line in enumerate(hdl):
-                l_rules = self.parse_dependency_grammar_line(line)
+                l_rules, in_card, out_card = self.parse_dependency_grammar_line(line)
 
                 if not self._validate_rules(l_rules):
                     _invalid_lines.append((line_no, line))
 
                 rules.extend(l_rules)
+
+                for lhs in outlink_cardinalities:
+                    if lhs not in outlink_cardinalities:
+                        outlink_cardinalities[lhs] = dict()
+                    outlink_cardinalities[lhs].update(out_card[lhs])
+
+                inlink_cardinalities.update(in_card)
+                outlink_cardinalities.update(out_card)
+
         if len(_invalid_lines) > 0:
             logging.warning('DependencyGrammar.parse_rules(): Invalid lines'
                             ' {0}'.format(pprint.pformat(_invalid_lines)))
@@ -145,9 +196,17 @@ class DependencyGrammar(object):
         # logging.info('DependencyGrammar: tokens lhs={0}, rhs={1}'
         #              ''.format(lhs_tokens, rhs_tokens))
 
+        out_cards = {}
+        in_cards = {}
+
         lhs_symbols = []
         for l in lhs_tokens:
-            lhs_symbols.extend(self._matching_names(l))
+            if '{' not in l:
+                lhs_symbols.extend(self._matching_names(l))
+            else:
+                token, cardinality = l[:-1].split('{')
+
+                exp_tokens = self._matching_names(token)
 
         rhs_symbols = []
         for r in rhs_tokens:
