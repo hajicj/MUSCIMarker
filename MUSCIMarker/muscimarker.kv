@@ -266,19 +266,32 @@
     size: app.root.size[0] * 0.5, app.root.size[1] * 0.5
     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 
+
     ScatterLayout:
+        id: scatter
+
         size: root.size
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
         do_rotation: False
         #scale: 10.0
 
+        canvas.before:
+            Color:
+                rgba: 0.2, 0.1, 0.1, 1   ### Debugging color
+                # rgba: 0.0, 0.0, 0.0, 1     ### Production color
+            Rectangle:
+                # self here refers to the widget i.e BoxLayout pos: self.pos
+                size: self.size
+
+
         Image:
             id: inspected_image
+            allow_stretch: True
 
             source: root.source
             #size: app.root.size[0] * 0.4, app.root.size[1] * 0.4
             # size_hint: 1.0, 1.0
-            pos_hint: root.pos_hint
+            # pos_hint: root.pos_hint
 
 ##############################################################################
 
