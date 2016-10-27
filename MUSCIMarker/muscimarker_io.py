@@ -150,7 +150,7 @@ class CropObject(object):
     (NOTE: this really changes the input image!)
 
     >>> c_obj.render(img)
-    >>> plt.imshow(c_obj); plt.show()
+    >>> plt.imshow(img); plt.show()
 
     However, `CropObject.render()` currently does not support rendering
     the mask.

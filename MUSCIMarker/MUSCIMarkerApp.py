@@ -1626,6 +1626,12 @@ class MUSCIMarkerApp(App):
         self.stop()
 
     ##########################################################################
+    # Temporary files
+    @property
+    def tmp_dir(self):
+        return os.path.join(os.path.dirname(__file__), 'tmp')
+
+    ##########################################################################
     # Tracking
     def init_tracking(self):
         # First make sure the directory for tracking exists.

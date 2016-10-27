@@ -2,7 +2,11 @@
 from __future__ import print_function, unicode_literals
 
 import logging
+import os
+import uuid
 from time import time
+
+import scipy.misc
 
 from kivy.app import App
 from kivy.core.window import Window
@@ -22,6 +26,7 @@ from kivy.uix.spinner import Spinner
 from kivy.uix.togglebutton import ToggleButton
 
 import tracker as tr
+from utils import InspectionPopup
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -282,8 +287,9 @@ class CropObjectView(SelectableView, ToggleButton):
 
         # Show/hide info panel
         elif dispatch_key == '105':  # i
-            logging.info('CropObjectView: handling info panel')
-            self.toggle_info_panel()
+            logging.info('CropObjectView: handling inspection')
+            #self.toggle_info_panel()
+            self.inspect()
 
         elif dispatch_key == '120':  # x
             logging.info('CropObjectView: handling split')
@@ -664,6 +670,34 @@ class CropObjectView(SelectableView, ToggleButton):
     def clone_class_to_app(self):
         App.get_running_app().currently_selected_mlclass_name = self._model_counterpart.clsname
 
+
+    ##########################################################################
+    # Inspect mask
+    def inspect(self):
+        """Shows the symbol's exact mask in the context of its bounding box
+        in a popup."""
+        # Create crop
+        image = self._model.image
+        crop = self._model_counterpart.project_to(image).astype('float32')
+        t, l, b, r = self._model_counterpart.bounding_box
+        background_crop = image[t:b, l:r].astype('float32')
+        combined_crop = (crop / 2.0) + (background_crop / 2.0)
+
+        # Save image
+        app = App.get_running_app()
+        tmp_dir = app.tmp_dir
+        fname = unicode(uuid.uuid4()) + '.png'
+        full_path = os.path.join(tmp_dir, fname)
+
+        scipy.misc.imsave(full_path, combined_crop, )
+
+        # Make popup with the crop
+        popup = InspectionPopup(title='Inspecting obj. {0}'.format(self.objid),
+                                source=full_path)
+
+        # Bind to delete the temp file on cancel()
+        popup.bind(on_dismiss=lambda x: os.unlink(full_path))
+        popup.open()
 
     ##########################################################################
     # Copied over from ListItemButton

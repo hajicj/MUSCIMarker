@@ -254,6 +254,11 @@ class ConfirmationDialog(Popup):
 
 ##############################################################################
 
+class InspectionPopup(Popup):
+    source = StringProperty()
+
+##############################################################################
+
 
 def bbox_to_integer_bounds(ftop, fleft, fbottom, fright, to_integer=True):
     """Rounds off the CropObject bounds to the nearest integer
