@@ -2,7 +2,7 @@
 
 .. include:: shortcuts
 
-.. _instructionss:
+.. _instructions:
 
 Annotation Instructions
 =======================
