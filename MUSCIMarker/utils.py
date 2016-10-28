@@ -252,6 +252,22 @@ class ConfirmationDialog(Popup):
         pass
 
 
+class MessageDialog(Popup):
+    text = StringProperty('')
+    title = StringProperty('Message')
+
+    ok_text = StringProperty('OK')
+
+    __events__ = ('on_ok',)
+
+    def ok(self):
+        self.dispatch('on_ok')
+        self.dismiss()
+
+    def on_ok(self):
+        pass
+
+
 ##############################################################################
 
 class InspectionPopup(Popup):

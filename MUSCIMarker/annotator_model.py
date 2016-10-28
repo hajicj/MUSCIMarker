@@ -397,6 +397,19 @@ class CropObjectAnnotatorModel(Widget):
             return False
         return True
 
+    def find_errors(self):
+        vertices = {v: self.cropobjects[v].clsname for v in self.graph.vertices}
+        edges = self.graph.edges.keys()
+        v, i, o, r_v, r_i, r_o = self.grammar.find_invalid_in_graph(vertices, edges,
+                                                                    provide_reasons=True)
+        return v, i, o, r_v, r_i, r_o
+
+    def find_wrong_vertices(self, provide_reasons=False):
+        v, i, o, r_v, r_i, r_o = self.find_errors()
+        if provide_reasons:
+            return v, r_v
+        return v
+
     ##########################################################################
     # Keeping the model in a consistent state
     def on_grammar(self, instance, g):

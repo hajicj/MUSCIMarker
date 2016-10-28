@@ -197,6 +197,7 @@ import argparse
 import codecs
 import logging
 import os
+import pprint
 import time
 # from random import random
 # from math import sqrt
@@ -232,7 +233,8 @@ from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from edge_view import ObjectGraphRenderer
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
-from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key
+from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key, \
+    MessageDialog
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
 import tracker as tr
@@ -909,6 +911,9 @@ class MUSCIMarkerApp(App):
         if dispatch_key == '27':  # Escape
             self.currently_selected_tool_name = '_default'
 
+        elif dispatch_key == '118':  # "v" -- validate
+            self.find_cropobjects_with_errors()
+
         logging.info('App: Checking keyboard dispatch, {0}'
                      ''.format(self.keyboard_dispatch.keys()))
         if dispatch_key in self.keyboard_dispatch:
@@ -1455,6 +1460,27 @@ class MUSCIMarkerApp(App):
         else:
             self.annot_model.clear_cropobjects()
             confirmation.unbind(on_ok=self.do_clear_cropobjects)
+
+
+    @tr.Tracker(track_names=[],
+                tracker_name='commands')
+    def find_cropobjects_with_errors(self):
+        vertices, reasons = self.annot_model.find_wrong_vertices(provide_reasons=True)
+        vertex_set = set(vertices)
+        logging.info('App: find_cropobjects_with_errors: Reasons:\n{0}'
+                     ''.format(pprint.pformat(reasons)))
+
+        if len(vertices) == 0:
+            confirmation = MessageDialog(text='No wrong vertex detected.')
+            confirmation.open()
+            return
+
+        view = self.cropobject_list_renderer.view
+        view.unselect_all()
+
+        for c in view.container.children[:]:
+            if c._model_counterpart.objid in vertex_set:
+                c.dispatch('on_release')
 
     ##########################################################################
     # MLClass selection tracking

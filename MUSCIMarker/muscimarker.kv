@@ -258,6 +258,39 @@
 				text: root.ok_text
                 on_press: root.ok()
 
+
+<MessageDialog@Popup>:
+    size_hint: None, None
+    size: app.root.size[0] * 0.5, app.root.size[1] * 0.2
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+    GridLayout:
+        cols: 1
+        padding: '12dp'
+
+        Label:
+            text: root.text
+            size_hint_y: None
+            height: self.texture_size[1] + dp(16)
+            text_size: self.width - dp(16), None
+            halign: 'center'
+
+        BoxLayout:
+            size_hint_y: None
+            height: sp(48)
+
+            BoxLayout:
+                size_hint_y: 0.3
+                background_color: 0.1, 0.1, 0.0, 1.0
+
+            Button:
+                text: root.ok_text
+                on_press: root.ok()
+
+            BoxLayout:
+                size_hint_y: 0.3
+
+
 ##############################################################################
 # Inspection popup
 

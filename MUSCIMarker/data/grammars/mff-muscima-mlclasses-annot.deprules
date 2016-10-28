@@ -19,6 +19,17 @@ notehead-* grace-notehead-* | instrument_specific
 notehead-full | grace-notehead-full grace-notehead-empty
 notehead-empty | grace-notehead-full grace-notehead-empty
 
+# Aggregate cardinalities
+
+notehead-full{1,} |
+
+| grace-notehead-*{1,}
+| beam{1,} stem{1,}
+| duration-dot{1,} other-dot{1,} tenuto{1,} accent{1,} strong_accent{1,}
+| sharp{1,} flat{1,} natural{1,} double_sharp{1,} double_flat{1,}
+| ledger_line{1,}
+| curved-line_(tie-or-slur){1,} slur{1,} tie{1,}
+
 ##############################################################################
 # Rests
 
@@ -30,10 +41,14 @@ whole_rest half_rest *th_rest | duration-dot
 stem | grace_strikethrough
 stem | tremolo_mark single-note_tremolo multiple-note_tremolo
 
+| grace_strikethrough{1}
+
 ##############################################################################
 # Notations
 
 repeat | repeat-dot thin_barline thick_barline
+repeat{1,} |
+| repeat-dot{1,}
 
 trill | trill_"wobble"
 
@@ -46,8 +61,11 @@ volta | numeral_*
 # Part defaults
 
 key_signature | sharp flat double_sharp double_flat natural
-time_signature | whole-time_mark alla_breve other_time_signature numeral_*
+key_signature{1,} |
 
+time_signature | whole-time_mark alla_breve other_time_signature numeral_*
+time_signature{1,} |
+| whole-time_mark{1,} alla_breve{1,} other_time_signature{1,}
 
 ##############################################################################
 # Text rules
@@ -60,3 +78,8 @@ other_text | letter_* numeral_*
 
 bar_number | numeral_*
 other_numeric_sign | numeral_*
+
+*_text{1,} |
+rehearsal_mark{1,} |
+| numeral_*{1,}
+| letter_*{1,}
