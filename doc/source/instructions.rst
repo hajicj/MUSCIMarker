@@ -37,6 +37,15 @@ questions to is ``hajicj@ufal.mff.cuni.cz``
     To learn how to properly receive data to annotate and submit
     your work, see :ref:`organizing`.
 
+Changes in 1.0.1
+----------------
+
+.. caution::
+
+    **Flags** are labeled individually. The outermost flag is the 8th
+    flag, the next one is the 16th flag, etc. See 16th notes in the example.
+    (For 8th notes, nothing changes.)
+
 Changes in 1.0
 --------------
 
