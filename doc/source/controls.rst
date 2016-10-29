@@ -362,13 +362,14 @@ The following keyboard shortcuts work on selected objects:
 **shift+c**         Sets the app's current class to the class of a selected object.
 **ctrl+shift+c**    Apply the app's current class to all selected objects.
 **a**               Create a relationship from the first to the second
-                    selected object.
+                    selected object. Don't use this unless you can't use **p**.
 **d**               Remove a relationship from the first to the second
                     selected object.
 **b**               Send selected objects backward, so that it exposes the objects
                     that were lying underneath. (Useful when a large object
                     overlaps smaller ones, like text.)
-**i**               Toggle the selected objects' *info labels*.
+**i**               Inspect the selected object. **(New!)** A popup appears with
+                    the object's exact position highlighted.
 =================   ================================================================
 
 .. note::
@@ -388,3 +389,14 @@ Editing a selection of Relationships
 
 There are currently no keyboard shortcuts available for manipulating
 selected relationships.
+
+
+.. _controls_shortcuts_global:
+
+Global keyboard shortcuts
+-------------------------
+
+=================   ================================================================
+*v*                 Validate the current annnotation. Finds inconsistencies in how
+                    relationships are being assigned to objects.
+=================   ================================================================
