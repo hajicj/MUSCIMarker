@@ -316,9 +316,9 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
         m_points_x, m_points_y = zip(*m_points)
 
         # Let's deal with points on the boundary or outside
-        m_points_x = [min(x, self.app_ref.image_scaler.model_height - 1)
+        m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
                       for x in m_points_x]
-        m_points_y = [min(y, self.app_ref.image_scaler.model_width - 1)
+        m_points_y = [max(0, min(y, self.app_ref.image_scaler.model_width - 1))
                       for y in m_points_y]
 
         chi = polygon(m_points_x, m_points_y)
@@ -495,9 +495,9 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
         m_points_x, m_points_y = zip(*m_points)
 
         # Let's deal with points on the boundary or outside
-        m_points_x = [min(x, self.app_ref.image_scaler.model_height - 1)
+        m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
                       for x in m_points_x]
-        m_points_y = [min(y, self.app_ref.image_scaler.model_width - 1)
+        m_points_y = [max(0, min(y, self.app_ref.image_scaler.model_width - 1))
                       for y in m_points_y]
 
         chi = polygon(m_points_x, m_points_y)
