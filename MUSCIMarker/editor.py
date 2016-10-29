@@ -96,6 +96,7 @@ class BoundingBoxTracer(FloatLayout):
     def on_touch_move(self, touch):
         if touch.grab_current is not self:
             return
+
         ud = touch.ud
 
         with self.canvas:
@@ -423,6 +424,9 @@ class LineTracer(FloatLayout):
         return True
 
     def on_touch_move(self, touch):
+        if touch.grab_current is not self:
+            return
+
         ud = touch.ud
         ud['stop'] = (touch.x, touch.y)
         ud['line'].points += [touch.x, touch.y]
