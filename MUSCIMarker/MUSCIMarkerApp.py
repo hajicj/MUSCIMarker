@@ -1465,6 +1465,11 @@ class MUSCIMarkerApp(App):
     @tr.Tracker(track_names=[],
                 tracker_name='commands')
     def find_cropobjects_with_errors(self):
+        selected_objids = [c.objid for c in
+                           self.cropobject_list_renderer.view.adapter.selection]
+        logging.info('App: looking for cropobjects with errors: {0} selected'
+                     ''.format(len(selected_objids)))
+
         vertices, reasons = self.annot_model.find_wrong_vertices(provide_reasons=True)
         vertex_set = set(vertices)
         logging.info('App: find_cropobjects_with_errors: Reasons:\n{0}'
@@ -1480,7 +1485,11 @@ class MUSCIMarkerApp(App):
 
         for c in view.container.children[:]:
             if c._model_counterpart.objid in vertex_set:
-                c.dispatch('on_release')
+                if len(selected_objids) > 0:
+                    if c._model_counterpart.objid in selected_objids:
+                        c.dispatch('on_release')
+                else:
+                    c.dispatch('on_release')
 
     ##########################################################################
     # MLClass selection tracking
