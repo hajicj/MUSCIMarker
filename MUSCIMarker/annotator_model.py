@@ -397,15 +397,41 @@ class CropObjectAnnotatorModel(Widget):
             return False
         return True
 
-    def find_errors(self):
+    def find_grammar_errors(self):
         vertices = {v: self.cropobjects[v].clsname for v in self.graph.vertices}
         edges = self.graph.edges.keys()
         v, i, o, r_v, r_i, r_o = self.grammar.find_invalid_in_graph(vertices, edges,
                                                                     provide_reasons=True)
         return v, i, o, r_v, r_i, r_o
 
+    def find_very_small_objects(self, bbox_threshold=10, mask_threshold=10):
+        """Finds CropObjects that are very small.
+
+        "Very small" means that their bounding box area is
+        smaller than the given threshold or they consist of less
+        than ``mask_threshold`` pixels."""
+        very_small_cropobjects = []
+
+        for c in self.cropobjects.values():
+            total_masked_area = c.mask.sum()
+            total_bbox_area = c.width * c.height
+            if total_bbox_area < bbox_threshold:
+                very_small_cropobjects.append(c)
+            elif total_masked_area < mask_threshold:
+                very_small_cropobjects.append(c)
+
+        return list(set([c.objid for c in very_small_cropobjects]))
+
     def find_wrong_vertices(self, provide_reasons=False):
-        v, i, o, r_v, r_i, r_o = self.find_errors()
+        v, i, o, r_v, r_i, r_o = self.find_grammar_errors()
+
+        v_small = self.find_very_small_objects()
+        # Merge with small objects.
+        for objid in v_small:
+            if objid not in v:
+                v.append(objid)
+                r_v[objid] = 'Object {0} is suspiciously small.'.format(objid)
+
         if provide_reasons:
             return v, r_v
         return v
@@ -466,15 +492,16 @@ class CropObjectAnnotatorModel(Widget):
     def bboxes(self):
         self._ensure_cc_cache()
         return self._bboxes
-    # def plot_annotations(self):
-    #     """Plot the current animation using Matplotlib."""
-    #     rgb_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
-    #     annot_img = muscimarker_io.render_annotations(rgb_img,
-    #                                                   self.cropobjects.values(),
-    #                                                   self.mlclasses.values())
-    #
-    #     logging.info('Plotting annotation, image shape: {0}'.format(annot_img.shape))
-    #     plt.imshow(annot_img)
-    #     plt.show()
+        # def plot_annotations(self):
+        #     """Plot the current animation using Matplotlib."""
+        #     rgb_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
+        #     annot_img = muscimarker_io.render_annotations(rgb_img,
+        #                                                   self.cropobjects.values(),
+        #                                                   self.mlclasses.values())
+        #
+        #     logging.info('Plotting annotation, image shape: {0}'.format(annot_img.shape))
+        #     plt.imshow(annot_img)
+        #     plt.show()
+    very_small_cropobjects = []
 
 
