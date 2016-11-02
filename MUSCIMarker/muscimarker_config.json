@@ -66,5 +66,12 @@
     "desc": "When using the Trimmed Lasso tool for larger objects, MUSCIMarker, will display a dotted line to show you how it would like to close the lasso.",
     "section": "toolkit",
     "key": "trimmed_lasso_helper_line"
+  },
+
+  { "type": "bool",
+    "title": "Active Obj./Rel. selection",
+    "desc": "The Obj. and Rel. Select tools will try to highlight what has been selected so far.",
+    "section": "toolkit",
+    "key": "active_selection"
   }
 ]

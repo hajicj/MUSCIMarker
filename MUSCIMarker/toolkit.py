@@ -11,10 +11,10 @@ from kivy.app import App
 from skimage.draw import polygon, line
 
 # DEBUG
-# simport matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from kivy.core.window import Window
-from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty, ListProperty
+from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty, ListProperty, NumericProperty
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 
@@ -120,10 +120,28 @@ class MUSCIMarkerTool(Widget):
         return m_points
 
     def model_mask_from_points(self, m_points):
+        _t_start = time.clock()
+
         mask = numpy.zeros(self._model_image.shape, dtype='uint8')
+
+        _t_mask_creation = time.clock()
+
+        # Possible speedup:
         m_points_x, m_points_y = zip(*m_points)
         chi = polygon(m_points_x, m_points_y)
+
+        _t_polygon = time.clock()
+
         mask[chi] = 1.0
+
+        _t_mask_application = time.clock()
+
+        logging.info('Toolkit.model_mask_from_points: {0} pts, area {1},'
+                     'polygon(): {2:.5f}'
+                     ''.format(len(m_points),
+                               len(chi[0]),
+                               _t_polygon - _t_mask_creation,
+                               _t_mask_application - _t_polygon))
         return mask
 
     @property
@@ -744,14 +762,157 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
 
     line_color = ListProperty([0.6, 0.6, 0.6])
 
+    forgetful = BooleanProperty(True)
+    '''If True, will always forget prior selection. If False, will
+    be "additive".'''
+
+    active_selection = BooleanProperty(True)
+    '''If True, will show the current state of the selection.'''
+
+    def __init__(self, app, editor_widget, command_widget, active_selection=True,
+                 **kwargs):
+
+        # Settings like this have to be provided *before* create_editor_widgets
+        # is called by super.__init__
+        self.active_selection = active_selection
+        logging.info('Toolkit: __init__ got active selection: {0}'
+                     ''.format(self.active_selection))
+
+        super(BaseListItemViewsOperationTool, self).__init__(app=app,
+                                                             editor_widget=editor_widget,
+                                                             command_widget=command_widget,
+                                                             **kwargs)
+
+
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
         editor_widgets['line_tracer'].line_color = self.line_color
-        editor_widgets['line_tracer'].bind(points=self.select_applicable_objects)
+        editor_widgets['line_tracer'].bind(points=self.final_select_applicable_objects)
+
+        if self.active_selection:
+            editor_widgets['line_tracer'].bind(on_touch_down=self.process_active_selection_start)
+            editor_widgets['line_tracer'].bind(on_touch_move=self.process_active_selection_move)
+            editor_widgets['line_tracer'].bind(on_touch_up=self.process_active_selection_end)
+        else:
+            logging.info('Toolkit: active selection not requested')
+
         return editor_widgets
 
-    def select_applicable_objects(self, instance, points):
+    ##########################################################################
+    # Active selection behavior
+
+    # _active_selection_object_touched = DictProperty(None, allownone=True)
+    # '''Maintains the list of objects that have been passed through and selected
+    # by the traced line itself. For these, we are sure they will get selected.'''
+    #
+    # _active_selection_object_in = DictProperty(None, allownone=True)
+    # '''Maintains the list of objects that are currently affected
+    # by the complement of the selection line (straigt line from start
+    # to end of current line), but have not been directly touched.'''
+    #
+    # _active_selection_object_passed = DictProperty(None, allownone=True)
+    # '''Maintains the list of objects that would currently get selected, if
+    # the on_touch_up() signal came, although they have not been directly
+    # touched and the complement line is not currently touching them.'''
+
+    _active_selection_slow_mode = BooleanProperty(False)
+    '''Slow mode: only check for active selection once every 10 touch_move
+    events.'''
+
+    _active_selection_slow_mode_threshold = NumericProperty(30000)
+    '''Empirically measured slow mode threshold.'''
+
+    _active_selection_slow_mode_counter = NumericProperty(1)
+    _active_selection_slow_mode_modulo = NumericProperty(10)
+    '''Active selection in slow mode should not take more than 0.001
+    seconds per move event. E.g., if one selection is taking 0.01 s,
+    then it has to be spread over 10 events. If it takes 0.5 s, it has
+    to be spread over 50 events.
+
+    The time is measured every time active selection is run in slow mode.
+    The slow_mode_modulo is adjusted accordingly and the counter is reset.
+    '''
+
+    _active_selection_target_time_per_event = NumericProperty(0.01)
+    '''The desired amortized time taken by the active selection
+    computation per on_touch_move event.'''
+
+    def process_active_selection_start(self, tracer, touch):
+        # Unselect all
+        if self.forgetful:
+            for v in self.available_views:
+                if v.is_selected:
+                    v.dispatch('on_release')
+
+    def process_active_selection_move(self, tracer, touch):
+        # This has the problem that it only includes the collided
+        # objects, not those "inside"
+        # for v in self.available_views:
+        #     if v.collide_point(touch.x, touch.y):
+        #         if not v.is_selected:
+        #             v.dispatch('on_release')
+
+        points = touch.ud['line'].points
+        m_points = self.editor_to_model_points(points)
+        # logging.debug('Active selection: {0} points in line'.format(len(m_points)))
+        self._process_active_selection_slow_mode(m_points)
+
+        if self._active_selection_slow_mode:
+            if self._active_selection_slow_mode_counter % self._active_selection_slow_mode_modulo == 0:
+                # Let's try running "experimental selection"
+                logging.info('Active selection: checking in slow mode')
+                _t_start = time.clock()
+                self.provisional_select_applicable_objects(instance=None,
+                                                           points=touch.ud['line'].points)
+                _t_end = time.clock()
+                time_taken = (_t_end - _t_start)
+                # Set new modulo so that the expected time per event is 0.001.
+                # Later on, this may cause noticeable lag in the selection, but
+                # hopefully not so much in the lasso.
+                self._active_selection_slow_mode_modulo = max(1, min(int(time_taken / self._active_selection_target_time_per_event), 30))
+                logging.info('Active selection: time take: {0}, setting modulo to {1}'
+                             ''.format(time_taken, self._active_selection_slow_mode_modulo))
+                self._active_selection_slow_mode_counter = 1
+            else:
+                self._active_selection_slow_mode_counter += 1
+        else:
+            logging.info('Active selection: checking in normal mode')
+            self.provisional_select_applicable_objects(instance=None,
+                                                       points=touch.ud['line'].points)
+
+    def process_active_selection_end(self, tracer, touch):
+        pass
+
+    def _process_active_selection_slow_mode(self, points):
+        m_points_x, m_points_y = zip(*points)
+        xmin, xmax = min(m_points_x), max(m_points_x)
+        ymin, ymax = min(m_points_y), max(m_points_y)
+
+        # logging.debug('Active selection: checking slow mode with range'
+        #               ' ({0}, {1}), ({2}, {3})'
+        #               ''.format(xmin, xmax, ymin, ymax))
+        is_slow = True
+        #if (xmax - xmin) * (ymax - ymin) < self._active_selection_slow_mode_threshold:
+        #    is_slow = False
+
+        if self._active_selection_slow_mode != is_slow:
+            logging.info('Active selection: slow mode: changing to {0}'.format(is_slow))
+            self._active_selection_slow_mode_counter = 1
+
+        self._active_selection_slow_mode = is_slow
+
+
+    ##########################################################################
+    # Computing the selection from a set of points
+
+    def provisional_select_applicable_objects(self, instance, points):
+        self.select_applicable_objects(instance, points, do_clear_tracer=False)
+
+    def final_select_applicable_objects(self, instance, points):
+        self.select_applicable_objects(instance, points, do_clear_tracer=True)
+
+    def select_applicable_objects(self, instance, points, do_clear_tracer=True):
         raise NotImplementedError()
 
     @property
@@ -777,17 +938,39 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
 
     line_color = ListProperty([1.0, 0.5, 1.0])
 
-    def select_applicable_objects(self, instance, points):
+    def select_applicable_objects(self, instance, points, do_clear_tracer=True):
         # Get the model mask
+        _t_start = time.clock()
+
         m_points = self.editor_to_model_points(points)
+
+        _t_points = time.clock()
+
+        # filtered_m_points = self._filter_polygon_points_to_relevant_for_selection(m_points)
+        # Possible speedup: discard points that cannot have any further
+        # effect on object selection/deselection.
+        # The polygon() implementation is already algorithmically
+        # efficient.
+
         model_mask = self.model_mask_from_points(m_points)
+
+        _t_middle = time.clock()
 
         # Find all CropObjects that overlap
         objids = [objid for objid, c in self._model.cropobjects.iteritems()
                   if image_mask_overlaps_cropobject(model_mask, c,
                     use_cropobject_mask=self.use_mask_to_determine_selection)]
 
-        self.editor_widgets['line_tracer'].clear()
+        _t_end = time.clock()
+        # logging.info('select_applicable_objects: points and mask took'
+        #              ' {0:.5f} ({1:.5f}/{2:.5f}, collision checks took {3:.5f}'
+        #              ''.format(_t_middle - _t_start,
+        #                        _t_points - _t_start, _t_middle  - _t_points,
+        #                        _t_end - _t_middle))
+
+        if do_clear_tracer:
+            logging.info('select_applicable_objects: clearing tracer')
+            self.editor_widgets['line_tracer'].clear()
 
         # Unselect
         if self.forgetful:
@@ -798,6 +981,8 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
         # Mark their views as selected
         applicable_views = [v for v in self.available_views
                              if v.objid in objids]
+        logging.info('select_applicable_objects: found {0} objects'
+                     ''.format(len(applicable_views)))
         for c in applicable_views:
             self.apply_operation(c)
 
@@ -814,13 +999,19 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
     #def available_views(self):
     #    return self.list_view.rendered_views
 
+    def _filter_polygon_points_to_relevant_for_selection(self, m_points):
+        """We can filter out some points in the polygon if we can be
+        sure that if we leave them out, the final selection will be
+        the same as if we left them in."""
+        return m_points
+
 
 class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
     """Selects all edges that lead to/from CropObjects overlapped
     by the selection."""
     line_color = ListProperty([1.0, 0.0, 0.0])
 
-    def select_applicable_objects(self, instance, points):
+    def select_applicable_objects(self, instance, points, do_clear_tracer=True):
         # Get the model mask
         m_points = self.editor_to_model_points(points)
         model_mask = self.model_mask_from_points(m_points)
@@ -830,7 +1021,8 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
                   if image_mask_overlaps_cropobject(model_mask, c,
                     use_cropobject_mask=self.use_mask_to_determine_selection)]
 
-        self.editor_widgets['line_tracer'].clear()
+        if do_clear_tracer:
+            self.editor_widgets['line_tracer'].clear()
 
         # Mark their views as selected
         applicable_views = [v for v in self.available_views
@@ -854,8 +1046,9 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
 
 class CropObjectViewsParseTool(CropObjectViewsSelectTool):
 
-    def select_applicable_objects(self, instance, points):
-        super(CropObjectViewsParseTool, self).select_applicable_objects(instance, points)
+    def select_applicable_objects(self, instance, points, do_clear_tracer=True):
+        super(CropObjectViewsParseTool, self).select_applicable_objects(instance, points,
+                                                                        do_clear_tracer=do_clear_tracer)
         self.list_view.parse_current_selection()
 
 ###############################################################################
@@ -906,9 +1099,6 @@ def get_tool_kwargs_dispatch(name):
         'connected_select_tool': dict(),
         'lasso_select_tool': dict(),
         'gesture_select_tool': dict(),
-        'cropobject_views_select_tool': dict(),
-        'edge_views_select_tool': dict(),
-        'cropobject_views_parse_tool': dict(),
     }
 
     if name in no_kwarg_tools:
@@ -917,5 +1107,36 @@ def get_tool_kwargs_dispatch(name):
     app = App.get_running_app()
     conf = app.config
     if name == 'trimmed_lasso_select_tool':
-        return {'do_helper_line': bool(int(conf.get('toolkit',
-                                                    'trimmed_lasso_helper_line')))}
+        _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
+        do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
+        return {'do_helper_line': do_helper_line}
+
+    if name == 'cropobject_views_select_tool':
+        _as_str = conf.get('toolkit', 'active_selection')
+        active_selection = _safe_parse_bool_from_conf(_as_str)
+        logging.info('Toolkit: got active_selection={0}'
+                     ''.format(active_selection))
+        return {'active_selection': active_selection}
+
+    if name == 'edge_views_select_tool':
+        _as_str = conf.get('toolkit', 'active_selection')
+        active_selection = _safe_parse_bool_from_conf(_as_str)
+        logging.info('Toolkit: got active_selection={0}'
+                     ''.format(active_selection))
+        return {'active_selection': active_selection}
+
+    if name == 'cropobject_views_parse_tool':
+        # Doesn't make sense here without a way to undo the line
+        active_selection = False
+        logging.info('Toolkit: got active_selection={0}'
+                     ''.format(active_selection))
+        return {'active_selection': active_selection}
+
+
+def _safe_parse_bool_from_conf(conf_str):
+    if conf_str == 'True':
+        return True
+    elif conf_str == 'False':
+        return False
+    else:
+        return bool(int(conf_str))

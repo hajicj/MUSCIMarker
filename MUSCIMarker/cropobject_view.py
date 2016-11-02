@@ -213,8 +213,8 @@ class CropObjectView(SelectableView, ToggleButton):
 
         # Unselect
         elif dispatch_key == '27':  # Escape
-            logging.info('CropObjectView\t{0}: handling deselect + state to \'normal\''
-                         ''.format(self.objid))
+            # logging.info('CropObjectView\t{0}: handling deselect + state to \'normal\''
+            #              ''.format(self.objid))
             # Simple deselection is not enough because of the adapter handle_selection()
             # method.
             if self.is_selected:
@@ -707,8 +707,8 @@ class CropObjectView(SelectableView, ToggleButton):
                 fn_name='CropObjectView.select',
                 tracker_name='editing')
     def select(self, *args):
-        logging.info('CropObjectView\t{0}: called selection'
-                      ''.format(self.cropobject.objid))
+        # logging.debug('CropObjectView\t{0}: called selection'
+        #               ''.format(self.cropobject.objid))
         self.background_color = self.selected_color
         if not self._info_label_shown:
             self.create_info_label()
@@ -726,8 +726,8 @@ class CropObjectView(SelectableView, ToggleButton):
         """Only handles self.is_selected, not the 'on_release'
         dispatch that the ListAdapter uses to maintain selection!
         Use do_deselect()."""
-        logging.info('CropObjectView\t{0}: called deselection'
-                      ''.format(self.cropobject.objid))
+        # logging.debug('CropObjectView\t{0}: called deselection'
+        #               ''.format(self.cropobject.objid))
         if self._info_label_shown:
             self.destroy_info_label()
         if self._mlclass_selection_spinner_shown:

@@ -668,10 +668,11 @@ class MUSCIMarkerApp(App):
             })
         config.setdefaults('toolkit',
             {
-                'cropobject_mask_nonzero_only': True,
+                'cropobject_mask_nonzero_only': 1,
                 # If set, will automatically restrict all masks to nonzero
                 # pixels of the input image only.
-                'trimmed_lasso_helper_line': True,
+                'trimmed_lasso_helper_line': 1,
+                'active_selection': 0,
             })
         config.setdefaults('tracking',
             {
