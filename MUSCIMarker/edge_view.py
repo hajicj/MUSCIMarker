@@ -218,7 +218,11 @@ class EdgeView(SelectableView, ToggleButton):
         _m_cthr = self._collide_threshold
 
         # Cheating to recompute threshold to actual on-screen pixels
-        _cthr = _m_cthr / App.get_running_app()._get_editor_scatter_container_widget().scale
+        #_cthr = _m_cthr / App.get_running_app()._get_editor_scatter_container_widget().scale
+        _cthr = 2   # Nobody really needs to select edges that badly.
+                    # We can afford that selecting an edge is frustrating
+                    # more than we can afford that selecting the underlying
+                    # object is frustrating.
         if not ((self.left - _cthr) <= h <= (self.right + _cthr)
                 and (self.bottom - _cthr) <= v <= (self.top + _cthr)):
             return False
