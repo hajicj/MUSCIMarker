@@ -309,6 +309,17 @@ class CropObject(object):
     def bounding_box(self):
         return self.top, self.left, self.bottom, self.right
 
+    @property
+    def middle(self):
+        """Returns the integer representation of where the middle
+        of the CropObject lies, as a ``(m_vert, m_horz)`` tuple.
+
+        The integers just get rounded down.
+        """
+        vmid = self.top + (self.bottom - self.top) / 2
+        hmid = self.left + (self.right - self.left) / 2
+        return int(vmid), int(hmid)
+
     @staticmethod
     def bbox_to_integer_bounds(ftop, fleft, fbottom, fright):
         """Rounds off the CropObject bounds to the nearest integer

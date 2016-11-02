@@ -3,9 +3,12 @@ from __future__ import print_function, unicode_literals
 
 import codecs
 import logging
+from math import floor, ceil
 import os
 
+import numpy
 import skimage.measure
+from skimage.draw import line
 
 from kivy.core.window import Window
 from kivy.properties import ObjectProperty, StringProperty, BooleanProperty, NumericProperty
@@ -373,6 +376,40 @@ def image_mask_overlaps_cropobject(mask, cropobject,
         return mask_crop.any() != 0
     else:
         return (mask_crop * cropobject.mask).any() != 0
+
+
+def image_mask_overlaps_model_edge(mask, edge_start, edge_end, margin=2):
+    """Determines whether the given image mask overlaps the given Edge.
+    Assumes the EdgeView has been converted to model coordinates.
+
+
+    """
+    t = min(edge_start[0], edge_end[0])
+    l = min(edge_start[1], edge_end[1])
+    b = max(edge_start[0], edge_end[0]) + 1
+    r = max(edge_start[1], edge_end[1]) + 1
+
+    crop = mask[t:b, l:r]
+    l = line(edge_start[0] - t, edge_start[1] - l,
+             edge_end[0] - t, edge_end[1] - l)
+    m2 = numpy.zeros(crop.shape)
+    m2[l] = 1
+
+    mc = crop * m2
+    s = mc.sum()
+    return s > 0
+
+    # The edge passes through the middle of its bounding box!
+    vert_mid, horz_mid = t + (b - t) / 2.0, l + (r - l) / 2.0
+
+    t_mid = max(0, int(floor(vert_mid) - margin))
+    b_mid = min(int(ceil(vert_mid) + margin), mask.shape[0])
+    l_mid = max(0, int(floor(horz_mid) - margin))
+    r_mid = min(int(ceil(horz_mid) + margin), mask.shape[1])
+
+    s = mask[t_mid:b_mid, l_mid:r_mid].sum()
+    logging.warn('Middle: {0}:{1}, {2}:{3}'.format(t_mid, b_mid, l_mid, r_mid))
+    return s > 0
 
 
 ##############################################################################

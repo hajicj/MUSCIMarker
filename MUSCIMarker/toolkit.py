@@ -18,8 +18,9 @@ from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, Strin
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 
+from edge_view import EdgeView
 from editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, LineTracer
-from utils import bbox_to_integer_bounds, image_mask_overlaps_cropobject
+from utils import bbox_to_integer_bounds, image_mask_overlaps_cropobject, image_mask_overlaps_model_edge
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -1016,17 +1017,39 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
         m_points = self.editor_to_model_points(points)
         model_mask = self.model_mask_from_points(m_points)
 
+        # Find all Edges that overlap
+        objid_pairs = []
+        for e in self.available_views:
+            # logging.info('Edge {0} --> {1}'.format(e.edge[0], e.edge[1]))
+            c_start = self._model.cropobjects[e.start_objid]
+            c_end = self._model.cropobjects[e.end_objid]
+            if c_start.objid == 224 and c_end.objid == 225:
+                sx, sy = c_start.middle
+                ex, ey = c_end.middle
+                mx, my = (sx + ex) / 2, (sy + ey) / 2
+                logging.warn('Edge 224 --> 225: middle points '
+                             '{0}, {1} -- mask: {2}'
+                             ''.format(c_start.middle, c_end.middle,
+                                       model_mask[mx, my]))
+            # This is a little hack-ish, because the assumptions about
+            # what is up and what is left are wrong...?
+            if image_mask_overlaps_model_edge(model_mask,
+                                              c_start.middle,
+                                              c_end.middle):
+                objid_pairs.append((e.start_objid, e.end_objid))
+
+
         # Find all CropObjects that overlap
-        objids = [objid for objid, c in self._model.cropobjects.iteritems()
-                  if image_mask_overlaps_cropobject(model_mask, c,
-                    use_cropobject_mask=self.use_mask_to_determine_selection)]
+        # objids = [objid for objid, c in self._model.cropobjects.iteritems()
+        #           if image_mask_overlaps_cropobject(model_mask, c,
+        #             use_cropobject_mask=self.use_mask_to_determine_selection)]
 
         if do_clear_tracer:
             self.editor_widgets['line_tracer'].clear()
 
         # Mark their views as selected
         applicable_views = [v for v in self.available_views
-                             if (v.edge[0] in objids) or (v.edge[1] in objids)]
+                            if v.edge in objid_pairs]
         for c in applicable_views:
             self.apply_operation(c)
 
