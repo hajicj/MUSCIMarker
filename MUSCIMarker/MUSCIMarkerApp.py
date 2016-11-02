@@ -671,6 +671,7 @@ class MUSCIMarkerApp(App):
                 'cropobject_mask_nonzero_only': True,
                 # If set, will automatically restrict all masks to nonzero
                 # pixels of the input image only.
+                'trimmed_lasso_helper_line': True,
             })
         config.setdefaults('tracking',
             {
@@ -1588,9 +1589,13 @@ class MUSCIMarkerApp(App):
             return
 
         # The tool is a controller...
+        tool_kwargs = toolkit.get_tool_kwargs_dispatch(pos)
+        logging.info('App.on_currently_selected_tool: Tool kwargs are {0}'
+                     ''.format(tool_kwargs))
         tool = toolkit.tool_dispatch[pos](app=self,
                                           editor_widget=self._get_editor_widget(),
-                                          command_widget=self._get_tool_command_palette())
+                                          command_widget=self._get_tool_command_palette(),
+                                          **tool_kwargs)
         # Tools need information about app state to initialize themselves correctly.
         # The tool will attach them to the editor widget.
         tool.init_editor_widgets()

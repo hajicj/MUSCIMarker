@@ -55,5 +55,16 @@
     "desc": "Root directory where tracking files go (into day-based folders)",
     "section": "tracking",
     "key": "tracking_root_dir"
+  },
+
+  { "type": "title",
+    "title": "Toolkit"
+  },
+
+  { "type": "bool",
+    "title": "Helper line in T. Lasso",
+    "desc": "When using the Trimmed Lasso tool for larger objects, MUSCIMarker, will display a dotted line to show you how it would like to close the lasso.",
+    "section": "toolkit",
+    "key": "trimmed_lasso_helper_line"
   }
 ]

@@ -6,6 +6,8 @@ import logging
 
 import numpy
 import time
+
+from kivy.app import App
 from skimage.draw import polygon, line
 
 # DEBUG
@@ -273,10 +275,23 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
     current_cropobject_model_selection = ObjectProperty(None)
     current_cropobject_mask = ObjectProperty(None)
 
+    do_helper_line = BooleanProperty(False)
+
+    def __init__(self, app, editor_widget, command_widget, do_helper_line=False,
+                 **kwargs):
+        logging.info('Toolkit: Initializing Lasso tool with do_helper_line={0},'
+                     'kwargs = {1}'.format(do_helper_line, kwargs))
+        self.do_helper_line = do_helper_line
+        super(LassoBoundingBoxSelectTool, self).__init__(app=app,
+                                                         editor_widget=editor_widget,
+                                                         command_widget=command_widget,
+                                                         **kwargs)
+
+
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
-        editor_widgets['line_tracer'].do_helper_line = True
+        editor_widgets['line_tracer'].do_helper_line = self.do_helper_line
         editor_widgets['line_tracer'].bind(points=self.current_selection_and_mask_from_points)
         return editor_widgets
 
@@ -837,7 +852,6 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
     #    return self.list_view.rendered_views
 
 
-
 class CropObjectViewsParseTool(CropObjectViewsSelectTool):
 
     def select_applicable_objects(self, instance, points):
@@ -881,3 +895,27 @@ tool_dispatch = {
     'edge_views_select_tool': EdgeViewsSelectTool,
     'cropobject_views_parse_tool': CropObjectViewsParseTool,
 }
+
+
+def get_tool_kwargs_dispatch(name):
+
+    no_kwarg_tools = {
+        'viewing_tool': dict(),
+        'add_symbol_tool': dict(),
+        'trimmed_select_tool': dict(),
+        'connected_select_tool': dict(),
+        'lasso_select_tool': dict(),
+        'gesture_select_tool': dict(),
+        'cropobject_views_select_tool': dict(),
+        'edge_views_select_tool': dict(),
+        'cropobject_views_parse_tool': dict(),
+    }
+
+    if name in no_kwarg_tools:
+        return no_kwarg_tools[name]
+
+    app = App.get_running_app()
+    conf = app.config
+    if name == 'trimmed_lasso_select_tool':
+        return {'do_helper_line': bool(int(conf.get('toolkit',
+                                                    'trimmed_lasso_helper_line')))}
