@@ -16,6 +16,8 @@ then: args dict, formatted as key=value,key=value
 """
 from __future__ import print_function, unicode_literals
 import argparse
+import codecs
+import json
 import logging
 import numpy
 import time
@@ -53,6 +55,9 @@ def build_argument_parser():
     parser = argparse.ArgumentParser(description=__doc__, add_help=True,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    parser.add_argument('-i', '--input', action='store',
+                        help='Log file to be analyzed.')
+
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Turn on INFO messages.')
     parser.add_argument('--debug', action='store_true',
@@ -65,11 +70,15 @@ def main(args):
     logging.info('Starting main...')
     _start_time = time.clock()
 
+    with codecs.open(args.input, 'r', 'utf-8') as hdl:
+        log_data = json.load(hdl)
+
+    logging.info('Parsed {0} data items.'.format(len(log_data)))
     # Your code goes here
-    raise NotImplementedError()
+    # raise NotImplementedError()
 
     _end_time = time.clock()
-    logging.info('[XXXX] done in {0:.3f} s'.format(_end_time - _start_time))
+    logging.info('analyze_tracking_log.py done in {0:.3f} s'.format(_end_time - _start_time))
 
 
 if __name__ == '__main__':

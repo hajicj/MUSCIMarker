@@ -285,7 +285,12 @@ class CropObjectView(SelectableView, ToggleButton):
             logging.info('CropObjectView: cloning mlclass to app')
             self.clone_class_to_app()
 
-        # Show/hide info panel
+        # Hide relationships
+        elif dispatch_key == '104+alt':  # h
+            logging.info('CropObjectView: handling hiding relationships')
+            self.toggle_hide_relationships()
+
+        # Inspect CropObjects
         elif dispatch_key == '105':  # i
             logging.info('CropObjectView: handling inspection')
             #self.toggle_info_panel()
@@ -672,7 +677,64 @@ class CropObjectView(SelectableView, ToggleButton):
 
 
     ##########################################################################
+    # Hide relationships
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid),
+                                          lambda s: ('clsname', s._model_counterpart.clsname),
+                                          lambda s: ('inlinks', s._model_counterpart.inlinks),
+                                          lambda s: ('outlinks', s._model_counterpart.outlinks)]},
+
+                fn_name='CropObjectView.hide_relationships',
+                tracker_name='editing')
+    def hide_relationships(self):
+        edges = self.collect_all_edges()
+        App.get_running_app().graph_renderer.mask(edges)
+
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid),
+                                          lambda s: ('clsname', s._model_counterpart.clsname),
+                                          lambda s: ('inlinks', s._model_counterpart.inlinks),
+                                          lambda s: ('outlinks', s._model_counterpart.outlinks)]},
+
+                fn_name='CropObjectView.hide_relationships',
+                tracker_name='editing')
+    def show_relationships(self):
+        edges = self.collect_all_edges()
+        App.get_running_app().graph_renderer.unmask(edges)
+
+    def toggle_hide_relationships(self):
+        # A very private toggle switch that keeps track of whether
+        # the relationships are hidden or visible.
+        if not hasattr(self, '_relationships_hidden'):
+            self._relationships_hidden = False
+
+        if self._relationships_hidden:
+            self._relationships_hidden = False
+            self.show_relationships()
+        else:
+            self._relationships_hidden = True
+            self.hide_relationships()
+
+    def collect_all_edges(self):
+        edges = []
+        for i in self._model_counterpart.inlinks:
+            edges.append((i, self.objid))
+        for o in self._model_counterpart.outlinks:
+            edges.append((self.objid, o))
+        return edges
+
+
+
+    ##########################################################################
     # Inspect mask
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
+                                          lambda s: ('clsid', s._model_counterpart.clsid),
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
+                fn_name='CropObjectView.clone_class_to_app',
+                tracker_name='editing')
     def inspect(self):
         """Shows the symbol's exact mask in the context of its bounding box
         in a popup."""

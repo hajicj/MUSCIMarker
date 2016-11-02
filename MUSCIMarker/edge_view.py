@@ -464,11 +464,32 @@ class ObjectGraphRenderer(FloatLayout):
         self.update_edge_adapter_data(instance=None,
                                       edges=self.graph.edges)
 
+    def mask(self, edges):
+        """Only acts on the given set of edges, doesn't change masking
+        for others."""
+        new_mask = {e: self.views_mask[e] for e in self.graph.edges}
+        for e in edges:
+            new_mask[e] = False
+        self.views_mask = new_mask
+        self.update_edge_adapter_data(instance=None,
+                                      edges=self.graph.edges)
+
     def unmask_all(self):
         new_mask = {e: e_label for e, e_label in self.graph.edges.iteritems()}
         self.views_mask = new_mask
         self.update_edge_adapter_data(instance=None,
                                       edges=self.graph.edges)
+
+    def unmask(self, edges):
+        """Only acts on the given set of edges, doesn't change masking
+        for others."""
+        new_mask = {e: self.views_mask[e] for e in self.graph.edges}
+        for e in edges:
+            new_mask[e] = True
+        self.views_mask = new_mask
+        self.update_edge_adapter_data(instance=None,
+                                      edges=self.graph.edges)
+
 
 ##############################################################################
 
