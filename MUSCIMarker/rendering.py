@@ -284,6 +284,11 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView: detaching selected CropObjects.')
             self.process_detach()
 
+        # alt+h for global hide relationships
+        if dispatch_key == '104+alt':
+            logging.info('CropObjectListView: hiding all relationships.')
+            self.process_hide_relationships()
+
         # P for actual parsing
         if dispatch_key == '112':
             logging.info('CropObjectListView: handling parse')
@@ -325,6 +330,24 @@ class CropObjectListView(ListView):
 
         a1, a2 = cropobjects[0].objid, cropobjects[1].objid
         self._model.graph.ensure_remove_edge(a1, a2)
+
+    def process_hide_relationships(self):
+        graph_renderer = App.get_running_app().graph_renderer
+        if len(self.adapter.selection) == 0:
+            if not graph_renderer.are_all_masked():
+                graph_renderer.mask_all()
+            else:
+                graph_renderer.unmask_all()
+        else:
+            edges = []
+            for v in self.adapter.selection:
+                e = v.collect_all_edges()
+                edges.extend(e)
+            edges = list(set(edges)) # Get unique
+            if not graph_renderer.are_all_masked(edges=edges):
+                graph_renderer.mask(edges=edges)
+            else:
+                graph_renderer.unmask(edges=edges)
 
     def send_current_selection_back(self):
         """Moves the selected items back in the rendering order,

@@ -707,14 +707,11 @@ class CropObjectView(SelectableView, ToggleButton):
     def toggle_hide_relationships(self):
         # A very private toggle switch that keeps track of whether
         # the relationships are hidden or visible.
-        if not hasattr(self, '_relationships_hidden'):
-            self._relationships_hidden = False
-
-        if self._relationships_hidden:
-            self._relationships_hidden = False
+        graph_renderer = App.get_running_app().graph_renderer
+        edges = self.collect_all_edges()
+        if graph_renderer.are_all_masked(edges):
             self.show_relationships()
         else:
-            self._relationships_hidden = True
             self.hide_relationships()
 
     def collect_all_edges(self):

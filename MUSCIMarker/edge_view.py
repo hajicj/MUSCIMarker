@@ -475,7 +475,7 @@ class ObjectGraphRenderer(FloatLayout):
                                       edges=self.graph.edges)
 
     def unmask_all(self):
-        new_mask = {e: e_label for e, e_label in self.graph.edges.iteritems()}
+        new_mask = {e: True for e, e_label in self.graph.edges.iteritems()}
         self.views_mask = new_mask
         self.update_edge_adapter_data(instance=None,
                                       edges=self.graph.edges)
@@ -490,6 +490,16 @@ class ObjectGraphRenderer(FloatLayout):
         self.update_edge_adapter_data(instance=None,
                                       edges=self.graph.edges)
 
+    def are_all_masked(self, edges=None):
+        if edges is None:
+            edges = self.graph.edges
+
+        masked = [e for e in edges
+                  if ((e in self.views_mask) and (self.views_mask[e] is False))]
+        logging.info('GraphRenderer: {0} masked, {1} total in mask'
+                     ''.format(len(masked), len(self.views_mask)))
+        output = (len(masked) == len(edges))
+        return output
 
 ##############################################################################
 
