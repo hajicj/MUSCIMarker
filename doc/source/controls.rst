@@ -403,8 +403,29 @@ the given selection is not supposed to react to the shortcut.
 =================   ================================================================
 **v**               Validate the current annnotation. Finds inconsistencies in how
                     relationships are being assigned to objects.
-**c**               Open symbol class selection dialog.
+**c**               Open symbol class selection dialog. (See below.)
 **alt+h**           Hide/Show all relationships.
 **1, 2, ...**       Select the n-th tool from the top.
 =================   ================================================================
 
+
+.. _controls_dialog_mlclass_selection:
+
+MLClass selection dialog
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The MLClass selection dialog enables quickly selecting new MLClasses
+by typing their names. The dialog will show you the suggested symbol
+in the input field and a list of available symbols with the given prefix
+(truncated to 5) below.
+
+**Controlling:**
+
+Type to enter text.
+
+Enter to confirm, Escape to cancel (or just press the buttons).
+
+Press "tab" to have the dialog guess the next part of
+the symbol name (it's never wrong, but sometimes it might not be able to
+come up with any guess at all). Try pressing tab when trying to get letters!
+It should speed up the process considerably.
