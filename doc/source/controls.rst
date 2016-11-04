@@ -370,6 +370,7 @@ The following keyboard shortcuts work on selected objects:
                     overlaps smaller ones, like text.)
 **i**               Inspect the selected object. **(New!)** A popup appears with
                     the object's exact position highlighted.
+**alt+h**           Hide/Show the selected objects' relationships.
 =================   ================================================================
 
 .. note::
@@ -396,7 +397,14 @@ selected relationships.
 Global keyboard shortcuts
 -------------------------
 
+These shortcuts work if no object or relationship is selected, or if
+the given selection is not supposed to react to the shortcut.
+
 =================   ================================================================
-*v*                 Validate the current annnotation. Finds inconsistencies in how
+**v**               Validate the current annnotation. Finds inconsistencies in how
                     relationships are being assigned to objects.
+**c**               Open symbol class selection dialog.
+**alt+h**           Hide/Show all relationships.
+**1, 2, ...**       Select the n-th tool from the top.
 =================   ================================================================
+

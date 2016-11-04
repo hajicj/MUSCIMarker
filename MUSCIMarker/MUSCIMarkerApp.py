@@ -228,6 +228,7 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
 import muscimarker_io
+from mlclass_selection import MLClassSelectionDialog
 from syntax.dependency_grammar import DependencyGrammar
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from edge_view import ObjectGraphRenderer
@@ -913,6 +914,10 @@ class MUSCIMarkerApp(App):
         if dispatch_key == '27':  # Escape
             self.currently_selected_tool_name = '_default'
 
+        elif dispatch_key == '99': # c
+            logging.info('Doing current MLClass selection dialog.')
+            self.open_mlclass_selection_dialog()
+
         elif dispatch_key == '118':  # "v" -- validate
             self.find_cropobjects_with_errors()
 
@@ -1516,6 +1521,11 @@ class MUSCIMarkerApp(App):
                 tracker_name='commands')
     def _mlclass_selection_spinner_closed(self):
         pass
+
+    def open_mlclass_selection_dialog(self):
+
+        dialog = MLClassSelectionDialog()
+        dialog.open()
 
     ##########################################################################
     # Tool selection
