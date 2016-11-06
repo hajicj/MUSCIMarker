@@ -34,6 +34,7 @@ notehead-full{1,} |
 # Rests
 
 whole_rest half_rest *th_rest | duration-dot
+*_rest | tuple
 
 ##############################################################################
 # Stem modifiers
