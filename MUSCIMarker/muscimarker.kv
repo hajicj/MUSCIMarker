@@ -496,10 +496,44 @@
         id: command_palette
         orientation: 'vertical'
 
-    GridLayout:
-        id: info_panel
-        orientation: 'vertical'
-        cols: 1
+    # Displaying information on currently selected CropObjects
+    ScrollView:
+        size_hint: (0.8, 1.0)
+        bar_width: 5
+        scroll_type: ['content']
+
+        do_scroll_x: False
+        do_scroll_y: True
+
+        bar_margin: self.width * 0.1
+
+        GridLayout:
+            id: info_panel
+            orientation: 'vertical'
+            cols: 1
+            size_hint: (1.0, None)
+            pos_hint: (None, None)
+
+            # This is really important: doesn't scroll without it.
+            height: self.minimum_height
+
+            padding: [25, 0]
+
+            canvas.before:
+                Color:
+                    rgba: 0.3, 0.3, 0.3, 0.9
+                Rectangle:
+                    pos: self.x + self.width * 0.1, self.y
+                    size: self.width * 0.8, self.height
+                #Color:
+                #    rgba: 1.0, 1.0, 1.0, 0.9
+                #Rectangle:
+                #    pos: self.x, self.y - 1
+                #    size: self.width, 4
+                #Rectangle:
+                #    pos: self.x, self.top - 1
+                #    size: self.width, 4
+
 
     BoxLayout:
         id: command_sidebar_filler
