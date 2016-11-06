@@ -163,7 +163,7 @@ class ObjectGraph(Widget):
 
     def _clear_obj_outlinks(self, objid):
         """Remove the node's outlinks, and remove it from the inlinks
-        of the notdes it outlinks to."""
+        of the nodes it outlinks to."""
         if objid in self._outlinks:
             outlinks = self._outlinks[objid]
             for o in outlinks:
@@ -250,13 +250,28 @@ class CropObjectAnnotatorModel(Widget):
     @Tracker(track_names=['cropobject'],
              transformations={'cropobject': [lambda c: ('objid', c.objid),
                                              lambda c: ('clsid', c.clsid),
+                                             lambda c: ('mlclass_name', c.clsname),
                                              lambda c: ('tool_used', App.get_running_app().currently_selected_tool_name)]
                               },
              fn_name='model.add_cropobject',
              tracker_name='model')
-    def add_cropobject(self, cropobject):
+    def add_cropobject(self, cropobject, perform_checks=True):
+        if perform_checks:
+            if not self._is_cropobject_valid(cropobject):
+                logging.info('Model: Adding cropobject {0}: invalid!'
+                             ''.format(cropobject.objid))
+                return
+
         self.graph.add_vertex(cropobject.objid)
         self.cropobjects[cropobject.objid] = cropobject
+
+    def _is_cropobject_valid(self, cropobject):
+        t, l, b, r = cropobject.bounding_box
+        if (b - t) * (r - l) < 10:
+            logging.warn('Model: Trying to add a CropObject that is very small'
+                         ' ({0} x {1})'.format(cropobject.height, cropobject.width))
+            return False
+        return True
 
     @Tracker(track_names=['key'],
              transformations={'key': [lambda key: ('objid', key)]},
@@ -335,12 +350,16 @@ class CropObjectAnnotatorModel(Widget):
         logging.info('Model: Syncing {0} attachments to CropObjects.'
                      ''.format(len(self.graph.edges)))
 
-        for objid in self.graph._inlinks:
-            c = self.cropobjects[objid]
-            c.inlinks = list(self.graph._inlinks[objid])
-        for objid in self.graph._outlinks:
-            c = self.cropobjects[objid]
-            c.outlinks = list(self.graph._outlinks[objid])
+        for c in self.cropobjects.values():
+            if c.objid in self.graph._inlinks:
+                c.inlinks = list(self.graph._inlinks[c.objid])
+            else:
+                c.inlinks = []
+
+            if c.objid in self.graph._outlinks:
+                c.outlinks = list(self.graph._outlinks[c.objid])
+            else:
+                c.outlinks = []
 
     def sync_cropobjects_to_graph(self):
         """Ensures that the attachment structure in CropObjects

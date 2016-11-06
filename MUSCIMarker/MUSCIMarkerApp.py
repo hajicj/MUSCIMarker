@@ -235,7 +235,7 @@ from edge_view import ObjectGraphRenderer
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
 from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key, \
-    MessageDialog
+    MessageDialog, OnBindFileSaver
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
 import tracker as tr
@@ -478,7 +478,8 @@ class MUSCIMarkerApp(App):
     '''Handler for reloading the CropObjectList definition.'''
 
     # Set overwriting to False for production.
-    cropobject_list_saver = ObjectProperty(FileSaver(overwrite=True))
+    cropobject_list_saver = ObjectProperty(OnBindFileSaver(overwrite=True))
+    cropobject_list_export_path = StringProperty()
 
     cropobject_list_renderer = ObjectProperty()
     '''The renderer is responsible for showing the current state
@@ -572,6 +573,8 @@ class MUSCIMarkerApp(App):
         logging.info('Build: Setting default export dir to the cropobject list dir: {0}'
                      ''.format(saver_output_path))
         self.cropobject_list_saver.last_output_path = saver_output_path
+        self.cropobject_list_saver.bind(filename=lambda *args, **kwargs: self.annot_model.export_cropobjects(
+                                                         self.cropobject_list_saver.filename))
 
         logging.info('Build: started loading grammar from config')
         _grammar_abspath = os.path.abspath(conf.get('default_input_files',
@@ -917,9 +920,20 @@ class MUSCIMarkerApp(App):
         elif dispatch_key == '99': # c
             logging.info('Doing current MLClass selection dialog.')
             self.open_mlclass_selection_dialog()
+        # This is a shortcut that can be used even if there
+        # are selected CropObjects that would respond to "c"
+        elif dispatch_key == '99+alt': # alt+c
+            logging.info('Doing current MLCLass selection dialog, forced')
+            self.open_mlclass_selection_dialog()
+
+        elif dispatch_key == '115+shift':  # "shift+S" -- select all of current clsname
+            logging.info('Selecting all CropObjects of the current clsname.')
+            view = self.cropobject_list_renderer.view
+            view.select_class(self.currently_selected_mlclass_name)
 
         elif dispatch_key == '118':  # "v" -- validate
             self.find_cropobjects_with_errors()
+
 
         logging.info('App: Checking keyboard dispatch, {0}'
                      ''.format(self.keyboard_dispatch.keys()))
@@ -1522,10 +1536,13 @@ class MUSCIMarkerApp(App):
     def _mlclass_selection_spinner_closed(self):
         pass
 
+    @tr.Tracker(track_names=[],
+                tracker_name='commands')
     def open_mlclass_selection_dialog(self):
 
-        dialog = MLClassSelectionDialog()
-        dialog.open()
+        Clock.schedule_once(lambda *args, **kwargs: MLClassSelectionDialog().open())
+        # dialog = MLClassSelectionDialog()
+        # dialog.open()
 
     ##########################################################################
     # Tool selection

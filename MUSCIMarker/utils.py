@@ -229,6 +229,30 @@ class FileSaver(FloatLayout):
         self.dismiss_popup()
 
 
+class OnBindFileSaver(FileSaver):
+    """This FileSaver fakes the saving: it just fills in the filename
+    property on the save() call and expects someone else binding to
+    this property to do the actual saving."""
+    filename = StringProperty(force_dispatch=True)
+
+    def save(self, path, filename):
+        output_path = os.path.join(path, filename)
+        if os.path.isdir(output_path):
+            logging.error('Export: Selected output is a directory! {0}'
+                          ''.format(output_path))
+            self.dismiss_popup()
+        if os.path.isfile(output_path):
+            if not self.overwrite:
+                logging.error('Export: Selected output exists! {0}'
+                              ''.format(output_path))
+                self.dismiss_popup()
+
+        # Leaves the saving for later.
+
+        self.filename = output_path
+        self.last_output_path = output_path
+        self.dismiss_popup()
+
 ##############################################################################
 
 

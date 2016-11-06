@@ -424,7 +424,7 @@
         id: cropobject_list_save_button
         text: 'Export CropObjectList file'
         on_release: app.cropobject_list_saver.show_save(path=os.path.dirname(app.cropobject_list_saver.last_output_path))
-        on_press: app.cropobject_list_saver.to_save = app.annot_model.export_cropobjects_string(mlclasslist_file=app.mlclass_list_loader.filename, image_file=app.image_loader.filename)
+        # on_press: app.cropobject_list_saver.to_save = app.annot_model.export_cropobjects_string(mlclasslist_file=app.mlclass_list_loader.filename, image_file=app.image_loader.filename)
 
     Label:
         size_hint: 1.0, 0.1

@@ -570,8 +570,8 @@ class EdgeListView(ListView):
             self._count -= 1
             # logging.debug('EdgeListView.populate: Finished removing edge {0}'.format(w_key))
 
-        logging.info('EdgeListView.populate: Edges in container after removal: {0}'
-                     ''.format([ww.edge for ww in container.children]))
+        #logging.info('EdgeListView.populate: Edges in container after removal: {0}'
+        #             ''.format([ww.edge for ww in container.children]))
 
         rendered_edges = set([ww.edge for ww in self.container.children[:]])
 
