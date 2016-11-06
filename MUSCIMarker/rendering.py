@@ -21,6 +21,7 @@ from kivy.uix.widget import Widget
 
 from cropobject_view import CropObjectView
 from muscimarker_io import cropobjects_merge_bbox, cropobjects_merge_mask
+import tracker as tr
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -179,6 +180,10 @@ class CropObjectListView(ListView):
         the CropObjectListView holds."""
         return [cv for cv in self.container.children[:]]
 
+    @property
+    def selected_views(self):
+        return [cv for cv in self.rendered_views if cv.is_selected]
+
     def _adapter_key2index(self, key):
         """Converts a key into an adapter index, so that we can request
         views based on the keys from the adapter. This avoids having to
@@ -201,6 +206,16 @@ class CropObjectListView(ListView):
             #w.deselect()
             #if hasattr(w, 'is_selected'):
             #    w.is_selected = False
+
+    def select_class(self, clsname):
+        """Select all CropObjects of the given class."""
+        for c in self.container.children[:]:
+            if c._model_counterpart.clsname == clsname:
+                if c.is_selected is False:
+                    c.dispatch('on_release')
+            else:
+                if c.is_selected is True:
+                    c.dispatch('on_release')
 
     ##########################################################################
     # Keyboard event trapping
@@ -425,6 +440,15 @@ class CropObjectListView(ListView):
         for s in self.adapter.selection:
             s.set_mlclass(clsid=clsid, clsname=clsname)
 
+    @tr.Tracker(track_names=['self'],
+             transformations={'self': [
+                 lambda v: ('objids', [c.objid for c in v.selected_views]),
+                 lambda v: ('mlclass_names', [c._model_counterpart.clsname
+                                              for c in v.selected_views])
+             ]
+                              },
+             fn_name='CropObjectListView.parse_current_selection',
+             tracker_name='model')
     def parse_current_selection(self, unselect_at_end=True):
         """Adds edges among the current selection according to the model's
         grammar and parser."""

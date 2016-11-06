@@ -176,6 +176,18 @@ class CropObjectView(SelectableView, ToggleButton):
         pass
 
     ##########################################################################
+    # Touch processing
+    # def on_touch_down(self, touch):
+    #     super(CropObjectView, self).on_touch_down(touch)
+    #
+    #     if touch.is_double_tap:
+    #         if self.collide_point(*touch.pos):
+    #             renderer = App.get_running_app().cropobject_list_renderer
+    #             renderer.view.select_class(self._model_counterpart.clsname)
+    #             return True
+
+
+    ##########################################################################
     # Keyboard event processing: the core UI of the CropObjectView
     def on_key_down(self, window, key, scancode, codepoint, modifier):
         """This method is one of the primary User Interfaces: keyboard
