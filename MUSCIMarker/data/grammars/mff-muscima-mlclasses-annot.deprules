@@ -28,7 +28,7 @@ notehead-full{1,} |
 | duration-dot{1,} other-dot{1,} tenuto{1,} accent{1,} strong_accent{1,}
 | sharp{1,} flat{1,} natural{1,} double_sharp{1,} double_flat{1,}
 | ledger_line{1,}
-| curved-line_(tie-or-slur){1,} slur{1,} tie{1,}
+| curved-line_(tie-or-slur){1,} slur{2,} tie{2,}
 
 ##############################################################################
 # Rests
@@ -82,4 +82,4 @@ other_numeric_sign | numeral_*
 *_text{1,} |
 rehearsal_mark{1,} |
 | numeral_*{1,}
-| letter_*{1,}
+| letter_*{1,1}
