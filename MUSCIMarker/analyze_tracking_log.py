@@ -173,6 +173,9 @@ def main(args):
     logging.info('analyze_tracking_log.py done in {0:.3f} s'.format(_end_time - _start_time))
 
 
+##############################################################################
+
+
 if __name__ == '__main__':
     parser = build_argument_parser()
     args = parser.parse_args()

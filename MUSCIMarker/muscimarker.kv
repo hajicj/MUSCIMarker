@@ -437,13 +437,17 @@
         # text: 'Last export dir: {0}'.format(os.path.basename(app.cropobject_list_saver.last_output_path))
         color: 0.7, 0.7, 0.7, 1
 
+    ###########
+    # How many objects & relationships are there?
     Label:
+        id: cropobject_counter_label
         size_hint: 1.0, 0.1
-        text: 'CropObjects: {0}'.format(len(app.annot_model.cropobjects))
+        text: 'Objects: {0} (sel.: {1})'.format(len(app.annot_model.cropobjects), app.n_selected_cropobjects)
 
     Label:
+        id: relationship_counter_label
         size_hint: 1.0, 0.1
-        text: 'Relationships: {0}'.format(len(app.annot_model.graph.edges))
+        text: 'Relationships: {0} (sel.: {1})'.format(len(app.annot_model.graph.edges), app.n_selected_relationships)
 
     Label:
         size_hint: 1.0, 0.1

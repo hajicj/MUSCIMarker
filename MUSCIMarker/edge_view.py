@@ -322,6 +322,7 @@ class ObjectGraphRenderer(FloatLayout):
                                  size_hint=(None, None),
                                  size=self.size,
                                  pos=self.pos)
+        self.edge_adapter.bind(on_selection_change=self.view.broadcast_selection)
 
         self.views_mask = dict()
 
@@ -501,6 +502,7 @@ class ObjectGraphRenderer(FloatLayout):
         output = (len(masked) == len(edges))
         return output
 
+
 ##############################################################################
 
 
@@ -518,15 +520,24 @@ class EdgeListView(ListView):
         return self._model.graph
 
     @property
-    def rendered_edges(self):
+    def rendered_views(self):
+        if self.container is None:
+            return []
         return self.container.children
+
+    @property
+    def selected_views(self):
+        return [ev for ev in self.rendered_views if ev.is_selected]
+
+    def broadcast_selection(self, *args, **kwargs):
+        App.get_running_app().selected_relationships = self.selected_views
 
     def log_rendered_edges(self):
         # logging.info('EdgeListView.log_rendered_edges: self.pos = {0},'
         #              ' self.wpos = {1},'
         #              ' self.size = {2}'.format(self.pos, self.to_window(*self.pos),
         #                                        self.size))
-        for e in self.rendered_edges:
+        for e in self.rendered_views:
             logging.info('EdgeListView.log_rendered_edges: edge {0} with'
                          ' pos {1}, wpos {2}, size {3}'.format(e.edge,
                                                                e.pos,

@@ -12,7 +12,7 @@ from kivy.app import App
 from kivy.compat import PY2
 from kivy.core.window import Window
 from kivy.lang import Builder
-from kivy.properties import DictProperty, ObjectProperty, ListProperty, NumericProperty, BooleanProperty
+from kivy.properties import DictProperty, ObjectProperty, ListProperty, NumericProperty, BooleanProperty, AliasProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.listview import ListItemButton, ListView, SelectableView, ListItemReprMixin, CompositeListItem
 from kivy.uix.relativelayout import RelativeLayout
@@ -169,8 +169,8 @@ class CropObjectListView(ListView):
             container.add_widget(item_view, index=ins_index)
             self._count += 1
 
-        logging.info('CropObjectListView.populate(): finished, available'
-                     ' CropObjects: {0}'.format([c.objid for c in self.rendered_views]))
+        #logging.info('CropObjectListView.populate(): finished, available'
+        #             ' CropObjects: {0}'.format([c.objid for c in self.rendered_views]))
         logging.info('CropObjectListView.populate(): selection size: {0}'
                      ''.format(len(self.adapter.selection)))
 
@@ -178,11 +178,20 @@ class CropObjectListView(ListView):
     def rendered_views(self):
         """The list of actual rendered CropObjectViews that
         the CropObjectListView holds."""
+        if self.container is None:
+            return []
         return [cv for cv in self.container.children[:]]
 
     @property
     def selected_views(self):
         return [cv for cv in self.rendered_views if cv.is_selected]
+
+    def broadcast_selection(self, *args, **kwargs):
+        '''Passes the selection on to the App.'''
+        logging.warn('CropObjectListView: changed on_selected_views, now: {0}'
+                     ''.format(len(self.selected_views)))
+        App.get_running_app().selected_cropobjects = self.selected_views
+
 
     def _adapter_key2index(self, key):
         """Converts a key into an adapter index, so that we can request
@@ -426,10 +435,10 @@ class CropObjectListView(ListView):
 
         self.render_new_to_back = True
         c = App.get_running_app().generate_cropobject_from_model_selection({'top': t,
-                                                                   'left': l,
-                                                                   'bottom': b,
-                                                                   'right': r},
-                                                                  mask=mask)
+                                                                            'left': l,
+                                                                            'bottom': b,
+                                                                            'right': r},
+                                                                           mask=mask)
         self._model.add_cropobject(c)
         # Problem with retaining selection: this triggers repopulation
         self.render_new_to_back = False
@@ -441,14 +450,14 @@ class CropObjectListView(ListView):
             s.set_mlclass(clsid=clsid, clsname=clsname)
 
     @tr.Tracker(track_names=['self'],
-             transformations={'self': [
-                 lambda v: ('objids', [c.objid for c in v.selected_views]),
-                 lambda v: ('mlclass_names', [c._model_counterpart.clsname
-                                              for c in v.selected_views])
-             ]
-                              },
-             fn_name='CropObjectListView.parse_current_selection',
-             tracker_name='model')
+                transformations={'self': [
+                    lambda v: ('objids', [c.objid for c in v.selected_views]),
+                    lambda v: ('mlclass_names', [c._model_counterpart.clsname
+                                                 for c in v.selected_views])
+                ]
+                },
+                fn_name='CropObjectListView.parse_current_selection',
+                tracker_name='model')
     def parse_current_selection(self, unselect_at_end=True):
         """Adds edges among the current selection according to the model's
         grammar and parser."""
@@ -554,6 +563,7 @@ class CropObjectRenderer(FloatLayout):
                                        size_hint=(None, None),
                                        size=self.size, #(self.size[0] / 2, self.size[1] / 2),
                                        pos=self.pos)
+        self.adapter.bind(on_selection_change=self.view.broadcast_selection)
 
         # Keyboard event trapping implemented there.
         Window.bind(on_key_down=self.view.on_key_down)

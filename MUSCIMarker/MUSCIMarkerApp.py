@@ -481,23 +481,43 @@ class MUSCIMarkerApp(App):
     cropobject_list_saver = ObjectProperty(OnBindFileSaver(overwrite=True))
     cropobject_list_export_path = StringProperty()
 
+    ##########################################################################
+    # View of the annotated CropObjects and relationships, and exposing
+    # them to the rest of the app.
     cropobject_list_renderer = ObjectProperty()
     '''The renderer is responsible for showing the current state
     of the annotation as (semi-)transparent bounding boxes overlaid
     over the editor image.'''
 
+    selected_cropobjects = ListProperty()
+    '''Bind fixed UI elements that need to know which CropObjects
+     are selected to this. It has to be actively updated by the Views.'''
+
+    def _get_n_selected_cropobjects(self): return len(self.selected_cropobjects)
+    n_selected_cropobjects = AliasProperty(_get_n_selected_cropobjects, None,
+                                           bind=['selected_cropobjects'])
+    '''For counting how many CropObjects are selected.'''
+
     graph_renderer = ObjectProperty()
     '''The edge renderer is responsible for showing the current state
     of the object graph as lines overlaid on the editor image.'''
+
+    selected_relationships = ListProperty()
+    '''Bind fixed UI elements that need to know which Edges
+     are selected to this.'''
+
+    def _get_n_selected_relationships(self): return len(self.selected_relationships)
+    n_selected_relationships = AliasProperty(_get_n_selected_relationships, None,
+                                           bind=['selected_relationships'])
+    '''For counting how many CropObjects are selected.'''
 
     #######################################
     # In-app messages (not working yet)
     message = ObjectProperty(None)
 
     #######################################
-    # Keyboard shortcuts (at the app level, there are none so far
-    # and keyboard shortcut handling is pretty decentralized & not
-    # great)
+    # Keyboard shortcuts (keyboard shortcut handling is pretty
+    # decentralized & not great)
     keyboard_dispatch = DictProperty(None)
     '''
     '''
@@ -564,7 +584,7 @@ class MUSCIMarkerApp(App):
 
         logging.info('Build: Started loading cropobjects from config')
         _cropobject_list_abspath = os.path.abspath(conf.get('default_input_files',
-                                                        'cropobject_list_file'))
+                                                            'cropobject_list_file'))
         self.cropobject_list_loader.filename = _cropobject_list_abspath
         logging.info('Build: Finished loading cropobject list fname from config: {0}'
                      ''.format(self.cropobject_list_loader.filename))
@@ -574,7 +594,7 @@ class MUSCIMarkerApp(App):
                      ''.format(saver_output_path))
         self.cropobject_list_saver.last_output_path = saver_output_path
         self.cropobject_list_saver.bind(filename=lambda *args, **kwargs: self.annot_model.export_cropobjects(
-                                                         self.cropobject_list_saver.filename))
+            self.cropobject_list_saver.filename))
 
         logging.info('Build: started loading grammar from config')
         _grammar_abspath = os.path.abspath(conf.get('default_input_files',
@@ -1389,7 +1409,7 @@ class MUSCIMarkerApp(App):
                                       clsid=new_cropobject_clsid,
                                       clsname=new_cropobject_clsname,
                                       # Hah -- here, having the Image as the parent widget
-                          # of the bbox selection tool is kind of useful...
+                                      # of the bbox selection tool is kind of useful...
                                       x=x_scaled_inverted,
                                       y=y_scaled,
                                       width=width_scaled,
@@ -1427,7 +1447,7 @@ class MUSCIMarkerApp(App):
 
         new_cropobject_clsname = self.annot_model.mlclasses[new_cropobject_clsid].name
 
-        mT, mL, mB, mR = selection['top'], selection['left'],\
+        mT, mL, mB, mR = selection['top'], selection['left'], \
                          selection['bottom'], selection['right']
         mH = mB - mT
         mW = mR - mL
