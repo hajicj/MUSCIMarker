@@ -33,7 +33,7 @@ mlclass_selection_dialog_kv = '''
         TextInput:
             id: text_input
             size_hint_y: None
-            height: sp(24)
+            height: dp(24)
             multiline: False
             focus: True
             text: ''
@@ -42,7 +42,7 @@ mlclass_selection_dialog_kv = '''
 
         BoxLayout:
             size_hint_y: None
-            height: sp(24)
+            height: dp(24)
 
             Button:
                 id: cancel
@@ -57,7 +57,7 @@ mlclass_selection_dialog_kv = '''
         Label:
             id: available_names_label
             size_hint_y: None
-            height: sp(24)
+            height: dp(24)
             text: ''
 '''
 
