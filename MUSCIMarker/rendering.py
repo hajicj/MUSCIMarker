@@ -11,6 +11,7 @@ from kivy.adapters.simplelistadapter import SimpleListAdapter
 from kivy.app import App
 from kivy.compat import PY2
 from kivy.core.window import Window
+from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.properties import DictProperty, ObjectProperty, ListProperty, NumericProperty, BooleanProperty, AliasProperty
 from kivy.uix.floatlayout import FloatLayout
@@ -188,10 +189,9 @@ class CropObjectListView(ListView):
 
     def broadcast_selection(self, *args, **kwargs):
         '''Passes the selection on to the App.'''
-        logging.warn('CropObjectListView: changed on_selected_views, now: {0}'
-                     ''.format(len(self.selected_views)))
-        App.get_running_app().selected_cropobjects = self.selected_views
-
+        def _do_broadcast_selection(*args, **kwargs):
+            App.get_running_app().selected_cropobjects = self.selected_views
+        Clock.schedule_once(_do_broadcast_selection)
 
     def _adapter_key2index(self, key):
         """Converts a key into an adapter index, so that we can request

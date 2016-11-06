@@ -8,6 +8,7 @@ import pprint
 import math
 from kivy.adapters.dictadapter import DictAdapter
 from kivy.app import App
+from kivy.clock import  Clock
 from kivy.core.window import Window
 from kivy.graphics import Color, Line, Rectangle
 from kivy.properties import ObjectProperty, NumericProperty, BooleanProperty, ListProperty, DictProperty
@@ -530,7 +531,10 @@ class EdgeListView(ListView):
         return [ev for ev in self.rendered_views if ev.is_selected]
 
     def broadcast_selection(self, *args, **kwargs):
-        App.get_running_app().selected_relationships = self.selected_views
+        '''Passes the selection on to the App.'''
+        def _do_broadcast_selection(*args, **kwargs):
+            App.get_running_app().selected_relationships = self.selected_views
+        Clock.schedule_once(_do_broadcast_selection)
 
     def log_rendered_edges(self):
         # logging.info('EdgeListView.log_rendered_edges: self.pos = {0},'
