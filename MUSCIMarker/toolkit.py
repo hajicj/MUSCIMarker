@@ -118,6 +118,15 @@ class MUSCIMarkerTool(Widget):
         m_points = [self.app_ref.image_scaler.point_widget2model(wX, wY)
                     for wX, wY in point_set_as_tuples]
         m_points = [(int(x), int(y)) for x, y in m_points]
+
+        # Let's deal with points on the boundary or outside
+        m_points_x, m_points_y = zip(*m_points)
+        m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
+                      for x in m_points_x]
+        m_points_y = [max(0, min(y, self.app_ref.image_scaler.model_width - 1))
+                      for y in m_points_y]
+        m_points = zip(m_points_x, m_points_y)
+
         return m_points
 
     def model_mask_from_points(self, m_points):
