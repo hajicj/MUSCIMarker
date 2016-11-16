@@ -261,11 +261,94 @@ class ConnectedSelectTool(AddSymbolTool):
 
     current_cropobject_selection = ObjectProperty(None)
 
+    # Caches.
+    _cc = NumericProperty(-1)
+    _labels = ObjectProperty(None)
+    _bboxes = ObjectProperty(None)
+
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
-        editor_widgets['bbox_tracer'] = ConnectedComponentBoundingBoxTracer()
+        editor_widgets['bbox_tracer'] = BoundingBoxTracer()
         editor_widgets['bbox_tracer'].bind(current_finished_bbox=self.current_selection_and_mask_from_bbox_tracer)
         return editor_widgets
+
+    def current_selection_and_mask_from_bbox_tracer(self, instance, pos):
+
+        # Clear the last mask
+        #self.current_cropobject_mask = None
+        # ...should not be necessary
+
+        # Get mask
+        ed_t, ed_l, ed_b, ed_r = pos['top'], pos['left'], \
+                                 pos['bottom'], pos['right']
+
+        m_t, m_l, m_b, m_r = self.editor_to_model_bbox(ed_t, ed_l, ed_b, ed_r)
+        m_t, m_l, m_b, m_r = bbox_to_integer_bounds(m_t, m_l, m_b, m_r)
+
+        # Processing a single click: converting to single-pixel bbox
+        if (m_t == m_b) and (m_l == m_r):
+            m_t = int(m_t)
+            m_b = int(m_b) + 1
+            m_l = int(m_l)
+            m_r = int(m_r) + 1
+
+        mask, cc_bbox = self.cc_model_mask_and_bbox_from_model_bbox(m_t, m_l, m_b, m_r)
+
+        if mask is None:
+            logging.info('CCSelect: no mask')
+            return
+
+        self.current_cropobject_mask = mask
+
+        # Now create current selection
+        cc_t, cc_l, cc_b, cc_r = cc_bbox
+        self.current_cropobject_model_selection = {'top': cc_t,
+                                                   'left': cc_l,
+                                                   'bottom': cc_b,
+                                                   'right': cc_r}
+        # self.current_selection_from_bbox_tracer(instance=instance, pos=pos)
+
+    def cc_model_mask_and_bbox_from_model_bbox(self, t, l, b, r):
+        """The "clever" part of the CC tracking."""
+        logging.info('CCselect: getting mask and new bounding box from labels.')
+
+        self._cc = self._model.cc
+        self._labels = self._model.labels
+        self._bboxes = self._model.bboxes
+
+        selected_labels = set([l for l in self._labels[t:b, l:r].flatten()
+                               if l != 0])  # Ignore background
+        # Nothing selected
+        if len(selected_labels) == 0:
+            logging.warn('CCselect: no cc selected!')
+            return None, None
+
+        logging.info('CCSelect: got labels {0}'.format(selected_labels))
+
+        selected_bboxes = numpy.array([self._bboxes[l] for l in selected_labels])
+
+        # Get the combined bbox
+        cc_t = min(selected_bboxes[:,0])
+        cc_l = min(selected_bboxes[:,1])
+        cc_b = max(selected_bboxes[:,2])
+        cc_r = max(selected_bboxes[:,3])
+
+        # Mask:
+        #   - crop the labels to this box
+        lcrop = self._labels[cc_t:cc_b, cc_l:cc_r]
+
+        #   - create the zeros
+        mask = numpy.zeros(lcrop.shape, dtype='uint8')
+
+        #   - mark as 1 all pixels that have one of the selected labels
+        #     in the crop
+        for l in selected_labels:
+            logging.info('CCSelect: running mask against label {0}'.format(l))
+            mask[lcrop == l] = 1
+
+        return mask, (cc_t, cc_l, cc_b, cc_r)
+
+
 
 ###############################################################################
 
@@ -279,7 +362,6 @@ class TrimmedSelectTool(AddSymbolTool):
         editor_widgets['bbox_tracer'] = TrimmedBoundingBoxTracer()
         editor_widgets['bbox_tracer'].bind(current_finished_bbox=self.current_selection_from_bbox_tracer)
         return editor_widgets
-
 
 ###############################################################################
 

@@ -253,9 +253,6 @@ class ConnectedComponentBoundingBoxTracer(BoundingBoxTracer):
     a postprocessing step. For that, it needs a reference to the current
     image, by way of image *data*.
 
-    The usage, however, is different. Instead of the ``current_finished_bbox``
-    property, bind to the ``current_postprocessed_bbox``.
-
     To manipulate the image data, it also needs recomputing the bounding box
     to its Numpy-world counterpart.
 
@@ -264,7 +261,7 @@ class ConnectedComponentBoundingBoxTracer(BoundingBoxTracer):
     '''Overrides the original bbox selector setting to allow single-click
     selection.'''
 
-    current_postprocessed_bbox = DictProperty()
+    # current_postprocessed_bbox = DictProperty()
 
     # Caches.
     _cc = NumericProperty(-1)
