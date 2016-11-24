@@ -108,6 +108,26 @@ def try_correct_crashed_json(fname):
         return None
 
 
+def unique_logs(event_logs):
+    """Checks that the event logs are unique using the start event
+    timestamp. Returns a list of unique event logs. If two have the same
+    timestamp, the first one is used."""
+    unique = collections.OrderedDict()
+    for l in event_logs:
+        init_event = l[0]
+        if '-time-' not in init_event:
+            raise ValueError('Got a non-event log JSON list! Supposed init event: {0}'
+                             ''.format(init_event))
+        init_time  = init_event['-time-']
+        if init_time in unique:
+            logging.warn('Found non-unique event log with timestamp {0} ({1} events)!'
+                         ' Using first ({2} events).'
+                         ''.format(init_time, len(l), len(unique[init_time])))
+        else:
+            unique[init_time] = l
+    return unique.values()
+
+
 ##############################################################################
 # Visualization
 
@@ -220,14 +240,17 @@ def main(args):
         log_files = logs_from_package(package)
         args.input = log_files
 
-    log_data = []
+    log_data_per_file = []
     for input_file in args.input:
         if not os.path.isfile(input_file):
             raise ValueError('Log file {0} not found!'.format(input_file))
+
+        current_log_data = []
+
         with codecs.open(input_file, 'r', 'utf-8') as hdl:
             try:
                 current_log_data = json.load(hdl)
-                log_data += current_log_data
+
             except ValueError:
                 logging.warn('Could not parse JSON file {0}'.format(input_file))
                 logging.info('Attempting to correct file.')
@@ -236,13 +259,22 @@ def main(args):
                     logging.warn('Attempting to parse corrected JSON.')
                     try:
                         current_log_data = json.loads(corrected)
-                        log_data += current_log_data
                     except ValueError:
                         logging.warn('Could not even parse corrected JSON, skipping file.')
                         raise
                     logging.warn('Success!')
                 else:
                     logging.warn('Unable to correct JSON, skipping file.')
+
+        log_data_per_file.append(current_log_data)
+
+    logging.info('Checking logs for uniqueness. Started with {0} log files.'
+                 ''.format(len(log_data_per_file)))
+    log_data_per_file = unique_logs(log_data_per_file)
+    logging.info('After uniqueness check: {0} logs left.'.format(len(log_data_per_file)))
+
+    log_data = [e for e in itertools.chain(*log_data_per_file)]
+
 
     logging.info('Parsed {0} data items.'.format(len(log_data)))
     # Your code goes here
