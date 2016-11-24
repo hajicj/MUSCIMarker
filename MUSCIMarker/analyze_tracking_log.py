@@ -22,14 +22,13 @@ from __future__ import print_function, unicode_literals
 import argparse
 import codecs
 import collections
+import io
+import itertools
 import json
 import logging
-
-import itertools
-import os
-
-import io
 import numpy
+import os
+import pprint
 import time
 
 import matplotlib.pyplot as plt
@@ -54,6 +53,19 @@ def freqdict(l, sort=True):
 
 ##############################################################################
 
+def is_annotation_package(path):
+    """Checks that the given path is an annotation package."""
+    if not os.path.isdir(path):
+        return False
+    subdirs = os.listdir(path)
+    if 'source_images' not in subdirs:
+        return False
+    if 'annotations' not in subdirs:
+        return False
+    if 'annotation_logs' not in subdirs:
+        return False
+    return True
+
 
 def logs_from_package(package):
     """Collects all log file names (with complete paths) from the given package.
@@ -71,16 +83,39 @@ def logs_from_package(package):
                          ''.format(package))
     # Collect all log days
     log_days = os.listdir(log_path)
+
+    # Dealing with people who copied the entire .muscimarker-tracking directory
+    # (potentially without the dot, as just "muscimarker-tracking")
+    if len(log_days) == 0:
+        logging.info('No logs in package {0}!'.format(package))
+        return []
+
+    if log_days[-1].endswith('muscimarker-tracking'):
+        log_path = os.path.join(log_path, log_days[-1])
+        log_days = os.listdir(log_path)
+
     log_files = []
     for day in log_days:
+
+        # .DS_store and other hidden files
         if day.startswith('.'):
             continue
+
+        # Dealing with people who copied only the JSON files
+        if day.endswith('json'):
+            logging.info('Found log file that is not inside a day dir: {0}'
+                         ''.format(day))
+            log_files.append(os.path.join(log_path, day))
+            continue
+
         day_log_path = os.path.join(log_path, day)
         day_log_files = [os.path.join(day_log_path, l)
                          for l in os.listdir(day_log_path)]
         log_files += day_log_files
     logging.info('In package {0}: found {1} log files.'
                  ''.format(package, len(log_files)))
+    logging.debug('In package {0}: log files:\n{1}'
+                  ''.format(package, pprint.pformat(log_files)))
     return log_files
 
 
@@ -111,18 +146,25 @@ def try_correct_crashed_json(fname):
 def unique_logs(event_logs):
     """Checks that the event logs are unique using the start event
     timestamp. Returns a list of unique event logs. If two have the same
-    timestamp, the first one is used."""
+    timestamp, the first one is used.
+
+    For logging purposes, expects a dict of event logs. Keys are log file names,
+    values are the event lists.
+    """
     unique = collections.OrderedDict()
-    for l in event_logs:
+    for log_file, l in event_logs.iteritems():
+        if len(l) < 1:
+            logging.warn('Got an empty log from file {0}'.format(log_file))
+            continue
         init_event = l[0]
         if '-time-' not in init_event:
-            raise ValueError('Got a non-event log JSON list! Supposed init event: {0}'
-                             ''.format(init_event))
+            raise ValueError('Got a non-event log JSON list, file {0}! Supposed init event: {1}'
+                             ''.format(log_file, init_event))
         init_time  = init_event['-time-']
         if init_time in unique:
-            logging.warn('Found non-unique event log with timestamp {0} ({1} events)!'
-                         ' Using first ({2} events).'
-                         ''.format(init_time, len(l), len(unique[init_time])))
+            logging.warn('Found non-unique event log {0} with timestamp {1} ({2} events)!'
+                         ' Using first ({3} events).'
+                         ''.format(log_file, init_time, len(l), len(unique[init_time])))
         else:
             unique[init_time] = l
     return unique.values()
@@ -216,12 +258,13 @@ def build_argument_parser():
 
     parser.add_argument('-i', '--inputs', nargs='+', action='store',
                         help='Log files to be analyzed.')
-    parser.add_argument('-p', '--package', action='store',
+    parser.add_argument('-p', '--packages', nargs='+', action='store',
                         help='Annotation package. If set, will pull'
                              ' all log files in the package.')
     parser.add_argument('-a', '--annotator', action='store',
                         help='Annotator. If set, will pull all log files'
-                             ' for the given person.')
+                             ' from all packages in the given person\'s'
+                             ' annotation directory')
 
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Turn on INFO messages.')
@@ -235,12 +278,32 @@ def main(args):
     logging.info('Starting main...')
     _start_time = time.clock()
 
-    if args.package is not None:
-        package = args.package
-        log_files = logs_from_package(package)
+    if args.annotator is not None:
+        logging.info('Collecting annotation packages for annotator {0}'
+                     ''.format(args.annotator))
+        # Collect all packages, incl. training
+        packages = []
+        for d in os.listdir(args.annotator):
+            package_candidate = os.path.join(args.annotator, d)
+            if not is_annotation_package(package_candidate):
+                continue
+            packages.append(package_candidate)
+
+        logging.info('Found: {0} packages'.format(len(packages)))
+
+        args.packages = packages
+
+    if args.packages is not None:
+        logging.info('Collecting log files for {0} packages.'.format(len(args.packages)))
+        log_files = []
+        for package in args.packages:
+            current_log_files = logs_from_package(package)
+            log_files += current_log_files
+
+        logging.info('Found: {0} log files'.format(len(log_files)))
         args.input = log_files
 
-    log_data_per_file = []
+    log_data_per_file = {}
     for input_file in args.input:
         if not os.path.isfile(input_file):
             raise ValueError('Log file {0} not found!'.format(input_file))
@@ -266,7 +329,7 @@ def main(args):
                 else:
                     logging.warn('Unable to correct JSON, skipping file.')
 
-        log_data_per_file.append(current_log_data)
+        log_data_per_file[input_file] = current_log_data
 
     logging.info('Checking logs for uniqueness. Started with {0} log files.'
                  ''.format(len(log_data_per_file)))
@@ -287,6 +350,11 @@ def main(args):
     by_minute_freq = {k: len(v) for k, v in by_minute.items()}
     n_minutes = len(by_minute)
     print('# minutes worked: {0}'.format(n_minutes))
+    n_hours = n_minutes / 60.0
+    print('# hours worked: {0:.2f}'.format(n_hours))
+    print('CZK@120: {0:.3f}'.format(n_hours * 120))
+    print('CZK@150: {0:.3f}'.format(n_hours * 150))
+    print('CZK@180: {0:.3f}'.format(n_hours * 180))
     print('Avg. events per minute: {0}'.format(float(len(log_data)) / n_minutes))
 
     _end_time = time.clock()
