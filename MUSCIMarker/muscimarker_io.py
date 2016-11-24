@@ -284,8 +284,8 @@ class CropObject(object):
                                  ' to integer shape {1} of CropObject.'
                                  ''.format(mask.shape, (b - t, r - l)))
             if str(mask.dtype) != 'uint8':
-                logging.warn('CropObject.set_mask(): Supplied non-integer mask'
-                             ' with dtype={0}'.format(mask.dtype))
+                logging.debug('CropObject.set_mask(): Supplied non-integer mask'
+                              ' with dtype={0}'.format(mask.dtype))
 
             self.mask = mask.astype('uint8')
 

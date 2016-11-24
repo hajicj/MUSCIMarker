@@ -34,6 +34,8 @@ import time
 import matplotlib.pyplot as plt
 import operator
 
+from muscimarker_io import parse_cropobject_list
+
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
 
@@ -154,7 +156,7 @@ def unique_logs(event_logs):
     unique = collections.OrderedDict()
     for log_file, l in event_logs.iteritems():
         if len(l) < 1:
-            logging.warn('Got an empty log from file {0}'.format(log_file))
+            logging.info('Got an empty log from file {0}'.format(log_file))
             continue
         init_event = l[0]
         if '-time-' not in init_event:
@@ -162,12 +164,47 @@ def unique_logs(event_logs):
                              ''.format(log_file, init_event))
         init_time  = init_event['-time-']
         if init_time in unique:
-            logging.warn('Found non-unique event log {0} with timestamp {1} ({2} events)!'
+            logging.info('Found non-unique event log {0} with timestamp {1} ({2} events)!'
                          ' Using first ({3} events).'
                          ''.format(log_file, init_time, len(l), len(unique[init_time])))
         else:
             unique[init_time] = l
     return unique.values()
+
+
+##############################################################################
+# Counting results
+
+
+def annotations_from_package(package):
+    """Collect all annotation XML files (with complete paths)
+    from the given package."""
+    logging.info('Collecting annotation files from package {0}'.format(package))
+    if not os.path.isdir(package):
+        raise OSError('Package {0} not found!'.format(package))
+    annot_path = os.path.join(package, 'annotations')
+    if not os.path.isdir(annot_path):
+        raise ValueError('Package {0}: annotations not found, probably not a package.'
+                         ''.format(package))
+
+    # Collect all annotations
+    annotation_files = [os.path.join(annot_path, f)
+                        for f in os.listdir(annot_path) if f.endswith('.xml')]
+    return annotation_files
+
+
+def count_cropobjects(annot_file):
+    return len(parse_cropobject_list(annot_file))
+
+
+def count_cropobjects_and_relationships(annot_file):
+    cropobjects = parse_cropobject_list(annot_file)
+    n_inlinks = 0
+    for c in cropobjects:
+        if c.inlinks is not None:
+            n_inlinks += len(c.inlinks)
+    return len(cropobjects), n_inlinks
+
 
 
 ##############################################################################
@@ -266,6 +303,11 @@ def build_argument_parser():
                              ' from all packages in the given person\'s'
                              ' annotation directory')
 
+    parser.add_argument('-c', '--count_annotations', action='store_true',
+                        help='If given, will collect annotation files from the'
+                             ' supplied packages (or per-annotator packages)'
+                             ' and compute object/rel counts and efficiency statistics.')
+
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Turn on INFO messages.')
     parser.add_argument('--debug', action='store_true',
@@ -315,19 +357,19 @@ def main(args):
                 current_log_data = json.load(hdl)
 
             except ValueError:
-                logging.warn('Could not parse JSON file {0}'.format(input_file))
+                logging.info('Could not parse JSON file {0}'.format(input_file))
                 logging.info('Attempting to correct file.')
                 corrected = try_correct_crashed_json(input_file)
                 if corrected is not None:
-                    logging.warn('Attempting to parse corrected JSON.')
+                    logging.info('Attempting to parse corrected JSON.')
                     try:
                         current_log_data = json.loads(corrected)
                     except ValueError:
-                        logging.warn('Could not even parse corrected JSON, skipping file.')
+                        logging.info('Could not even parse corrected JSON, skipping file.')
                         raise
-                    logging.warn('Success!')
+                    logging.info('Success!')
                 else:
-                    logging.warn('Unable to correct JSON, skipping file.')
+                    logging.info('Unable to correct JSON, skipping file.')
 
         log_data_per_file[input_file] = current_log_data
 
@@ -337,25 +379,48 @@ def main(args):
     logging.info('After uniqueness check: {0} logs left.'.format(len(log_data_per_file)))
 
     log_data = [e for e in itertools.chain(*log_data_per_file)]
+    if len(log_data) == 0:
+        print('Received no log data! Skipping ahead to count annotations.')
+        n_minutes = None
+        n_hours = None
+    else:
+        logging.info('Parsed {0} data items.'.format(len(log_data)))
+        # Your code goes here
+        # raise NotImplementedError()
 
+        # Frequency by -fn-:
+        freq_by_fn = freqdict([l.get('-fn-', None) for l in log_data])
 
-    logging.info('Parsed {0} data items.'.format(len(log_data)))
-    # Your code goes here
-    # raise NotImplementedError()
+        by_minute = events_by_time_units(log_data)
+        by_minute_freq = {k: len(v) for k, v in by_minute.items()}
+        n_minutes = len(by_minute)
 
-    # Frequency by -fn-:
-    freq_by_fn = freqdict([l.get('-fn-', None) for l in log_data])
+        print('# minutes worked: {0}'.format(n_minutes))
+        n_hours = n_minutes / 60.0
+        print('# hours worked: {0:.2f}'.format(n_hours))
+        print('CZK@120: {0:.3f}'.format(n_hours * 120))
+        print('CZK@150: {0:.3f}'.format(n_hours * 150))
+        print('CZK@180: {0:.3f}'.format(n_hours * 180))
+        print('Avg. events per minute: {0}'.format(float(len(log_data)) / n_minutes))
 
-    by_minute = events_by_time_units(log_data)
-    by_minute_freq = {k: len(v) for k, v in by_minute.items()}
-    n_minutes = len(by_minute)
-    print('# minutes worked: {0}'.format(n_minutes))
-    n_hours = n_minutes / 60.0
-    print('# hours worked: {0:.2f}'.format(n_hours))
-    print('CZK@120: {0:.3f}'.format(n_hours * 120))
-    print('CZK@150: {0:.3f}'.format(n_hours * 150))
-    print('CZK@180: {0:.3f}'.format(n_hours * 180))
-    print('Avg. events per minute: {0}'.format(float(len(log_data)) / n_minutes))
+    if args.count_annotations:
+        if args.packages is None:
+            raise ValueError('Cannot count annotations if no packages are given!')
+
+        n_cropobjects = 0
+        n_relationships = 0
+        for package in args.packages:
+            annot_files = annotations_from_package(package)
+            for f in annot_files:
+                n_c, n_r = count_cropobjects_and_relationships(f)
+                n_cropobjects += n_c
+                n_relationships += n_r
+
+        print('Total CropObjects: {0}'.format(n_cropobjects))
+        print('Total Relationships: {0}'.format(n_relationships))
+        if n_minutes is not None:
+            print('Cropobjects per minute: {0:.2f}'.format(n_cropobjects / float(n_minutes)))
+
 
     _end_time = time.clock()
     logging.info('analyze_tracking_log.py done in {0:.3f} s'.format(_end_time - _start_time))
