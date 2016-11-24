@@ -26,6 +26,9 @@ import json
 import logging
 
 import itertools
+import os
+
+import io
 import numpy
 import time
 
@@ -47,6 +50,62 @@ def freqdict(l, sort=True):
             s_out[k] = v
         out = s_out
     return out
+
+
+##############################################################################
+
+
+def logs_from_package(package):
+    """Collects all log file names (with complete paths) from the given package.
+
+    :param package: Path to the annotations package.
+
+    :return: List of filenames (full paths).
+    """
+    logging.info('Collecting log files from package {0}'.format(package))
+    if not os.path.isdir(package):
+        raise OSError('Package {0} not found!'.format(package))
+    log_path = os.path.join(package, 'annotation_logs')
+    if not os.path.isdir(log_path):
+        raise ValueError('Package {0}: annotation_logs not found, probably not a package.'
+                         ''.format(package))
+    # Collect all log days
+    log_days = os.listdir(log_path)
+    log_files = []
+    for day in log_days:
+        if day.startswith('.'):
+            continue
+        day_log_path = os.path.join(log_path, day)
+        day_log_files = [os.path.join(day_log_path, l)
+                         for l in os.listdir(day_log_path)]
+        log_files += day_log_files
+    logging.info('In package {0}: found {1} log files.'
+                 ''.format(package, len(log_files)))
+    return log_files
+
+
+def try_correct_crashed_json(fname):
+    """Attempts to correct an incomplete JSON list file: if MUSCIMarker
+    crashed, the items list would not get correctly closed. We attempt
+    to remove the last comma and add a closing bracket (`]`) on a new
+    line instead, and return the object as a (unicode) string.
+
+    >>> json = '''
+    ... [
+    ...   {'something': 'this', 'something': 'that'},'''
+
+    """
+    with open(fname, 'r') as hdl:
+        lines = [l.rstrip() for l in hdl]
+    if lines[-1][-1] == ',':
+        logging.info('Correcting JSON: found hanging comma!')
+        lines[-1] = lines[-1][:-1]
+        lines.append(']')
+        return '\n'.join(lines)
+
+    else:
+        logging.info('No hanging comma, cannot deal with this situation.')
+        return None
 
 
 ##############################################################################
@@ -135,11 +194,14 @@ def build_argument_parser():
     parser = argparse.ArgumentParser(description=__doc__, add_help=True,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-i', '--input', action='store',
-                        help='Log file to be analyzed.')
+    parser.add_argument('-i', '--inputs', nargs='+', action='store',
+                        help='Log files to be analyzed.')
     parser.add_argument('-p', '--package', action='store',
                         help='Annotation package. If set, will pull'
-                             ' all CropObject lists and all ')
+                             ' all log files in the package.')
+    parser.add_argument('-a', '--annotator', action='store',
+                        help='Annotator. If set, will pull all log files'
+                             ' for the given person.')
 
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Turn on INFO messages.')
@@ -153,8 +215,34 @@ def main(args):
     logging.info('Starting main...')
     _start_time = time.clock()
 
-    with codecs.open(args.input, 'r', 'utf-8') as hdl:
-        log_data = json.load(hdl)
+    if args.package is not None:
+        package = args.package
+        log_files = logs_from_package(package)
+        args.input = log_files
+
+    log_data = []
+    for input_file in args.input:
+        if not os.path.isfile(input_file):
+            raise ValueError('Log file {0} not found!'.format(input_file))
+        with codecs.open(input_file, 'r', 'utf-8') as hdl:
+            try:
+                current_log_data = json.load(hdl)
+                log_data += current_log_data
+            except ValueError:
+                logging.warn('Could not parse JSON file {0}'.format(input_file))
+                logging.info('Attempting to correct file.')
+                corrected = try_correct_crashed_json(input_file)
+                if corrected is not None:
+                    logging.warn('Attempting to parse corrected JSON.')
+                    try:
+                        current_log_data = json.loads(corrected)
+                        log_data += current_log_data
+                    except ValueError:
+                        logging.warn('Could not even parse corrected JSON, skipping file.')
+                        raise
+                    logging.warn('Success!')
+                else:
+                    logging.warn('Unable to correct JSON, skipping file.')
 
     logging.info('Parsed {0} data items.'.format(len(log_data)))
     # Your code goes here
