@@ -556,6 +556,6 @@ class CropObjectAnnotatorModel(Widget):
         #     logging.info('Plotting annotation, image shape: {0}'.format(annot_img.shape))
         #     plt.imshow(annot_img)
         #     plt.show()
-    very_small_cropobjects = []
+#    very_small_cropobjects = []
 
 
