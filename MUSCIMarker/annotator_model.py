@@ -1,4 +1,5 @@
-"""This module implements a class that..."""
+"""This module implements the annotator model portion of the MUSCIMarker
+MVC design."""
 from __future__ import print_function, unicode_literals
 
 import codecs
@@ -7,7 +8,7 @@ import logging
 # import cv2
 # import matplotlib.pyplot as plt
 from kivy.app import App
-from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty
+from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty, BooleanProperty
 from kivy.uix.widget import Widget
 
 import muscimarker_io
@@ -229,6 +230,8 @@ class CropObjectAnnotatorModel(Widget):
     """
     image = ObjectProperty()
 
+    _is_binary = BooleanProperty()
+
     # Connected component precomputing
     _cc = NumericProperty(-1)
     _labels = ObjectProperty(None, allownone=True)
@@ -260,9 +263,22 @@ class CropObjectAnnotatorModel(Widget):
 
     def load_image(self, image, compute_cc=False):
         self._invalidate_cc_cache()
+        self._is_binary = False
+
+        self._is_binary = self._determine_if_binary(image)
+
         self.image = image
         if compute_cc:
             self._compute_cc_cache()
+
+    def _determine_if_binary(self, image):
+        values = set(image.flatten())
+        logging.info('Model: Determining if image is binary. {0}'
+                     ' colors detected.'.format(len(values)))
+        if len(values) == 2:
+            return True
+        else:
+            return False
 
     @Tracker(track_names=['cropobject'],
              transformations={'cropobject': [lambda c: ('objid', c.objid),

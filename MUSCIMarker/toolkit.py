@@ -4,6 +4,7 @@ from __future__ import print_function, unicode_literals
 import collections
 import logging
 
+import cv2
 import numpy
 import time
 
@@ -696,6 +697,183 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
 ###############################################################################
 
 
+class GrayscaleTrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
+    """Like TrimmedLasso, but locally binarizes candidate crops
+    to obtain mask."""
+
+    current_cropobject_selection = ObjectProperty(None)
+    current_cropobject_mask = ObjectProperty(None)
+
+    def model_bbox_from_points(self, pos):
+        """The trimming differs from the TrimTool because only points
+        inside the convex hull of the lasso count towards trimming.
+
+        ..warning:
+
+            Assumes the lasso region is convex.
+        """
+        # Algorithm:
+        #  - get bounding box of lasso in model coordinates
+        #  - get model coordinates of points
+        #  - get convex hull mask of these coordinates
+        #  - apply mask of convex hull to the bounding box
+        #    of the lasso selection
+        #  - trim the masked image to get final model-space bounding box
+        #  - recompute to editor-space
+        #  - set finished box
+
+        # Debug/profiling
+        _start_time = time.clock()
+
+        #  - get bounding box of lasso in model coordinates
+        #    (we could just get uncut mask, but for trimming, we need
+        #    m_points etc. anyway)
+        point_set_as_tuples = [p for i, p in enumerate(zip(pos[:-1], pos[1:]))
+                               if i % 2 == 0]
+
+        m_points = [self.app_ref.image_scaler.point_widget2model(wX, wY)
+                    for wX, wY in point_set_as_tuples]
+
+        m_points = [(int(x), int(y)) for x, y in m_points]
+        m_points_x, m_points_y = zip(*m_points)
+
+        # Let's deal with points on the boundary or outside
+        m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
+                      for x in m_points_x]
+        m_points_y = [max(0, min(y, self.app_ref.image_scaler.model_width - 1))
+                      for y in m_points_y]
+
+        m_lasso_bbox = (min(m_points_x), min(m_points_y),
+                        max(m_points_x), max(m_points_y))
+        m_lasso_int_bbox = bbox_to_integer_bounds(*m_lasso_bbox)
+        m_t, m_l, m_b, m_r = m_lasso_int_bbox
+        if (m_b - m_t) * (m_r - m_l) == 0:
+            logging.info('Lasso got zero-area input.')
+            return
+
+        chi = polygon(m_points_x, m_points_y)
+
+        image = self.get_binary_image(
+            bbox=m_lasso_int_bbox,
+            polygon=chi)
+
+        #image = self.app_ref.annot_model.image
+        mask = numpy.zeros((self.app_ref.image_scaler.model_height,
+                            self.app_ref.image_scaler.model_width),
+                           dtype=image.dtype)
+
+        mask[chi] = 1.0
+
+        logging.warning('BinarizerLasso: Mask shape: {0}, image shape: {1}'
+                        ''.format(mask.shape, image.shape))
+        mask *= image  # This applies the image foreground/background.
+
+        mask = mask.astype(image.dtype)
+        logging.info('T-Lasso: mask: {0} pxs'.format(mask.sum() / 255))
+
+        # - trim the masked image
+        out_t, out_b, out_l, out_r = 1000000, 0, 1000000, 0
+        img_t, img_l, img_b, img_r = m_lasso_int_bbox
+        logging.info('T-Lasso: trimming with bbox={0}'.format(m_lasso_int_bbox))
+        _trim_start_time = time.clock()
+        # Find topmost and bottom-most nonzero row.
+        for i in xrange(img_t, img_b):
+            if mask[i, img_l:img_r].sum() > 0:
+                out_t = i
+                break
+        for j in xrange(img_b, img_t, -1):
+            if mask[j-1, img_l:img_r].sum() > 0:
+                out_b = j
+                break
+        # Find leftmost and rightmost nonzero column.
+        for k in xrange(img_l, img_r):
+            if mask[img_t:img_b, k].sum() > 0:
+                out_l = k
+                break
+        for l in xrange(img_r, img_l, -1):
+            if mask[img_t:img_b, l-1].sum() > 0:
+                out_r = l
+                break
+        _trim_end_time = time.clock()
+        logging.info('T-Lasso: Trimming took {0:.4f} s'.format(_trim_end_time - _trim_start_time))
+
+        logging.info('T-Lasso: Output={0}'.format((out_t, out_l, out_b, out_r)))
+
+        # Rounding errors when converting m --> w --> m integers!
+        #  - Output
+        if (out_b > out_t) and (out_r > out_l):
+            return out_t, out_l, out_b, out_r
+
+    def get_binary_image(self, bbox, polygon):
+        """Returns a binary image that should be used for trimming
+        the lasso.
+
+        :param bbox: (t, l, b, r) in model points
+
+        :param chi: The polygon points. Use: image[chi] = 1
+        """
+        t, l, b, r = bbox
+        model_image = self.app_ref.annot_model.image
+        img_crop = model_image[t:b, l:r]
+
+        polygon_mask = numpy.zeros(model_image.shape,
+                                   dtype=model_image.dtype)
+        polygon_mask[polygon] = 1
+
+        polygon_mask_crop = polygon_mask[t:b, l:r]
+
+        # Have binary image, don't spoil by thresholding
+        #if img_crop.all() in [0, 1]:
+        #    logging.warning('Image crop seems to be binary.')
+        #    return model_image
+
+        # Background is black
+        # Foreground is white(-ish, in the grayscale image)
+        bg_intensity = 0
+        # This can be improved by estimating the true background intensity
+        # as darkest grayscale pixel indexed by one of the polygon points.
+        img_crop[polygon_mask_crop == 0] = bg_intensity
+
+        thr, binarized_crop = cv2.threshold(img_crop,
+                                            bg_intensity,
+                                            img_crop.max(),
+                                            cv2.THRESH_OTSU)
+
+        output = numpy.zeros(model_image.shape,
+                             dtype=model_image.dtype)
+        output[t:b, l:r] = binarized_crop
+        logging.warning('Returning locally binarized image with shape {0}'
+                        ''.format(output.shape))
+
+        return output
+
+    def model_selection_from_points(self, points):
+        # This should go away anyway.
+        model_bbox = self.model_bbox_from_points(points)
+        if model_bbox is not None:
+            t, l, b, r = model_bbox
+            return {'top': t, 'left': l, 'bottom': b, 'right': r}
+        else:
+            return None
+
+    def selection_from_points(self, points):
+        model_bbox = self.model_bbox_from_points(points)
+        if model_bbox is None:
+            return None
+        ed_t, ed_l, ed_b, ed_r = self.model_to_editor_bbox(*model_bbox)
+
+        logging.info('T-Lasso: editor-coord output bbox {0}'
+                     ''.format((ed_t, ed_l, ed_b, ed_r)))
+        output = {'top': ed_t,
+                  'bottom': ed_b,
+                  'left': ed_l,
+                  'right': ed_r}
+        return output
+
+
+###############################################################################
+
+
 class GestureSelectTool(LassoBoundingBoxSelectTool):
     """The GestureSelectTool tries to find the best approximation
     to a user gesture, as though the user is writing the score
@@ -1165,6 +1343,7 @@ class CropObjectViewsParseTool(CropObjectViewsSelectTool):
                                                                         do_clear_tracer=do_clear_tracer)
         self.list_view.parse_current_selection()
 
+
 ###############################################################################
 
 
@@ -1196,7 +1375,7 @@ tool_dispatch = {
     'trimmed_select_tool': TrimmedSelectTool,
     'connected_select_tool': ConnectedSelectTool,
     'lasso_select_tool':  LassoBoundingBoxSelectTool,
-    'trimmed_lasso_select_tool': TrimmedLassoBoundingBoxSelectTool,
+    'trimmed_lasso_select_tool': GrayscaleTrimmedLassoBoundingBoxSelectTool,
     'gesture_select_tool': GestureSelectTool,
     'cropobject_views_select_tool': CropObjectViewsSelectTool,
     'edge_views_select_tool': EdgeViewsSelectTool,

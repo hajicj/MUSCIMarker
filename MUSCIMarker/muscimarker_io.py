@@ -329,7 +329,7 @@ class CropObject(object):
         Returns the rounded-off integers (top, left, bottom, right)
         as `int`s.
         """
-        logging.info('bbox_to_integer_bounds: inputs {0}'.format((ftop, fleft, fbottom, fright)))
+        logging.debug('bbox_to_integer_bounds: inputs {0}'.format((ftop, fleft, fbottom, fright)))
 
         top = ftop - (ftop % 1.0)
         left = fleft - (fleft % 1.0)
@@ -341,13 +341,13 @@ class CropObject(object):
             right += 1.0
 
         if top != ftop:
-            logging.info('bbox_to_integer_bounds: rounded top by {0}'.format(top - ftop))
+            logging.debug('bbox_to_integer_bounds: rounded top by {0}'.format(top - ftop))
         if left != fleft:
-            logging.info('bbox_to_integer_bounds: rounded left by {0}'.format(left - fleft))
+            logging.debug('bbox_to_integer_bounds: rounded left by {0}'.format(left - fleft))
         if bottom != fbottom:
-            logging.info('bbox_to_integer_bounds: rounded bottom by {0}'.format(bottom - fbottom))
+            logging.debug('bbox_to_integer_bounds: rounded bottom by {0}'.format(bottom - fbottom))
         if right != fright:
-            logging.info('bbox_to_integer_bounds: rounded right by {0}'.format(right - fright))
+            logging.debug('bbox_to_integer_bounds: rounded right by {0}'.format(right - fright))
 
         return int(top), int(left), int(bottom), int(right)
 
