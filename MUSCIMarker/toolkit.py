@@ -1405,6 +1405,11 @@ def get_tool_kwargs_dispatch(name):
         do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
         return {'do_helper_line': do_helper_line}
 
+    if name == 'grayscale_trimmed_lasso_select_tool':
+        _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
+        do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
+        return {'do_helper_line': do_helper_line}
+
     if name == 'cropobject_views_select_tool':
         _as_str = conf.get('toolkit', 'active_selection')
         active_selection = _safe_parse_bool_from_conf(_as_str)
