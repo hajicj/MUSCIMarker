@@ -996,6 +996,9 @@ class MUSCIMarkerApp(App):
         logging.info('App: === Reloading CropObjectList fired with file \'{0}\''
                      ''.format(pos))
 
+        # Timing it
+        _start_time = time.clock()
+
         # Check for XML
         if not pos.endswith('xml'):
             logging.info('App: Detected non-XML file in import_cropobject_list request!')
@@ -1034,8 +1037,9 @@ class MUSCIMarkerApp(App):
 
         logging.info('App: Imported CropObjectList has {0} items.'
                      ''.format(len(cropobject_list)))
-        # self.current_n_cropobjects = len(cropobject_list)
         self.annot_model.import_cropobjects(cropobject_list)
+
+        logging.info('App: Importing CropObjects took {0:.3f} seconds.'.format(time.clock() - _start_time))
 
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('image_file', x)]},

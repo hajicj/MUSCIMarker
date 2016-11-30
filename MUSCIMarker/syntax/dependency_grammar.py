@@ -224,10 +224,10 @@ class DependencyGrammar(object):
             self.outlink_cardinalities = oc
             self.inlink_aggregated_cardinalities = iac
             self.outlink_aggregated_cardinalities = oac
-            logging.info('DependencyGrammar: Inlink aggregated cardinalities: {0}'
-                         ''.format(pprint.pformat(iac)))
-            logging.info('DependencyGrammar: Outlink aggregated cardinalities: {0}'
-                         ''.format(pprint.pformat(oac)))
+            logging.debug('DependencyGrammar: Inlink aggregated cardinalities: {0}'
+                          ''.format(pprint.pformat(iac)))
+            logging.debug('DependencyGrammar: Outlink aggregated cardinalities: {0}'
+                          ''.format(pprint.pformat(oac)))
         else:
             raise ValueError('Not able to parse dependency grammar file {0}.'
                              ''.format(grammar_filename))
@@ -461,7 +461,7 @@ class DependencyGrammar(object):
         if len(rhs) == 0:
             _line_type = 'aggregate_outlinks'
 
-        logging.warn('Line {0}: type {1}, lhs={2}, rhs={3}'.format(line, _line_type, lhs, rhs))
+        logging.debug('Line {0}: type {1}, lhs={2}, rhs={3}'.format(line, _line_type, lhs, rhs))
 
         if _line_type == 'aggregate_inlinks':
             rhs_tokens = rhs.strip().split()
@@ -469,8 +469,8 @@ class DependencyGrammar(object):
                 token, rhs_cmin, rhs_cmax = self.parse_token(rt)
                 for t in self._matching_names(token):
                     in_agg_cards[t] = (rhs_cmin, rhs_cmax)
-            logging.info('DependencyGrammar: found inlinks: {0}'
-                         ''.format(pprint.pformat(in_agg_cards)))
+            logging.debug('DependencyGrammar: found inlinks: {0}'
+                          ''.format(pprint.pformat(in_agg_cards)))
             return rules, out_cards, in_cards, in_agg_cards, out_agg_cards
 
         if _line_type == 'aggregate_outlinks':
@@ -479,8 +479,8 @@ class DependencyGrammar(object):
                 token, lhs_cmin, lhs_cmax = self.parse_token(lhs.strip())
                 for t in self._matching_names(token):
                     out_agg_cards[t] = (lhs_cmin, lhs_cmax)
-            logging.info('DependencyGrammar: found outlinks: {0}'
-                         ''.format(pprint.pformat(out_agg_cards)))
+            logging.debug('DependencyGrammar: found outlinks: {0}'
+                          ''.format(pprint.pformat(out_agg_cards)))
             return rules, out_cards, in_cards, in_agg_cards, out_agg_cards
 
         # Normal line that defines a left-hand side and a right-hand side

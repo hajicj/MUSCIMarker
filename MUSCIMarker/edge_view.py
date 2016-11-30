@@ -105,9 +105,9 @@ class EdgeView(SelectableView, ToggleButton):
         # Overriding default release
         self.always_release = False
 
-        logging.info('EdgeView: Initialized for edge {0}'
-                     #', with pos={1}, size={2}'
-                     ''.format(self.edge, self.pos, self.size))
+        logging.debug('EdgeView: Initialized for edge {0}'
+                      #', with pos={1}, size={2}'
+                      ''.format(self.edge, self.pos, self.size))
         self.do_render()
 
         self.register_event_type('on_key_captured')
@@ -143,7 +143,7 @@ class EdgeView(SelectableView, ToggleButton):
         self.vert_end -= self._start_node_size * 0.45
 
     def create_bindings(self):
-        logging.info('EdgeView\t{0}: Creating bindings'.format(self.edge))
+        logging.debug('EdgeView\t{0}: Creating bindings'.format(self.edge))
         Window.bind(on_key_down=self.on_key_down)
         Window.bind(on_key_up=self.on_key_up)
         #logging.info('EdgeView\t{0}: Current on_key_down total observers: {1}, obs:\n{2}'
@@ -151,7 +151,7 @@ class EdgeView(SelectableView, ToggleButton):
         #                       pprint.pformat(Window.get_property_observers('on_key_down'))))
 
     def remove_bindings(self):
-        logging.info('EdgeView\t{0}: Removing bindings'.format(self.edge))
+        logging.debug('EdgeView\t{0}: Removing bindings'.format(self.edge))
         Window.unbind(on_key_down=self.on_key_down)
         Window.unbind(on_key_up=self.on_key_up)
 
@@ -597,7 +597,7 @@ class EdgeListView(ListView):
             edge, e_label = e  # The adapter has items ((from, to), label)
             if edge in rendered_edges:
                 continue
-            logging.info('EdgeListView.populate: Adding edge from adapter {0}'.format(e))
+            # logging.info('EdgeListView.populate: Adding edge from adapter {0}'.format(e))
             e_idx = self._adapter_key2index(e_key)
             if e_idx is None:
                 raise ValueError('EdgeListView.populate(): Adapter sorted_keys'

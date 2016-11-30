@@ -157,8 +157,8 @@ class CropObjectListView(ListView):
                 raise ValueError('CropObjectListView.populate(): Adapter sorted_keys'
                                  ' out of sync with data.')
             item_view = self.adapter.get_view(c_idx)
-            logging.info('Populating with view that has color {0}'
-                         ''.format(item_view.selected_color))
+            logging.debug('Populating with view that has color {0}'
+                          ''.format(item_view.selected_color))
             # See CropObjectListView key trapping below.
             item_view.bind(on_key_captured=self.set_key_trap)
 

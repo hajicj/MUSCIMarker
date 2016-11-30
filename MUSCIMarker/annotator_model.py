@@ -89,6 +89,23 @@ class ObjectGraph(Widget):
         self.edges[edge] = label
         self.add_to_edges_index(a1, a2)
 
+    def add_edges(self, edges, label='Attachment'):
+        logging.info('Graph: adding {0} edges with label {1}'
+                     ''.format(len(edges), label))
+
+        # First add to edges index
+        for a1, a2 in edges:
+            if a1 not in self.vertices:
+                raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
+                                 ''.format((a1, a2), a1))
+            if a2 not in self.vertices:
+                raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
+                                 ''.format((a1, a2), a2))
+            self.add_to_edges_index(a1, a2)
+
+        edge_dict = {e: label for e in edges}
+        self.edges.update(edge_dict)
+
     def add_to_edges_index(self, a1, a2):
         if a1 not in self._outlinks:
             self._outlinks[a1] = set()
@@ -186,7 +203,7 @@ class ObjectGraph(Widget):
         self.clear_edges()
 
     def clear_edges(self):
-        self.edges = []
+        self.edges = {}
         self._inlinks = dict()
         self._outlinks = dict()
 
@@ -381,8 +398,10 @@ class CropObjectAnnotatorModel(Widget):
                 edges.append((c.objid, o))
             self.graph.add_vertex(c.objid)
 
-        for e in edges:
-            self.graph.add_edge(e)
+        # Add all edges at once.
+        self.graph.add_edges(edges)
+        #for e in edges:
+        #    self.graph.add_edge(e)
 
     def ensure_consistent(self):
         """Make sure that the model is in a consistent state.
