@@ -110,6 +110,10 @@ def logs_from_package(package):
             log_files.append(os.path.join(log_path, day))
             continue
 
+        if day.endswith('xml'):
+            logging.info('Log file is for some reason XML instead of JSON; copied wrong files???')
+            continue
+
         day_log_path = os.path.join(log_path, day)
         day_log_files = [os.path.join(day_log_path, l)
                          for l in os.listdir(day_log_path)]
@@ -307,6 +311,8 @@ def build_argument_parser():
                         help='If given, will collect annotation files from the'
                              ' supplied packages (or per-annotator packages)'
                              ' and compute object/rel counts and efficiency statistics.')
+    parser.add_argument('--no_training', action='store_true',
+                        help='If given, will ignore packages with "training" in their name.')
 
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Turn on INFO messages.')
@@ -365,8 +371,8 @@ def main(args):
                     try:
                         current_log_data = json.loads(corrected)
                     except ValueError:
-                        logging.info('Could not even parse corrected JSON, skipping file.')
-                        raise
+                        logging.warning('Could not even parse corrected JSON, skipping file {0}.'.format(input_file))
+                        #raise
                     logging.info('Success!')
                 else:
                     logging.info('Unable to correct JSON, skipping file.')
