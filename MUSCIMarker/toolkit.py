@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals
 
 import collections
+import copy
 import logging
 
 import cv2
@@ -635,7 +636,7 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
 
         mask *= image
         mask = mask.astype(image.dtype)
-        logging.info('T-Lasso: mask: {0} pxs'.format(mask.sum() / 255))
+        logging.info('T-Lasso: mask: {0} pxs'.format(mask.sum() / 255.0))
 
         # - trim the masked image
         out_t, out_b, out_l, out_r = 1000000, 0, 1000000, 0
@@ -814,18 +815,13 @@ class GrayscaleTrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
         """
         t, l, b, r = bbox
         model_image = self.app_ref.annot_model.image
-        img_crop = model_image[t:b, l:r]
+        img_crop = copy.deepcopy(model_image[t:b, l:r])
 
         polygon_mask = numpy.zeros(model_image.shape,
                                    dtype=model_image.dtype)
         polygon_mask[polygon] = 1
 
         polygon_mask_crop = polygon_mask[t:b, l:r]
-
-        # Have binary image, don't spoil by thresholding
-        #if img_crop.all() in [0, 1]:
-        #    logging.warning('Image crop seems to be binary.')
-        #    return model_image
 
         # Background is black
         # Foreground is white(-ish, in the grayscale image)

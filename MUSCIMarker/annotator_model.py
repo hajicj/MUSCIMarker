@@ -230,7 +230,7 @@ class CropObjectAnnotatorModel(Widget):
     """
     image = ObjectProperty()
 
-    _is_binary = BooleanProperty()
+    is_binary = BooleanProperty()
 
     # Connected component precomputing
     _cc = NumericProperty(-1)
@@ -263,9 +263,9 @@ class CropObjectAnnotatorModel(Widget):
 
     def load_image(self, image, compute_cc=False):
         self._invalidate_cc_cache()
-        self._is_binary = False
+        self.is_binary = False
 
-        self._is_binary = self._determine_if_binary(image)
+        self.is_binary = self._determine_if_binary(image)
 
         self.image = image
         if compute_cc:
@@ -274,8 +274,13 @@ class CropObjectAnnotatorModel(Widget):
     def _determine_if_binary(self, image):
         values = set(image.flatten())
         logging.info('Model: Determining if image is binary. {0}'
-                     ' colors detected.'.format(len(values)))
+                        ' colors detected.'.format(len(values)))
+        logging.debug('Model: Colors detected: {0}'.format(values))
+        logging.debug('Model: Image dtype = {0}, range = {1} -- {2}'
+                      ''.format(image.dtype,
+                                image.min(), image.max()))
         if len(values) == 2:
+            logging.info('Model: Determined that image is binary.')
             return True
         else:
             return False
