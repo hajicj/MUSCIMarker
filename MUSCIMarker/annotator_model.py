@@ -7,6 +7,7 @@ import logging
 
 # import cv2
 # import matplotlib.pyplot as plt
+import numpy
 from kivy.app import App
 from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty, BooleanProperty
 from kivy.uix.widget import Widget
@@ -236,6 +237,16 @@ class CropObjectAnnotatorModel(Widget):
     _cc = NumericProperty(-1)
     _labels = ObjectProperty(None, allownone=True)
     _bboxes = ObjectProperty(None, allownone=True)
+
+    # For grayscale images: foreground and background model
+    _foreground_model = ObjectProperty(None, allownone=True)
+    _background_model = ObjectProperty(None, allownone=True)
+    '''The foreground and background models collect pixel values
+    that are known to be foreground and background. This helps
+    improve grayscale image binarization.
+
+    The models are represented as lists of values.
+    '''
 
     cropobjects = DictProperty()
     mlclasses = DictProperty()
@@ -562,5 +573,24 @@ class CropObjectAnnotatorModel(Widget):
         #     plt.imshow(annot_img)
         #     plt.show()
 #    very_small_cropobjects = []
+
+    ##########################################################################
+    # Foreground and background model. Useful for grayscale images.
+    def add_pixels_to_foreground(self, cropobject, sample_size=None):
+        """Adds the pixels that belong to the CropObject as foreground.
+        Does not return anything, but adds the pixels to the model's
+        ``foreground_model``.
+
+        :param cropobject: A CropObject that you wish to "trust"
+            for foreground/background.
+
+        :param sample_size: Optionally, how many randomly chosen pixels
+            belonging to the CropObject should be taken as foreground.
+        """
+        t, l, b, r = cropobject.bounding_box
+        img_crop = self.image[t:b, l:r] # Read-only
+        masked_img_crop = numpy.ma.masked_array(img_crop, mask=~cropobject.mask.astype('bool'))
+        if sample_size is None:
+            pxs = masked_img_crop.compressed()
 
 
