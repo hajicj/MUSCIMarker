@@ -52,6 +52,7 @@ repeat{1,} |
 | repeat-dot{1,}
 
 trill | trill_"wobble" letter_t letter_r other_dot
+trill | sharp flat natural double_sharp double_flat
 | trill{1,}
 
 tuple | tuple_bracket/line numeral_*
