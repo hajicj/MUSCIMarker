@@ -51,7 +51,7 @@ repeat | repeat-dot thin_barline thick_barline
 repeat{1,} |
 | repeat-dot{1,}
 
-trill | trill_"wobble" letter_t letter_r other_dot
+trill | trill_"wobble" letter_t letter_r other-dot
 trill | sharp flat natural double_sharp double_flat
 | trill{1,}
 
