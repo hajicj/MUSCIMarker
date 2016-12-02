@@ -20,7 +20,8 @@ from kivy.uix.widget import Widget
 
 from edge_view import EdgeView
 from editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, LineTracer
-from utils import bbox_to_integer_bounds, image_mask_overlaps_cropobject, image_mask_overlaps_model_edge
+from utils import bbox_to_integer_bounds, image_mask_overlaps_cropobject, image_mask_overlaps_model_edge, \
+    bbox_intersection
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -349,7 +350,6 @@ class ConnectedSelectTool(AddSymbolTool):
         return mask, (cc_t, cc_l, cc_b, cc_r)
 
 
-
 ###############################################################################
 
 
@@ -363,7 +363,9 @@ class TrimmedSelectTool(AddSymbolTool):
         editor_widgets['bbox_tracer'].bind(current_finished_bbox=self.current_selection_from_bbox_tracer)
         return editor_widgets
 
+
 ###############################################################################
+
 
 class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
     """Note: cannot currently deal with nonconvex areas. Use the trimmed lasso
@@ -588,6 +590,7 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
 
         ..warning:
 
+            [Should be deprecated by now.)
             Assumes the lasso region is convex.
         """
         # Algorithm:
@@ -692,6 +695,61 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
                   'right': ed_r}
         return output
 
+###############################################################################
+
+
+class MaskEraserTool(LassoBoundingBoxSelectTool):
+    """Removes the given area from all selected symbols' masks."""
+
+    def on_current_cropobject_model_selection(self, instance, pos):
+        """Here, instead of adding a new CropObject as the other lasso
+        tools do, modify selected cropobjects' masks."""
+        t, l, b, r = pos['top'], pos['left'], pos['bottom'], pos['right']
+        bbox = bbox_to_integer_bounds(t, l, b, r)
+
+        logging.info('MaskEraser: got bounding box: {0}'.format(bbox))
+
+        for cropobject_view in self.app_ref.cropobject_list_renderer.view.selected_views:
+            c = cropobject_view._model_counterpart
+            # Guards:
+            if c.mask is None:
+                logging.info('MaskErarser: cropobject {0} has no mask.'
+                             ''.format(c.objid))
+                continue
+            if not c.overlaps(bbox):
+                logging.info('MaskErarser: cropobject {0} (bbox {1})'
+                             'does not overlap.'
+                             ''.format(c.objid, c.bounding_box))
+                continue
+
+            logging.info('MaskErarser: processing cropobject {0}.'
+                         ''.format(c.objid))
+
+            i_t, i_l, i_b, i_r = bbox_intersection(c.bounding_box, bbox)
+            m_t, m_l, m_b, m_r = bbox_intersection(bbox, c.bounding_box)
+            logging.info('MaskEraser: got cropobject intersection {0}'
+                         ''.format((i_t, i_l, i_b, i_r)))
+            logging.info('MaskEraser: got mask intersection {0}'
+                         ''.format((m_t, m_l, m_b, m_r)))
+
+            logging.info('MaskErarser: cropobject nnz previous = {0}'
+                         ''.format(c.mask.sum()))
+
+            # We need to invert the current mask, as we want to mask *out*
+            # whatever is *in* the mask now.
+            inverse_mask = c.mask.max() - self.current_cropobject_mask[m_t:m_b, m_l:m_r]
+            c.mask[i_t:i_b, i_l:i_r] *= inverse_mask
+            logging.info('MaskEraser: cropobject nnz after = {0}'
+                         ''.format(c.mask.sum()))
+            c.crop_to_mask()
+
+            self._model.remove_cropobject(c.objid)
+            self._model.add_cropobject(c)
+
+        logging.info('MaskEraser: Forcing redraw.')
+        self.app_ref.cropobject_list_renderer.redraw += 1
+
+        self.editor_widgets['line_tracer'].clear()
 
 ###############################################################################
 
@@ -1201,6 +1259,7 @@ tool_dispatch = {
     'cropobject_views_select_tool': CropObjectViewsSelectTool,
     'edge_views_select_tool': EdgeViewsSelectTool,
     'cropobject_views_parse_tool': CropObjectViewsParseTool,
+    'mask_eraser_tool': MaskEraserTool,
 }
 
 
@@ -1220,7 +1279,13 @@ def get_tool_kwargs_dispatch(name):
 
     app = App.get_running_app()
     conf = app.config
+
     if name == 'trimmed_lasso_select_tool':
+        _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
+        do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
+        return {'do_helper_line': do_helper_line}
+
+    if name == 'mask_eraser_tool':
         _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
         do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
         return {'do_helper_line': do_helper_line}
@@ -1240,7 +1305,8 @@ def get_tool_kwargs_dispatch(name):
         return {'active_selection': active_selection}
 
     if name == 'cropobject_views_parse_tool':
-        # Doesn't make sense here without a way to undo the line
+        # Doesn't make sense here without a way to undo the line,
+        # it would just be frustrating.
         active_selection = False
         logging.info('Toolkit: got active_selection={0}'
                      ''.format(active_selection))
