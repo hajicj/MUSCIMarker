@@ -51,7 +51,7 @@ repeat | repeat-dot thin_barline thick_barline
 repeat{1,} |
 | repeat-dot{1,}
 
-trill | trill_"wobble" letter_t letter_r
+trill | trill_"wobble" letter_t letter_r other_dot
 | trill{1,}
 
 tuple | tuple_bracket/line numeral_*
