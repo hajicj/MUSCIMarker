@@ -743,8 +743,19 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
                          ''.format(c.mask.sum()))
             c.crop_to_mask()
 
-            self._model.remove_cropobject(c.objid)
+            # We do the removal through the view, so that deselection
+            # and other stuff is handled.
+            cropobject_view.remove_from_model()
             self._model.add_cropobject(c)
+
+            try:
+                new_view = self.app_ref.cropobject_list_renderer.view.get_cropobject_view(c.objid)
+                new_view.select()
+            except KeyError:
+                logging.info('MaskEraser: View for modified CropObject {0} has'
+                             ' not been rendered yet, cannot select it.'
+                             ''.format(c.objid))
+
 
         logging.info('MaskEraser: Forcing redraw.')
         self.app_ref.cropobject_list_renderer.redraw += 1

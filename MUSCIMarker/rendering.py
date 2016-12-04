@@ -487,6 +487,18 @@ class CropObjectListView(ListView):
 
         self._model.graph.ensure_add_edges(edges)
 
+    def get_cropobject_view(self, objid):
+        """Retrieves the CropObjectView based on the objid. Useful e.g.
+        for programmatic selection/deselection of individual objects.
+
+        If the View for the given objid is not rendered, raises a KeyError."""
+        for v in self.rendered_views:
+            if v.objid == objid:
+                return v
+
+        raise KeyError('CropObjectView with objid {0} not found among rendered'
+                       ' CropObjects.'.format(objid))
+
 ##############################################################################
 
 
