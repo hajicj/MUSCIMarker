@@ -485,8 +485,7 @@ class CropObjectListView(ListView):
         logging.info('CropObjectListView.parse_selection(): {0} edges to add'
                      ''.format(len(edges)))
 
-        for e in edges:
-            self._model.graph.ensure_add_edge(e)
+        self._model.graph.ensure_add_edges(edges)
 
 ##############################################################################
 
