@@ -279,7 +279,16 @@ class CropObjectAnnotatorModel(Widget):
                              ''.format(cropobject.objid))
                 return
 
+        # Sync added cropobject to graph
         self.graph.add_vertex(cropobject.objid)
+        # collect edges & add them at once
+        edges = []
+        for i in cropobject.inlinks:
+            edges.append((i, cropobject.objid))
+        for o in cropobject.outlinks:
+            edges.append((cropobject.objid, o))
+        self.graph.add_edges(edges)
+
         self.cropobjects[cropobject.objid] = cropobject
 
     def _is_cropobject_valid(self, cropobject):
