@@ -69,10 +69,10 @@ class ObjectGraph(Widget):
         if v in self.vertices:
             self.remove_obj_from_graph(v)
 
-    def ensure_add_edge(self, edge):
+    def ensure_add_edge(self, edge, label='Attachment'):
         logging.info('Graph: ensuring edge {0}'.format(edge))
         if edge not in self.edges:
-            self.add_edge(edge)
+            self.add_edge(edge, label=label)
 
     def add_edge(self, edge, label='Attachment'):
         '''Edge is an ``(a1, a2)`` pair such that ``a1`` is the head
@@ -90,6 +90,11 @@ class ObjectGraph(Widget):
 
         self.edges[edge] = label
         self.add_to_edges_index(a1, a2)
+
+    def ensure_add_edges(self, edges, label='Attachment'):
+        logging.info('Graph: ensuring edges {0}'.format(edges))
+        edges_to_add = [e for e in edges if e not in self.edges]
+        self.add_edges(edges_to_add, label=label)
 
     def add_edges(self, edges, label='Attachment'):
         logging.info('Graph: adding {0} edges with label {1}'
@@ -311,7 +316,16 @@ class CropObjectAnnotatorModel(Widget):
                              ''.format(cropobject.objid))
                 return
 
+        # Sync added cropobject to graph
         self.graph.add_vertex(cropobject.objid)
+        # collect edges & add them at once
+        edges = []
+        for i in cropobject.inlinks:
+            edges.append((i, cropobject.objid))
+        for o in cropobject.outlinks:
+            edges.append((cropobject.objid, o))
+        self.graph.add_edges(edges)
+
         self.cropobjects[cropobject.objid] = cropobject
 
     def _is_cropobject_valid(self, cropobject):

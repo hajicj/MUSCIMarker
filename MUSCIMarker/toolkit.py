@@ -22,7 +22,8 @@ from kivy.uix.widget import Widget
 
 from edge_view import EdgeView
 from editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, LineTracer
-from utils import bbox_to_integer_bounds, image_mask_overlaps_cropobject, image_mask_overlaps_model_edge
+from utils import bbox_to_integer_bounds, image_mask_overlaps_cropobject, image_mask_overlaps_model_edge, \
+    bbox_intersection
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -351,7 +352,6 @@ class ConnectedSelectTool(AddSymbolTool):
         return mask, (cc_t, cc_l, cc_b, cc_r)
 
 
-
 ###############################################################################
 
 
@@ -365,7 +365,9 @@ class TrimmedSelectTool(AddSymbolTool):
         editor_widgets['bbox_tracer'].bind(current_finished_bbox=self.current_selection_from_bbox_tracer)
         return editor_widgets
 
+
 ###############################################################################
+
 
 class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
     """Note: cannot currently deal with nonconvex areas. Use the trimmed lasso
@@ -590,6 +592,7 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
 
         ..warning:
 
+            [Should be deprecated by now.)
             Assumes the lasso region is convex.
         """
         # Algorithm:
@@ -635,140 +638,6 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
         m_lasso_int_bbox = bbox_to_integer_bounds(*m_lasso_bbox)
 
         mask *= image
-        mask = mask.astype(image.dtype)
-        logging.info('T-Lasso: mask: {0} pxs'.format(mask.sum() / 255.0))
-
-        # - trim the masked image
-        out_t, out_b, out_l, out_r = 1000000, 0, 1000000, 0
-        img_t, img_l, img_b, img_r = m_lasso_int_bbox
-        logging.info('T-Lasso: trimming with bbox={0}'.format(m_lasso_int_bbox))
-        _trim_start_time = time.clock()
-        # Find topmost and bottom-most nonzero row.
-        for i in xrange(img_t, img_b):
-            if mask[i, img_l:img_r].sum() > 0:
-                out_t = i
-                break
-        for j in xrange(img_b, img_t, -1):
-            if mask[j-1, img_l:img_r].sum() > 0:
-                out_b = j
-                break
-        # Find leftmost and rightmost nonzero column.
-        for k in xrange(img_l, img_r):
-            if mask[img_t:img_b, k].sum() > 0:
-                out_l = k
-                break
-        for l in xrange(img_r, img_l, -1):
-            if mask[img_t:img_b, l-1].sum() > 0:
-                out_r = l
-                break
-        _trim_end_time = time.clock()
-        logging.info('T-Lasso: Trimming took {0:.4f} s'.format(_trim_end_time - _trim_start_time))
-
-        logging.info('T-Lasso: Output={0}'.format((out_t, out_l, out_b, out_r)))
-
-        # Rounding errors when converting m --> w --> m integers!
-        #  - Output
-        if (out_b > out_t) and (out_r > out_l):
-            return out_t, out_l, out_b, out_r
-
-    def model_selection_from_points(self, points):
-        # This should go away anyway.
-        model_bbox = self.model_bbox_from_points(points)
-        if model_bbox is not None:
-            t, l, b, r = model_bbox
-            return {'top': t, 'left': l, 'bottom': b, 'right': r}
-        else:
-            return None
-
-    def selection_from_points(self, points):
-        model_bbox = self.model_bbox_from_points(points)
-        if model_bbox is None:
-            return None
-        ed_t, ed_l, ed_b, ed_r = self.model_to_editor_bbox(*model_bbox)
-
-        logging.info('T-Lasso: editor-coord output bbox {0}'
-                     ''.format((ed_t, ed_l, ed_b, ed_r)))
-        output = {'top': ed_t,
-                  'bottom': ed_b,
-                  'left': ed_l,
-                  'right': ed_r}
-        return output
-
-
-###############################################################################
-
-
-class GrayscaleTrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
-    """Like TrimmedLasso, but locally binarizes candidate crops
-    to obtain mask."""
-
-    current_cropobject_selection = ObjectProperty(None)
-    current_cropobject_mask = ObjectProperty(None)
-
-    def model_bbox_from_points(self, pos):
-        """The trimming differs from the TrimTool because only points
-        inside the convex hull of the lasso count towards trimming.
-
-        ..warning:
-
-            Assumes the lasso region is convex.
-        """
-        # Algorithm:
-        #  - get bounding box of lasso in model coordinates
-        #  - get model coordinates of points
-        #  - get convex hull mask of these coordinates
-        #  - apply mask of convex hull to the bounding box
-        #    of the lasso selection
-        #  - trim the masked image to get final model-space bounding box
-        #  - recompute to editor-space
-        #  - set finished box
-
-        # Debug/profiling
-        _start_time = time.clock()
-
-        #  - get bounding box of lasso in model coordinates
-        #    (we could just get uncut mask, but for trimming, we need
-        #    m_points etc. anyway)
-        point_set_as_tuples = [p for i, p in enumerate(zip(pos[:-1], pos[1:]))
-                               if i % 2 == 0]
-
-        m_points = [self.app_ref.image_scaler.point_widget2model(wX, wY)
-                    for wX, wY in point_set_as_tuples]
-
-        m_points = [(int(x), int(y)) for x, y in m_points]
-        m_points_x, m_points_y = zip(*m_points)
-
-        # Let's deal with points on the boundary or outside
-        m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
-                      for x in m_points_x]
-        m_points_y = [max(0, min(y, self.app_ref.image_scaler.model_width - 1))
-                      for y in m_points_y]
-
-        m_lasso_bbox = (min(m_points_x), min(m_points_y),
-                        max(m_points_x), max(m_points_y))
-        m_lasso_int_bbox = bbox_to_integer_bounds(*m_lasso_bbox)
-        m_t, m_l, m_b, m_r = m_lasso_int_bbox
-        if (m_b - m_t) * (m_r - m_l) == 0:
-            logging.info('Lasso got zero-area input.')
-            return
-
-        chi = polygon(m_points_x, m_points_y)
-
-        image = self.get_binary_image(
-            bbox=m_lasso_int_bbox,
-            polygon=chi)
-
-        #image = self.app_ref.annot_model.image
-        mask = numpy.zeros((self.app_ref.image_scaler.model_height,
-                            self.app_ref.image_scaler.model_width),
-                           dtype=image.dtype)
-
-        mask[chi] = 1.0
-
-        logging.warning('BinarizerLasso: Mask shape: {0}, image shape: {1}'
-                        ''.format(mask.shape, image.shape))
-        mask *= image  # This applies the image foreground/background.
-
         mask = mask.astype(image.dtype)
         logging.info('T-Lasso: mask: {0} pxs'.format(mask.sum() / 255))
 
@@ -866,6 +735,72 @@ class GrayscaleTrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
                   'right': ed_r}
         return output
 
+###############################################################################
+
+
+class MaskEraserTool(LassoBoundingBoxSelectTool):
+    """Removes the given area from all selected symbols' masks."""
+
+    def on_current_cropobject_model_selection(self, instance, pos):
+        """Here, instead of adding a new CropObject as the other lasso
+        tools do, modify selected cropobjects' masks."""
+        t, l, b, r = pos['top'], pos['left'], pos['bottom'], pos['right']
+        bbox = bbox_to_integer_bounds(t, l, b, r)
+
+        logging.info('MaskEraser: got bounding box: {0}'.format(bbox))
+
+        for cropobject_view in self.app_ref.cropobject_list_renderer.view.selected_views:
+            c = cropobject_view._model_counterpart
+            # Guards:
+            if c.mask is None:
+                logging.info('MaskErarser: cropobject {0} has no mask.'
+                             ''.format(c.objid))
+                continue
+            if not c.overlaps(bbox):
+                logging.info('MaskErarser: cropobject {0} (bbox {1})'
+                             'does not overlap.'
+                             ''.format(c.objid, c.bounding_box))
+                continue
+
+            logging.info('MaskErarser: processing cropobject {0}.'
+                         ''.format(c.objid))
+
+            i_t, i_l, i_b, i_r = bbox_intersection(c.bounding_box, bbox)
+            m_t, m_l, m_b, m_r = bbox_intersection(bbox, c.bounding_box)
+            logging.info('MaskEraser: got cropobject intersection {0}'
+                         ''.format((i_t, i_l, i_b, i_r)))
+            logging.info('MaskEraser: got mask intersection {0}'
+                         ''.format((m_t, m_l, m_b, m_r)))
+
+            logging.info('MaskErarser: cropobject nnz previous = {0}'
+                         ''.format(c.mask.sum()))
+
+            # We need to invert the current mask, as we want to mask *out*
+            # whatever is *in* the mask now.
+            inverse_mask = c.mask.max() - self.current_cropobject_mask[m_t:m_b, m_l:m_r]
+            c.mask[i_t:i_b, i_l:i_r] *= inverse_mask
+            logging.info('MaskEraser: cropobject nnz after = {0}'
+                         ''.format(c.mask.sum()))
+            c.crop_to_mask()
+
+            # We do the removal through the view, so that deselection
+            # and other stuff is handled.
+            cropobject_view.remove_from_model()
+            self._model.add_cropobject(c)
+
+            try:
+                new_view = self.app_ref.cropobject_list_renderer.view.get_cropobject_view(c.objid)
+                new_view.select()
+            except KeyError:
+                logging.info('MaskEraser: View for modified CropObject {0} has'
+                             ' not been rendered yet, cannot select it.'
+                             ''.format(c.objid))
+
+
+        logging.info('MaskEraser: Forcing redraw.')
+        self.app_ref.cropobject_list_renderer.redraw += 1
+
+        self.editor_widgets['line_tracer'].clear()
 
 ###############################################################################
 
@@ -1377,6 +1312,7 @@ tool_dispatch = {
     'cropobject_views_select_tool': CropObjectViewsSelectTool,
     'edge_views_select_tool': EdgeViewsSelectTool,
     'cropobject_views_parse_tool': CropObjectViewsParseTool,
+    'mask_eraser_tool': MaskEraserTool,
 }
 
 
@@ -1396,12 +1332,18 @@ def get_tool_kwargs_dispatch(name):
 
     app = App.get_running_app()
     conf = app.config
+
     if name == 'trimmed_lasso_select_tool':
         _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
         do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
         return {'do_helper_line': do_helper_line}
 
     if name == 'grayscale_trimmed_lasso_select_tool':
+        _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
+        do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
+        return {'do_helper_line': do_helper_line}
+
+    if name == 'mask_eraser_tool':
         _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
         do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
         return {'do_helper_line': do_helper_line}
@@ -1421,7 +1363,8 @@ def get_tool_kwargs_dispatch(name):
         return {'active_selection': active_selection}
 
     if name == 'cropobject_views_parse_tool':
-        # Doesn't make sense here without a way to undo the line
+        # Doesn't make sense here without a way to undo the line,
+        # it would just be frustrating.
         active_selection = False
         logging.info('Toolkit: got active_selection={0}'
                      ''.format(active_selection))

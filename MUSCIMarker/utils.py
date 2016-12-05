@@ -327,6 +327,46 @@ def bbox_to_integer_bounds(ftop, fleft, fbottom, fright, to_integer=True):
     return t, l, b, r
 
 
+def bbox_intersection(origin, intersect):
+    """Returns the coordinates of the origin bounding box that
+    are intersected by the intersect bounding box.
+
+    >>> bounding_box = 10, 100, 30, 110
+    >>> other_bbox = 20, 100, 40, 105
+    >>> bbox_intersection(bounding_box, other_bbox)
+    (10, 0, 20, 5)
+    >>> bbox_intersection(other_bbox, bounding_box)
+    (0, 0, 10, 5)
+    >>> containing_bbox = 4, 55, 44, 115
+    >>> bbox_intersection(bounding_box, containing_bbox)
+    (0, 0, 20, 10)
+    >>> contained_bbox = 12, 102, 22, 108
+    >>> bbox_intersection(bounding_box, contained_bbox)
+    (2, 2, 12, 8)
+    >>> non_overlapping_bbox = 0, 0, 3, 3
+    >>> bbox_intersection(bounding_box, non_overlapping_bbox) is None
+    True
+
+
+    """
+    o_t, o_l, o_b, o_r = origin
+    t, l, b, r = intersect
+
+    out_top = max(t, o_t)
+    out_left = max(l, o_l)
+    out_bottom = min(b, o_b)
+    out_right = min(r, o_r)
+
+    if (out_top < out_bottom) and (out_left < out_right):
+        return out_top - o_t, \
+               out_left - o_l, \
+               out_bottom - o_t, \
+               out_right - o_l
+    else:
+        return None
+
+
+
 def connected_components2bboxes(labels):
     """Returns a dictionary of bounding boxes (upper left c., lower right c.)
     for each label.

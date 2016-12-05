@@ -320,6 +320,16 @@ class CropObject(object):
         hmid = self.left + (self.right - self.left) / 2
         return int(vmid), int(hmid)
 
+    @property
+    def is_empty(self):
+        """A CropObject is empty if it is composed of zero pixels.
+        This is measured through the mask. CropObjects without
+        a mask are assumed to be non-empty."""
+        if self.mask is None:
+            return False
+
+        return self.mask.sum() == 0
+
     @staticmethod
     def bbox_to_integer_bounds(ftop, fleft, fbottom, fright):
         """Rounds off the CropObject bounds to the nearest integer
@@ -401,6 +411,143 @@ class CropObject(object):
 
         img[self.top:self.bottom, self.left:self.right] = mix
         return img
+
+    def overlaps(self, bounding_box):
+        """Check whether this CropObject overlaps the given bounding box."""
+        t, l, b, r = bounding_box
+        # Does it overlap vertically? Includes situations where the CropObject is
+        # inside the bounding box.
+        # Note that the bottom is +1 (fencepost), so the checks bottom vs. top need to be "less than",
+        # not leq. If one object's top would be equal to the other's bottom, they would be touching,
+        # not overlapping.
+        if max(t, self.top) < min(b, self.bottom):
+            if max(l, self.left) < min(r, self.right):
+                return True
+        return False
+
+    def bbox_intersection(self, bounding_box):
+        """Returns the sub-bounding box of this CropObject, relative to its size (so: 0,0
+        is the CropObject's upper left corner), that intersects the given bounding box.
+        If the intersection is empty, returns None.
+
+        >>> c = CropObject(0, 0, 'test', 10, 100, height=20, width=10)
+        >>> c.bounding_box
+        (10, 100, 30, 110)
+        >>> other_bbox = 20, 100, 40, 105
+        >>> c.bbox_intersection(other_bbox)
+        (10, 0, 20, 5)
+        >>> containing_bbox = 4, 55, 44, 115
+        >>> c.bbox_intersection(containing_bbox)
+        (0, 0, 20, 10)
+        >>> contained_bbox = 12, 102, 22, 108
+        >>> c.bbox_intersection(contained_bbox)
+        (2, 2, 12, 8)
+        >>> non_overlapping_bbox = 0, 0, 3, 3
+        >>> c.bbox_intersection(non_overlapping_bbox) is None
+        True
+
+        """
+        t, l, b, r = bounding_box
+
+        out_top = max(t, self.top)
+        out_bottom = min(b, self.bottom)
+        out_left = max(l, self.left)
+        out_right = min(r, self.right)
+
+        if (out_top < out_bottom) and (out_left < out_right):
+            return out_top - self.top, \
+                   out_left - self.left, \
+                   out_bottom - self.top, \
+                   out_right - self.left
+        else:
+            return None
+
+
+    def crop_to_mask(self):
+        """Crops itself to the minimum bounding box that contains all
+        its pixels, as determined by its mask.
+
+        If the mask is all zeros, does not do anything, because
+        at this point, the is_empty check should be invoked anyway
+        in any situation where you care whether the object is empty
+        or not (e.g. delete it after trimming).
+
+        >>> mask = numpy.zeros((20, 10))
+        >>> mask[5:15, 3:8] = 1
+        >>> c = CropObject(0, 0, 'test', 10, 100, width=10, height=20, mask=mask)
+        >>> c.bounding_box
+        (10, 100, 30, 110)
+        >>> c.crop_to_mask()
+        >>> c.bounding_box
+        (15, 103, 25, 108)
+        >>> c.height, c.width
+        (10, 5)
+
+        Assumes integer bounds, which is ensured during CropObject initialization.
+        """
+        if self.mask is None:
+            return
+
+        if self.is_empty:
+            return
+
+        # We know the object is not empty.
+
+        # How many rows/columns to trim from top, bottom, etc.
+        trim_top = -1
+        for i in xrange(self.mask.shape[0]):
+            if self.mask[i,:].sum() != 0:
+                trim_top = i
+                break
+
+        trim_left = -1
+        for j in xrange(self.mask.shape[1]):
+            if self.mask[:,j].sum() != 0:
+                trim_left = j
+                break
+
+        trim_bottom = -1
+        for k in xrange(self.mask.shape[0]):
+            if self.mask[-(k+1),:].sum() != 0:
+                trim_bottom = k
+                break
+
+        trim_right = -1
+        for l in xrange(self.mask.shape[1]):
+            if self.mask[:,-(l+1)].sum() != 0:
+                trim_right = l
+                break
+
+        logging.info('Cropobject.crop: Trimming top={0}, left={1},'
+                     'bottom={2}, right={3}'
+                     ''.format(trim_top, trim_left, trim_bottom, trim_right))
+
+        # new bounding box relative to the current bounding box -- used to trim
+        # the mask
+        rel_t = trim_top
+        rel_l = trim_left
+        rel_b = self.height - trim_bottom
+        rel_r = self.width - trim_right
+
+        new_mask = self.mask[rel_t:rel_b, rel_l:rel_r] * 1
+
+        logging.info('Cropobject.crop: Old mask shape {0}, new mask shape {1}'
+                     ''.format(self.mask.shape, new_mask.shape))
+
+        # new bounding box, relative to image -- used to compute the CropObject's
+        # new position and size
+        abs_t = self.top + trim_top
+        abs_l = self.left + trim_left
+        abs_b = self.bottom - trim_bottom
+        abs_r = self.right - trim_right
+
+        self.x = abs_t
+        self.y = abs_l
+        self.height = abs_b - abs_t
+        self.width = abs_r - abs_l
+
+        self.set_mask(new_mask)
+
 
     def __str__(self):
         lines = []

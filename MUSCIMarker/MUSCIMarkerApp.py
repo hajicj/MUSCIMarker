@@ -529,6 +529,8 @@ class MUSCIMarkerApp(App):
 
         self.init_tracking()
 
+        self.clean_tmp_dir()
+
         # Why is this here?
         Window.bind(on_key_down=self.on_key_down)
         Window.bind(on_key_up=self.on_key_up)
@@ -1715,6 +1717,9 @@ class MUSCIMarkerApp(App):
         handler = self.get_tracking_handler()
         handler.ensure_closed()
 
+        # Clean tmp dir
+        self.clean_tmp_dir()
+
         self.stop()
 
     ##########################################################################
@@ -1722,6 +1727,16 @@ class MUSCIMarkerApp(App):
     @property
     def tmp_dir(self):
         return os.path.join(os.path.dirname(__file__), 'tmp')
+
+    def clean_tmp_dir(self):
+        tmp_dir = self.tmp_dir
+        for f in os.listdir(tmp_dir):
+            if f != '.tmp-placeholder':
+                try:
+                    os.unlink(os.path.join(tmp_dir, f))
+                except OSError:
+                    logging.warn('Cleaning tmp dir: could not unlink file {0}'
+                                 ''.format(os.path.join(tmp_dir, f)))
 
     ##########################################################################
     # Tracking
