@@ -201,7 +201,7 @@ import pprint
 import time
 # from random import random
 # from math import sqrt
-
+import uuid
 from functools import partial
 
 import cPickle
@@ -439,6 +439,10 @@ class MUSCIMarkerApp(App):
         os.path.dirname(__file__),
         'static',
         'OMR-RG_logo_darkbackground.png'))
+    image_tmp_filename = StringProperty()
+    '''The image gets copied to this file and then can be edited
+    (e.g. model's image enhancement) with the results showing, but without
+    modifying the original image.'''
 
     current_image_height = NumericProperty()
     image_height_ratio_in = NumericProperty()
@@ -1078,8 +1082,20 @@ class MUSCIMarkerApp(App):
         self.annot_model.clear_cropobjects()
         self.annot_model.load_image(img)
 
+        image_tmp_filename = self.generate_tmp_filename(suffix='png',
+                                                        prefix='edited-image')
+        # Now save the model image into this filename
+        image = self.annot_model.image
+        try:
+            scipy.misc.imsave(image_tmp_filename, image)
+        except:
+            logging.info('App: Loading image from file \'{0}\' failed'
+                         ' when trying to write working copy to application'
+                         ' temporary data.')
+
         # Only change the displayed image after annotation.
         self.currently_edited_image_filename = pos
+        self.image_tmp_filename = image_tmp_filename
 
         # compute scale
         self.current_image_height = img.shape[0]
@@ -1737,6 +1753,31 @@ class MUSCIMarkerApp(App):
                 except OSError:
                     logging.warn('Cleaning tmp dir: could not unlink file {0}'
                                  ''.format(os.path.join(tmp_dir, f)))
+
+    def generate_tmp_filename(self, suffix, prefix=''):
+        """Generates a random file name for interal use by MUSCIMarker.
+
+        :param suffix: Just "png", "xml", etc. - without dot.
+
+        :param prefix: Whatever name you want to put out in front.
+            Also separated by a dot from the random part of the filename.
+
+        :return: the full filename.
+        """
+        if suffix.startswith('.'):
+            logging.warning('Tmp filename should be created with a suffix'
+                            ' parameter WITHOUT the dot: just "png",'
+                            ' NOT ".png"')
+            suffix = suffix[1:]
+
+        if prefix is not None:
+            fname = prefix + '.' + unicode(uuid.uuid4()) + '.' + suffix
+        else:
+            fname = unicode(uuid.uuid4()) + '.' + suffix
+
+        full_name = os.path.join(self.tmp_dir, fname)
+
+        return full_name
 
     ##########################################################################
     # Tracking

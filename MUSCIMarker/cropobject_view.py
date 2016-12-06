@@ -748,12 +748,15 @@ class CropObjectView(SelectableView, ToggleButton):
     def inspect(self):
         """Shows the symbol's exact mask in the context of its bounding box
         in a popup."""
-        # Create crop
+
+        # Create inspection
         image = self._model.image
         crop = self._model_counterpart.project_to(image).astype('float32')
         t, l, b, r = self._model_counterpart.bounding_box
         background_crop = image[t:b, l:r].astype('float32')
         combined_crop = (crop / 2.0) + (background_crop / 2.0)
+
+        mask = self._model_counterpart.mask
 
         # Save image
         app = App.get_running_app()
@@ -761,7 +764,7 @@ class CropObjectView(SelectableView, ToggleButton):
         fname = unicode(uuid.uuid4()) + '.png'
         full_path = os.path.join(tmp_dir, fname)
 
-        scipy.misc.imsave(full_path, combined_crop, )
+        scipy.misc.imsave(full_path, combined_crop)
 
         # Make popup with the crop
         popup = InspectionPopup(title='Inspecting obj. {0}'.format(self.objid),

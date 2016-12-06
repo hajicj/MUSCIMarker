@@ -308,13 +308,15 @@ class CropObjectAnnotatorModel(Widget):
             return False
 
 
-    def enhance_grayscale_image(self):
+    def enhance_grayscale_image(self, median_kernel_size=19):
 
         # Expand range
         image = self.image
 
         # Blur image to get a better estimate of the min/max
-        image_blurred = skimage.filters.median(image, selem=numpy.ones((5, 5)))
+        median_selem = numpy.ones((median_kernel_size, median_kernel_size))
+        image_blurred = skimage.filters.median(image,
+                                               selem=median_selem)
         darkest = image_blurred.min()
         lightest = image_blurred.max()
         r = lightest - darkest
