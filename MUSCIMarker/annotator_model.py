@@ -8,6 +8,8 @@ import logging
 # import cv2
 # import matplotlib.pyplot as plt
 import numpy
+import skimage.filters
+
 from kivy.app import App
 from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty, BooleanProperty
 from kivy.uix.widget import Widget
@@ -279,6 +281,7 @@ class CropObjectAnnotatorModel(Widget):
 
     def load_image(self, image, compute_cc=False):
         self._invalidate_cc_cache()
+        self._invalidate_fg_bg_models()
         self.is_binary = False
 
         self.is_binary = self._determine_if_binary(image)
@@ -286,6 +289,9 @@ class CropObjectAnnotatorModel(Widget):
         self.image = image
         if compute_cc:
             self._compute_cc_cache()
+
+        if not self.is_binary:
+            self.enhance_grayscale_image()
 
     def _determine_if_binary(self, image):
         values = set(image.flatten())
@@ -300,6 +306,28 @@ class CropObjectAnnotatorModel(Widget):
             return True
         else:
             return False
+
+
+    def enhance_grayscale_image(self):
+
+        # Expand range
+        image = self.image
+
+        # Blur image to get a better estimate of the min/max
+        image_blurred = skimage.filters.median(image, selem=numpy.ones((5, 5)))
+        darkest = image_blurred.min()
+        lightest = image_blurred.max()
+        r = lightest - darkest
+
+        logging.info('Model: enhancing image -- range after median: {0} -- {1}'
+                     ''.format(darkest, lightest))
+
+        image[image < darkest] = darkest
+        image[image > lightest] = lightest
+
+        image = ((image - darkest) * (255.0 / lightest)).astype('uint8')
+        self.image = image
+
 
     @Tracker(track_names=['cropobject'],
              transformations={'cropobject': [lambda c: ('objid', c.objid),
@@ -603,8 +631,15 @@ class CropObjectAnnotatorModel(Widget):
         """
         t, l, b, r = cropobject.bounding_box
         img_crop = self.image[t:b, l:r] # Read-only
+
+        # The numpy mask blocks out everything True, instead
+        # of the MUSCIMarker "positive mask" that blocks out False (zeros)
         masked_img_crop = numpy.ma.masked_array(img_crop, mask=~cropobject.mask.astype('bool'))
         if sample_size is None:
             pxs = masked_img_crop.compressed()
 
+
+    def _invalidate_fg_bg_models(self):
+        self._background_model = []
+        self._foreground_model = []
 
