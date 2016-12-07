@@ -1,0 +1,19 @@
+[
+  { "type": "title",
+    "title": "Grayscale image enhancements"
+  },
+
+  { "type": "numeric",
+    "title": "Median kernel",
+    "desc": "Size of median filter kernel for obtaining robust intensity range estimation",
+    "section": "image_preprocessing",
+    "key": "median_kernel_size"
+  },
+
+  { "type": "numeric",
+    "title": "Lightness binarization",
+    "desc": "After median filtering, anything less than >this< intensity below the lightest is background, lighter is foreground.",
+    "section": "image_preprocessing",
+    "key": "binarization_lightness_tolerance"
+  }
+]

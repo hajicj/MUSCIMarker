@@ -709,6 +709,11 @@ class MUSCIMarkerApp(App):
                 'tracking_root_dir': self._get_default_tracking_root_dir(),
             })
         config.setdefaults('interface', {'center_on_resize': True})
+        config.setdefaults('image_preprocessing',
+            {
+                'median_kernel_size': 19,
+                'binarization_lightness_tolerance': 50,
+            })
         Config.set('kivy', 'exit_on_escape', '0')
 
     def build_settings(self, settings):
@@ -716,6 +721,12 @@ class MUSCIMarkerApp(App):
             jsondata = hdl.read()
         settings.add_json_panel('MUSCIMarker',
                                 self.config, data=jsondata)
+
+        with open(os.path.join(os.path.dirname(__file__),
+                               'muscimarker_image_processing.json')) as hdl:
+            img_preproc_jsondata = hdl.read()
+        settings.add_json_panel('Image processing',
+                                self.config, data=img_preproc_jsondata)
 
     @tr.Tracker(track_names=[],
                 tracker_name='app',

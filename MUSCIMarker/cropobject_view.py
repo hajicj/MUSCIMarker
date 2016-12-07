@@ -756,7 +756,8 @@ class CropObjectView(SelectableView, ToggleButton):
         background_crop = image[t:b, l:r].astype('float32')
         combined_crop = (crop / 2.0) + (background_crop / 2.0)
 
-        mask = self._model_counterpart.mask
+        mask = self._model_counterpart.mask * background_crop.max()
+        combined_crop = combined_crop / 2.0 + mask / 2.0
 
         # Save image
         app = App.get_running_app()

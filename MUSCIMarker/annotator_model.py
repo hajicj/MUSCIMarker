@@ -239,6 +239,8 @@ class CropObjectAnnotatorModel(Widget):
     image = ObjectProperty()
 
     is_binary = BooleanProperty()
+    '''Indicator flag that is True if the current image is binary
+    and False if it is not.'''
 
     # Connected component precomputing
     _cc = NumericProperty(-1)
@@ -254,6 +256,9 @@ class CropObjectAnnotatorModel(Widget):
 
     The models are represented as lists of values.
     '''
+
+    # Preprocessing the image
+    _image_preprocessing_settings = DictProperty()
 
     cropobjects = DictProperty()
     mlclasses = DictProperty()
@@ -278,6 +283,10 @@ class CropObjectAnnotatorModel(Widget):
 
         self.graph = ObjectGraph()
         self.sync_cropobjects_to_graph()
+
+    @property
+    def config(self):
+        return App.get_running_app().config
 
     def load_image(self, image, compute_cc=False):
         self._invalidate_cc_cache()
@@ -307,8 +316,12 @@ class CropObjectAnnotatorModel(Widget):
         else:
             return False
 
+    def enhance_grayscale_image(self):
 
-    def enhance_grayscale_image(self, median_kernel_size=19):
+        median_kernel_size = int(self.config.get('image_preprocessing',
+                                                 'median_kernel_size'))
+        lightest_tolerance = int(self.config.get('image_preprocessing',
+                                                 'binarization_lightness_tolerance'))
 
         # Expand range
         image = self.image
@@ -327,7 +340,16 @@ class CropObjectAnnotatorModel(Widget):
         image[image < darkest] = darkest
         image[image > lightest] = lightest
 
-        image = ((image - darkest) * (255.0 / lightest)).astype('uint8')
+        image = ((image - darkest) * (255.0 / (lightest - darkest))).astype('uint8')
+
+        # Binarization step.
+        new_darkest = image.min()
+        new_lightest = image.max()
+        image[image < lightest - lightest_tolerance] = new_darkest
+        #image[image >= new_lightest - lightest_tolerance] = new_lightest
+
+        logging.info('Model: enhancing image -- range after expansion: {0} -- {1}'
+                     ''.format(image.min(), image.max()))
         self.image = image
 
 
