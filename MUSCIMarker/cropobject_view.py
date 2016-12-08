@@ -768,7 +768,11 @@ class CropObjectView(SelectableView, ToggleButton):
                                 source=full_path)
 
         # Bind to delete the temp file on cancel()
-        popup.bind(on_dismiss=lambda x: os.unlink(full_path))
+        def __safe_unlink(fname):
+            if os.path.exists(full_path):
+                os.unlink(full_path)
+
+        popup.bind(on_dismiss=lambda x: __safe_unlink(x))
         popup.open()
 
     ##########################################################################
