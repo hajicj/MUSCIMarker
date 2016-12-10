@@ -1095,6 +1095,8 @@ class MUSCIMarkerApp(App):
 
         # move image to middle
         self.do_center_and_rescale_current_image()
+        image_widget = self._get_editor_widget()
+        image_widget.texture.mag_filter = 'nearest'
 
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('grammar_file', x)]},
