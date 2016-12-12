@@ -499,6 +499,7 @@ class CropObjectListView(ListView):
         raise KeyError('CropObjectView with objid {0} not found among rendered'
                        ' CropObjects.'.format(objid))
 
+
 ##############################################################################
 
 

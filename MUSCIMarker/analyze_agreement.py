@@ -162,6 +162,20 @@ def align_cropobjects(truth, prediction, fscore=None):
     return alignment
 
 
+def rpf_given_alignment(alignment, r, p):
+    total_r, total_p = 0, 0
+    for i, j in alignment:
+        total_r += r[i, j]
+        total_p += p[i, j]
+    total_r /= len(alignment)
+    total_p /= len(alignment)
+    if (total_r == 0) or (total_p == 0):
+        total_f = 0.0
+    else:
+        total_f = 2 * total_r * total_p / (total_r + total_p)
+    return total_r, total_p, total_f
+
+
 ##############################################################################
 
 
@@ -175,6 +189,18 @@ def build_argument_parser():
     parser.add_argument('-p', '--prediction', action='store', required=True,
                         help='The CropObjectList file you want to consider'
                              ' the prediction.')
+
+    parser.add_argument('-e', '--export', action='store',
+                        help='If set, will export the problematic CropObjects'
+                             ' to this file.')
+
+    parser.add_argument('--analyze_alignment', action='store_true',
+                        help='If set, will check whether the alignment is 1:1,'
+                             ' and print out the irregularities.')
+    parser.add_argument('--analyze_clsnames', action='store_true',
+                        help='If set, will check whether the CropObjects aligned'
+                             ' to each other have the same class labels'
+                             ' and print out the irregularities.')
 
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Turn on INFO messages.')
@@ -201,56 +227,69 @@ def main(args):
     truth = parse_cropobject_list(args.true)
     prediction = parse_cropobject_list(args.prediction)
 
+    _parse_time = time.clock()
+    logging.info('Parsing {0} true and {1} prediction cropobjects took {2:.2f} s'
+                 ''.format(len(truth), len(prediction), _parse_time - _start_time))
+
     r, p, f = cropobjects_rpf(truth, prediction)
+
+    _rpf_time = time.clock()
+    logging.info('Computing {0} entries of r/p/f matrices took {1:.2f} s'
+                 ''.format(len(truth) * len(prediction), _rpf_time - _parse_time))
 
     alignment = align_cropobjects(truth, prediction, fscore=f)
 
-    #pprint.pprint(f)
+    _aln_time = time.clock()
+    logging.info('Computing alignment took {0:.2f} s'
+                 ''.format(_aln_time - _rpf_time))
 
     # Now compute agreement: precision and recall on pixels
     # of the aligneed CropObjects.
-    total_r, total_p = 0, 0
-    for i, j in alignment:
-        total_r += r[i, j]
-        total_p += p[i, j]
-    total_r /= len(prediction)
-    total_p /= len(prediction)
-
-    if (total_r == 0) or (total_p == 0):
-        total_f = 0.0
-    else:
-        total_f = 2 * total_r * total_p / (total_r + total_p)
+    total_r, total_p, total_f = rpf_given_alignment(alignment, r, p)
 
     print('Truth objs.:\t{0}'.format(len(truth)))
-    print('Predicted objs.:\t{0}'.format(len(prediction)))
-    print('Recall: {0:.3f}, Precision: {1:.3f}, F-score: {2:.3f}'
+    print('Pred. objs.:\t{0}'.format(len(prediction)))
+    print('==============================================')
+    print('Recall:\t\t{0:.3f}\nPrecision:\t{1:.3f}\nF-score:\t{2:.3f}'
           ''.format(total_r, total_p, total_f))
 
+
+    ##########################################################################
     # Check if the alignment is a pairing -- find truth objects
     # with more than one prediction aligned to them.
-    t_aln_dict = collections.defaultdict(list)
-    for i, j in alignment:
-        t_aln_dict[i].append(prediction[j])
+    if args.analyze_alignment:
+        t_aln_dict = collections.defaultdict(list)
+        for i, j in alignment:
+            t_aln_dict[i].append(prediction[j])
 
-    multiple_truths = [truth[i] for i in t_aln_dict
-                       if len(t_aln_dict[i]) > 1]
-    multiple_truths_aln_dict = {t: t_aln_dict[t]
-                                for t in t_aln_dict
-                                if len(t_aln_dict[t]) > 1}
+        multiple_truths = [truth[i] for i in t_aln_dict
+                           if len(t_aln_dict[i]) > 1]
+        multiple_truths_aln_dict = {t: t_aln_dict[t]
+                                    for t in t_aln_dict
+                                    if len(t_aln_dict[t]) > 1}
 
-    #print('Truth CropObjects with multiple predictions:\n{0}'
-    #      ''.format([(t.objid, t.clsname) for t in multiple_truths]))
-    print('Truth multi-aligned CropObject classes:\n{0}'
-          ''.format(pprint.pformat(
-        {(truth[t].objid, truth[t].clsname): [(p.objid, p.clsname)
-                      for p in t_aln_dict[t]]
-                     for t in multiple_truths_aln_dict})))
+        print('Truth multi-aligned CropObject classes:\n{0}'
+              ''.format(pprint.pformat(
+            {(truth[t].objid, truth[t].clsname): [(p.objid, p.clsname)
+                          for p in t_aln_dict[t]]
+                         for t in multiple_truths_aln_dict})))
 
+    ##########################################################################
     # Check if the aligned objects have the same classes
+    if args.analyze_clsnames:
+        different_clsnames_pairs = []
+        for i, j in alignment:
+            if truth[i].clsname != prediction[j].clsname:
+                different_clsnames_pairs.append((truth[i], prediction[j]))
+        print('Aligned pairs with different clsnames:\n{0}'
+              ''.format('\n'.join(['{0}.{1}\t{2}.{3}'
+                                   ''.format(t.objid, t.clsname, p.objid, p.clsname)
+                                   for t, p in different_clsnames_pairs])))
+
 
 
     _end_time = time.clock()
-    logging.info('analyze_agreement done in {0:.3f} s'.format(_end_time - _start_time))
+    logging.info('analyze_agreement.py done in {0:.3f} s'.format(_end_time - _start_time))
 
 
 if __name__ == '__main__':
