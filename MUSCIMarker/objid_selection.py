@@ -3,6 +3,7 @@ from __future__ import print_function, unicode_literals
 
 import logging
 
+import re
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.lang import Builder
@@ -16,7 +17,7 @@ __author__ = "Jan Hajic jr."
 
 
 objid_selection_dialog_kv = '''
-<MLClassSelectionDialog@Popup>
+<ObjidSelectionDialog@Popup>
     size_hint: None, None
     size: app.root.size[0] * 0.5, app.root.size[1] * 0.2
     pos_hint: {'center_x': 0.5, 'centery_y': 0.5}
@@ -144,9 +145,12 @@ class ObjidSelectionDialog(Popup):
     ######################################################
     # The objid selection behavior
     def do_objid_selection(self):
-        objids = map(int, self.text.split())
+        objids = map(int, re.split('\W+', self.text))
         view = App.get_running_app().cropobject_list_renderer.view
-        cropobject_views = [view.get_cropobject_view(objid) for objid in objids]
+        available_objids = frozenset(App.get_running_app().annot_model.cropobjects.keys())
+        cropobject_views = [view.get_cropobject_view(objid) for objid in objids
+                            if objid in available_objids]
+        view.unselect_all()
         for v in cropobject_views:
             if not v.is_selected:
                 v.dispatch('on_release')

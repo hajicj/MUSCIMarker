@@ -228,6 +228,7 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
 import muscimarker_io
+from objid_selection import ObjidSelectionDialog
 from mlclass_selection import MLClassSelectionDialog
 from syntax.dependency_grammar import DependencyGrammar
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser
@@ -948,6 +949,10 @@ class MUSCIMarkerApp(App):
             logging.info('Doing current MLCLass selection dialog, forced')
             self.open_mlclass_selection_dialog()
 
+        elif dispatch_key == '111':   # o -- objid selection
+            logging.info('Doing objid-based selection dialog.')
+            self.open_objid_selection_dialog()
+
         elif dispatch_key == '115+shift':  # "shift+S" -- select all of current clsname
             logging.info('Selecting all CropObjects of the current clsname.')
             view = self.cropobject_list_renderer.view
@@ -1571,6 +1576,11 @@ class MUSCIMarkerApp(App):
         Clock.schedule_once(lambda *args, **kwargs: MLClassSelectionDialog().open())
         # dialog = MLClassSelectionDialog()
         # dialog.open()
+
+    @tr.Tracker(track_names=[],
+                tracker_name='commands')
+    def open_objid_selection_dialog(self):
+        Clock.schedule_once(lambda *args, **kwargs: ObjidSelectionDialog().open())
 
     ##########################################################################
     # Tool selection
