@@ -347,7 +347,6 @@ def bbox_intersection(origin, intersect):
     >>> bbox_intersection(bounding_box, non_overlapping_bbox) is None
     True
 
-
     """
     o_t, o_l, o_b, o_r = origin
     t, l, b, r = intersect

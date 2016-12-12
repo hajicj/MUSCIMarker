@@ -5,9 +5,12 @@ Only the function `position_cropobject_list_by_muscimage()`
 requires a `MUSCImage` instance as an argument.
 """
 from __future__ import print_function, unicode_literals
+
+import copy
 import logging
 import os
 
+import itertools
 import numpy
 from lxml import etree
 
@@ -1050,3 +1053,29 @@ def cropobjects_merge_mask(cropobjects):
 
     output_mask[output_mask > 0] = 1
     return output_mask
+
+
+def merge_cropobject_lists(*cropobject_lists):
+    """Combines the CropObject lists into one.
+
+    This just means shifting the `objid`s (and thus inlinks
+    and outlinks). It is assumed the lists pertain to the same
+    image. Uses deepcopy to avoid exposing the original lists
+    to modification through the merged list.
+
+    """
+    lengths = [len(c) for c in cropobject_lists]
+    shift_by = [0] + [sum(lengths[:i]) for i in xrange(1, len(lengths))]
+
+    new_lists = []
+    for clist, s in itertools.izip(cropobject_lists, shift_by):
+        new_list = []
+        for c in clist:
+            new_c = copy.deepcopy(c)
+            new_c.objid = c.objid + s
+            new_c.inlinks = [i + s for i in c.inlinks]
+            new_c.outlinks = [o + s for o in c.outlinks]
+            new_list.append(c)
+        new_lists.append(new_list)
+
+    return new_lists
