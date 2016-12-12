@@ -1044,7 +1044,7 @@ class MUSCIMarkerApp(App):
 
         logging.info('App: Imported CropObjectList has {0} items.'
                      ''.format(len(cropobject_list)))
-        self.annot_model.import_cropobjects(cropobject_list)
+        self.annot_model.import_cropobjects(cropobject_list, clear=True)
 
         logging.info('App: Importing CropObjects took {0:.3f} seconds.'.format(time.clock() - _start_time))
 

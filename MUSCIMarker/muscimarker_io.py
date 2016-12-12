@@ -1075,7 +1075,9 @@ def merge_cropobject_lists(*cropobject_lists):
             new_c.objid = c.objid + s
             new_c.inlinks = [i + s for i in c.inlinks]
             new_c.outlinks = [o + s for o in c.outlinks]
-            new_list.append(c)
+            new_list.append(new_c)
         new_lists.append(new_list)
 
-    return new_lists
+    output = list(itertools.chain(*new_lists))
+
+    return output

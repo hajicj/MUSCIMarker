@@ -318,8 +318,10 @@ class CropObjectAnnotatorModel(Widget):
                                               lambda cs: ('objids', [c.objid for c in cs])]},
              fn_name='model.import_cropobjects',
              tracker_name='model')
-    def import_cropobjects(self, cropobjects):
+    def import_cropobjects(self, cropobjects, clear=True):
         logging.info('Model: Importing {0} cropobjects.'.format(len(cropobjects)))
+        if clear:
+            self.clear_cropobjects()
         # Batch processing is more efficient, since rendering the CropObjectList
         # is tied to any change of self.cropobjects
         self.cropobjects = {c.objid: c for c in cropobjects}
