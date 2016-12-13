@@ -300,6 +300,15 @@ class MessageDialog(Popup):
 class InspectionPopup(Popup):
     source = StringProperty()
 
+    def __init__(self, *args, **kwargs):
+        super(InspectionPopup, self).__init__(*args, **kwargs)
+
+        self.image.texture.mag_filter = 'nearest'
+
+    @property
+    def image(self):
+        return self.ids['inspected_image']
+
 ##############################################################################
 
 
