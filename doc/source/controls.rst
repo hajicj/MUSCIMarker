@@ -404,6 +404,7 @@ the given selection is not supposed to react to the shortcut.
 **v**               Validate the current annnotation. Finds inconsistencies in how
                     relationships are being assigned to objects.
 **c**               Open symbol class selection dialog. (See below.)
+**o**               Open ID-based object selection dialog. (See below.)
 **alt+h**           Hide/Show all relationships.
 **1, 2, ...**       Select the n-th tool from the top.
 =================   ================================================================
@@ -429,3 +430,28 @@ Press "tab" to have the dialog guess the next part of
 the symbol name (it's never wrong, but sometimes it might not be able to
 come up with any guess at all). Try pressing tab when trying to get letters!
 It should speed up the process considerably.
+
+If there are symbols where the name of one is a prefix of the other,
+such as ``repeat`` is a prefix of ``repeat-dot``, you need to get the whole
+word there (``repeat``) to select that MLClass. You can still use "tab"
+to get there.
+
+
+Objid selection dialog
+^^^^^^^^^^^^^^^^^^^^^^
+
+The ``objid``-based selection dialog enables quickly selecting CropObjects
+using their unique identifier. Type in the numbers, separated by whitespace
+(you can also add commas, semicolons, etc.). Upon confirmation, these objects
+will be selected (and *only* these objects - previous selections will be
+canceled).
+
+**Controlling**
+
+Type to enter text.
+
+*Example:* ``123, 125, 126, 128`` *or* ``123 125 126 128``
+
+Enter to confirm, Escape to cancel (or just press the buttons).
+
+As opposed to the MLClass selection dialog, pressing "tab" does nothing.

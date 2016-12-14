@@ -37,6 +37,15 @@ questions to is ``hajicj@ufal.mff.cuni.cz``
     To learn how to properly receive data to annotate and submit
     your work, see :ref:`organizing`.
 
+
+There is an example annotation that comes up as the default image when you
+start MUSCIMarker. Many situations are already in this example. Check it out!
+You can select a symbol and use "i" (inspection popup) to look at the annotation
+at the level of individual pixels.
+
+
+  .. The changes will go away, to be replaced by a more coherent text.
+
 Changes in 1.0.1
 ----------------
 
@@ -194,7 +203,10 @@ For slurs and dynamic hairpins (cresc./decr.), attach them to *all* the notehead
 that they affect, not just the first and last one.
 
 .. tip:: The fastest way of selecting a bunch of primitives is to use
-         the **Obj. Select** tool.
+         the **Obj. Select** tool. If you have Active Selection turned
+         on in the settings, it will "preemtively" light up the current
+         selection as you draw the lasso, making it easier to know whether
+         the right symbols are being selected.
 
 ...
 
