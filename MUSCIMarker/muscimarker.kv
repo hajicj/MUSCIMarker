@@ -123,17 +123,17 @@
 
     ToolSelectionButton:
         name: 'cropobject_views_select_tool'
-        id: cropobject_views_select_tool,
+        id: cropobject_views_select_tool
         text: 'Obj.\nSelect'
 
     ToolSelectionButton:
         name: 'edge_views_select_tool'
-        id: edge_views_select_tool,
+        id: edge_views_select_tool
         text: 'Rel.\nSelect'
 
     ToolSelectionButton:
         name: 'cropobject_views_parse_tool'
-        id: cropobject_views_parse_tool,
+        id: cropobject_views_parse_tool
         text: 'Parse'
 
     ToolSelectionButton:
@@ -166,6 +166,15 @@
     #        pos: (self.pos[0] + 5, self.pos[1] + 2)
 
 
+<CurrentPathLabel@Label>:
+    height: sp(32)
+    markup: True
+    text_size: self.width, None
+    halign: 'left'
+
+    size_hint_y: None
+    pos_hint: root.pos_hint
+
 
 <FileLoadDialog>:
     BoxLayout:
@@ -173,10 +182,15 @@
         pos: root.pos
         orientation: 'vertical'
 
+        CurrentPathLabel:
+            id: current_path_label
+            text: '  [color=aaaaaa][b]Current path:[/b]    ...' + os.path.dirname(root.default_path)[-60:] + '[/color]'
+
         FileChooserListView:
             id: filechooser
             path: root.default_path
             on_submit: root.load(filechooser.path, filechooser.selection)
+            on_path: current_path_label.text = '  [color=aaaaaa][b]Current path:[/b]    ...' + self.path[-60:] + '[/color]'
 
         BoxLayout:
             size_hint_y: 0.07
@@ -211,10 +225,15 @@
         pos: root.pos
         orientation: "vertical"
 
+        CurrentPathLabel:
+            id: current_path_label
+            text: '  [color=aaaaaa][b]Current path:[/b]    ...' + os.path.dirname(app.image_loader.filename)[-60:] + '[/color]'
+
         FileChooserListView:
             id: filechooser
             path: root.default_path
             on_selection: text_input.text = self.selection and self.selection[0] or ''
+            on_path: current_path_label.text = '  [color=aaaaaa][b]Current path:[/b]    ...' + self.path[-60:] + '[/color]'
 
         TextInput:
             id: text_input
