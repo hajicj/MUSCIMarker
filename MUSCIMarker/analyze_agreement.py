@@ -160,7 +160,30 @@ def align_cropobjects(truth, prediction, fscore=None):
     # For each prediction (column), pick the highest-scoring
     # True symbol.
     closest_truths = list(fscore.argmax(axis=0))
-    alignment = [(t, p) for p, t in enumerate(closest_truths)]
+
+    # Checking for duplicates
+    closest_truth_distance = [fscore[ct,j]
+                              for j, ct in enumerate(closest_truths)]
+    equidistant_closest_truths = [[i for i, x in enumerate(fscore[:, j])
+                                   if x == ct]
+                                  for j, ct in enumerate(closest_truth_distance)]
+
+    clsname_aware_closest_truths = []
+    for j, ects in enumerate(equidistant_closest_truths):
+        best_truth_i = int(ects[0])
+
+        # If there is more than one tied best choice,
+        # try to choose the truth cropobject that has the same
+        # class as the predicted cropobject.
+        if len(ects) > 1:
+            ects_c = {truth[int(i)].clsname: i for i in ects}
+            j_clsname = prediction[j].clsname
+            if j_clsname in ects_c:
+                best_truth_i = int(ects_c[j_clsname])
+
+        clsname_aware_closest_truths.append(best_truth_i)
+
+    alignment = [(t, p) for p, t in enumerate(clsname_aware_closest_truths)]
     return alignment
 
 
