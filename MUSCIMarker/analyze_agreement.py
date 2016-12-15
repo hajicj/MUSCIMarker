@@ -72,6 +72,7 @@ def pixel_metrics(truth, prediction):
     """Computes the recall, precision and f-score for the prediction
     CropObject given the truth CropObject."""
     recall, precision, fscore = 0, 0, 0
+
     intersection_truth = bbox_intersection(truth.bounding_box,
                                            prediction.bounding_box)
     if intersection_truth is None:
@@ -109,6 +110,7 @@ def pixel_metrics(truth, prediction):
     else:
         recall = n_common / n_truth
         precision = n_common / n_pred
+
     if (recall == 0) or (precision == 0):
         fscore = 0
     else:
@@ -162,9 +164,28 @@ def align_cropobjects(truth, prediction, fscore=None):
     return alignment
 
 
-def rpf_given_alignment(alignment, r, p):
+def rpf_given_alignment(alignment, r, p,
+                        strict_clsnames=True,
+                        truths=None, predictions=None):
+    if strict_clsnames:
+        if not truths:
+            raise ValueError('If strict_clsnames is requested, must supply truths'
+                             ' CropObjects!')
+        if not predictions:
+            raise ValueError('If strict_clsnames is requested, must supply predictions'
+                             ' CropObjects!')
+
     total_r, total_p = 0, 0
+
     for i, j in alignment:
+
+        # Check for strict clsnames only at this stage.
+        if strict_clsnames:
+            t_c = truths[i]
+            p_c = predictions[j]
+            if t_c.clsname != p_c.clsname:
+                continue
+
         total_r += r[i, j]
         total_p += p[i, j]
     total_r /= len(alignment)
@@ -201,6 +222,10 @@ def build_argument_parser():
                         help='If set, will check whether the CropObjects aligned'
                              ' to each other have the same class labels'
                              ' and print out the irregularities.')
+    parser.add_argument('--no_strict_clsnames', action='store_true',
+                        help='If set, will not require aligned objects\' clsnames'
+                             ' to match before computing pixel-wise overlap'
+                             ' metrics.')
 
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Turn on INFO messages.')
@@ -245,7 +270,14 @@ def main(args):
 
     # Now compute agreement: precision and recall on pixels
     # of the aligneed CropObjects.
-    total_r, total_p, total_f = rpf_given_alignment(alignment, r, p)
+
+    # We apply strict clsnames only here, after the CropObjects have been
+    # aligned to each other using pixel metrics.
+    _strict_clsnames = (not args.no_strict_clsnames)
+    total_r, total_p, total_f = rpf_given_alignment(alignment, r, p,
+                                                    strict_clsnames=_strict_clsnames,
+                                                    truths=truth,
+                                                    predictions=prediction)
 
     print('Truth objs.:\t{0}'.format(len(truth)))
     print('Pred. objs.:\t{0}'.format(len(prediction)))
