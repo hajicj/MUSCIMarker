@@ -462,7 +462,6 @@ class CropObject(object):
         else:
             return None
 
-
     def crop_to_mask(self):
         """Crops itself to the minimum bounding box that contains all
         its pixels, as determined by its mask.
@@ -547,7 +546,6 @@ class CropObject(object):
         self.width = abs_r - abs_l
 
         self.set_mask(new_mask)
-
 
     def __str__(self):
         lines = []
@@ -680,7 +678,52 @@ class CropObject(object):
         mask = numpy.array(values).reshape(shape)
         return mask
 
+    def join(self, other):
+        """CropObject "addition": performs an OR on this
+        and the ``other`` CropObjects' masks and bounding boxes,
+        and assigns to this CropObject the result.
 
+        The ``clsname`` of the ``other`` is ignored.
+        """
+        # Get combined bounding box
+        nt = min(self.top, other.top)
+        nl = min(self.left, other.left)
+        nb = max(self.bottom, other.bottom)
+        nr = max(self.right, other.right)
+
+        nh = nb - nt
+        nw = nr - nl
+
+        # Create mask of corresponding size
+        new_mask = numpy.zeros((nh, nw), dtype=self.mask.dtype)
+
+        # Find coordinates where to paste the masks
+        spt = self.top - nt  # spt = self_paste_top
+        spl = self.left - nl
+        opt = other.top - nt
+        opl = other.left - nl
+
+        # Paste the masks into these places
+        new_mask[spt:spt+self.height, spl:spl+self.width] += self.mask
+        new_mask[opt:opt+other.height, opl:opl+other.width] += other.mask
+
+        # Normalize mask value
+        new_mask[new_mask != 0] = 1
+
+        # Assign the new variables to this CropObject
+        self.x = nt
+        self.y = nl
+        self.height = nh
+        self.width = nw
+        self.mask = new_mask
+
+        # Add inlinks and outlinks
+        for o in other.outlinks:
+            if o not in self.outlinks:
+                self.outlinks.append(o)
+        for i in other.inlinks:
+            if i not in self.inlinks:
+                self.inlinks.append(i)
 
 
 class MLClass(object):

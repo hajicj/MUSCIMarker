@@ -746,6 +746,10 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
             # We do the removal through the view, so that deselection
             # and other stuff is handled.
             cropobject_view.remove_from_model()
+
+            # Now add the CropObject back to redraw. Note that this way,
+            # the object's objid stays the same, which is essential for
+            # maintaining inlinks and outlinks!
             self._model.add_cropobject(c)
 
             try:
@@ -761,6 +765,38 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
         self.app_ref.cropobject_list_renderer.redraw += 1
 
         self.editor_widgets['line_tracer'].clear()
+
+
+class MaskAdditionTool(LassoBoundingBoxSelectTool):
+
+    def on_current_cropobject_model_selection(self, instance, pos):
+        """Here, instead of adding a new CropObject like the other
+        Lasso tools, we instead modify the mask of selected CropObjects
+        by adding the lasso-ed area."""
+        c_lasso = self.app_ref.generate_cropobject_from_model_selection(
+            selection=pos,
+            mask=self.current_cropobject_mask)
+        c_lasso.crop_to_mask()
+
+        for cropobject_view in self.app_ref.cropobject_list_renderer.view.selected_views:
+            c = cropobject_view._model_counterpart
+            c.join(c_lasso)
+
+            # Redraw:
+            cropobject_view.remove_from_model()
+            self._model.add_cropobject(c)
+
+            # Try reselecting the selected objects:
+            try:
+                new_view = self.app_ref.cropobject_list_renderer.view.get_cropobject_view(c.objid)
+                new_view.ensure_selected()
+            except KeyError:
+                logging.info('MaskEraser: View for modified CropObject {0} has'
+                             ' not been rendered yet, cannot select it.'
+                             ''.format(c.objid))
+
+        self.editor_widgets['line_tracer'].clear()
+
 
 ###############################################################################
 
@@ -1271,6 +1307,7 @@ tool_dispatch = {
     'edge_views_select_tool': EdgeViewsSelectTool,
     'cropobject_views_parse_tool': CropObjectViewsParseTool,
     'mask_eraser_tool': MaskEraserTool,
+    'mask_addition_tool': MaskAdditionTool,
 }
 
 
@@ -1297,6 +1334,11 @@ def get_tool_kwargs_dispatch(name):
         return {'do_helper_line': do_helper_line}
 
     if name == 'mask_eraser_tool':
+        _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
+        do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
+        return {'do_helper_line': do_helper_line}
+
+    if name == 'mask_addition_tool':
         _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
         do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
         return {'do_helper_line': do_helper_line}
