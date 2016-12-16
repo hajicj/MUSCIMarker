@@ -29,12 +29,14 @@ notehead-full{1,} |
 | sharp{1,} flat{1,} natural{1,} double_sharp{1,} double_flat{1,}
 | ledger_line{1,}
 | curved-line_(tie-or-slur){1,} slur{2,} tie{2,}
+| *_flag{1,}
 
 ##############################################################################
 # Rests
 
 whole_rest half_rest *th_rest | duration-dot
 *_rest | tuple
+*_rest | fermata
 
 ##############################################################################
 # Stem modifiers
@@ -59,6 +61,8 @@ tuple | tuple_bracket/line numeral_*
 
 volta | numeral_* other-dot
 
+thin_barline | fermata
+thick_barline | fermata
 
 ##############################################################################
 # Part defaults
