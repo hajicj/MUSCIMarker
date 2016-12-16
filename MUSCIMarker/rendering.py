@@ -326,7 +326,7 @@ class CropObjectListView(ListView):
         #logging.info('CropObjectListView: NOT propagating keypress')
         return True
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         logging.info('CropObjectListView.on_key_up(): trap {0}'
                      ''.format(self._trap_key))
         if self.handle_key_trap(window, key, scancode):

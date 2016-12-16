@@ -329,7 +329,7 @@ class CropObjectView(SelectableView, ToggleButton):
         self.dispatch('on_key_captured')
         return False
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         return False
 
     def on_key_captured(self, *largs):

@@ -94,7 +94,7 @@ class MUSCIMarkerTool(Widget):
         # return True
         pass
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         # logging.info('ToolKeyboard: Up {0}'.format((key, scancode)))
         # return True
         pass

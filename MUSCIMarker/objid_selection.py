@@ -139,7 +139,7 @@ class ObjidSelectionDialog(Popup):
         # Do not let the event propagate!
         return True
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         return False
 
     ######################################################

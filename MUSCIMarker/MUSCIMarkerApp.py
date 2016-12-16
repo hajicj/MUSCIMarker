@@ -975,7 +975,7 @@ class MUSCIMarkerApp(App):
 
         return True   # Stop bubbling
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         logging.info('App: Keyboard: Up {0}'.format((key, scancode)))
 
     ##########################################################################

@@ -7,6 +7,9 @@ import logging
 import os
 import time
 
+from kivy.app import App
+from kivy.uix.label import Label
+
 from MUSCIMarkerApp import MUSCIMarkerApp
 
 import kivy
@@ -27,6 +30,9 @@ def build_argument_parser():
                         help='Turn on INFO messages.')
     parser.add_argument('--debug', action='store_true',
                         help='Turn on DEBUG messages.')
+    #
+    # parser.add_argument('--hello', action='store_true',
+    #                     help='If set, runs a Hello World mini-app instead.')
 
     parser.add_argument('-w', '--writer', type=int, default=1,
                         help='Which writer?')
@@ -37,6 +43,10 @@ def build_argument_parser():
 
     return parser
 
+class MiniApp(App):
+    def build(self):
+        return Label(text='hello world')
+
 
 def main(args):
     logging.info('Starting main...')
@@ -44,6 +54,7 @@ def main(args):
 
     # Your code goes here
     app = MUSCIMarkerApp()
+    #app = MiniApp()   ### DEBUGGING RECORDER MODULE
     app.run()
 
     _end_time = time.clock()

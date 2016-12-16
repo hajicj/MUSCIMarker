@@ -22,6 +22,8 @@ from kivy.uix.textinput import TextInput
 import muscimarker_io as mmio
 # import mhr.muscima as mm
 
+from kivy.input.recorder import Recorder
+
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -63,7 +65,7 @@ class KeypressBubblingStopperBehavior(object):
                      ''.format((key, scancode, codepoint, modifier)))
         return True
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         logging.info('KeypressBubblingStopper: stopping key_up {0}'
                      ''.format((key, scancode)))
         return True
@@ -101,7 +103,7 @@ class FileLoadDialog(FloatLayout):
     # def on_key_down(self, window, key, scancode, codepoint, modifier):
     #     return True
     #
-    # def on_key_up(self, window, key, scancode):
+    # def on_key_up(self, window, key, scancode, *args, **kwargs):
     #     return True
 
 
@@ -172,7 +174,7 @@ class FileSaveDialog(FloatLayout):
     #                  ''.format(key, scancode, modifier))
     #     return True
     #
-    # def on_key_up(self, window, key, scancode):
+    # def on_key_up(self, window, key, scancode, *args, **kwargs):
     #     logging.info('FileSaveDialog: Captured up-key {0}/{1}'.format(key, scancode))
     #     return True
 
