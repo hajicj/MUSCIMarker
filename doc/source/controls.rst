@@ -263,9 +263,14 @@ part.
     a while to pre-compute where the connected components are. Subsequent
     uses, however, will be quick.
 
+
 **Object Selection** Draw a lasso and select all CropObjects that overlap
 this rectangle. Handy for adding relationships: quickly select groups
 of CropObjects with this tool and press "p" to create relationships.
+
+The selection can be made *active* in the Settings: this means it will
+light up selected symbols as you go.
+
 
 **Relationship Selection** Draw a lasso, find all CropObjects that overlap
 this rectangle (like the Object Selection tool), and select their *Relationships*.
@@ -279,6 +284,29 @@ This is useful for mass-editing Relationships.
 **Parse** Draw a rectangle and apply relationships to the set of all CropObjects
 that overlap this rectangle. Handy for adding relationships without having
 to press "p" over and over again.
+
+
+**Eraser Lasso** Sometimes, your hand slips when annotating and you mark some
+extra pixels which should not be a part of the object. This tool enables correcting
+that:
+
+1. Select (only) the object you need to fix,
+2. Draw a lasso around the parts that you want to throw out.
+
+Use `i` (inspection) to check the results.
+
+
+**Plus Lasso** Sometimes, your hand slips and you don't mark pixels that should
+be a part of the object you're working on -- the opposite of Eraser Lasso.
+This tool enables you to add more pixels to an object:
+
+1. Select (only) the object you need to fix,
+2. Draw a lasso around the parts that you want to add to the object.
+
+Use `i` (inspection) to check the results.
+
+Especially for the Plus Lasso, make sure that when you are using it,
+no other objects are selected, except for the one you want to edit.
 
 
 .. _controls_selection:
