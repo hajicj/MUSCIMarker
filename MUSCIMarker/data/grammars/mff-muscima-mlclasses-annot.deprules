@@ -22,6 +22,7 @@ notehead-empty | grace-notehead-full grace-notehead-empty
 # Aggregate cardinalities
 
 notehead-full{1,} |
+grace-notehead-full{1,} |
 
 | grace-notehead-*{1,}
 | beam{1,} stem{1,}
@@ -59,10 +60,15 @@ trill | sharp flat natural double_sharp double_flat
 
 tuple | tuple_bracket/line numeral_*
 
-volta | numeral_* other-dot
+volta | numeral_* other-dot horizontal_spanner dotted_horizontal_spanner
+transposition_text | horizontal_spanner dotted_horizontal_spanner
 
 thin_barline | fermata
 thick_barline | fermata
+dotted_barline | fermata
+
+*-clef | transposition_text
+
 
 ##############################################################################
 # Part defaults
@@ -83,9 +89,16 @@ tempo_text | letter_* numeral_* other-dot
 instrument_name | letter_* numeral_* other-dot
 rehearsal_mark | letter_* numeral_* other-dot
 other_text | letter_* numeral_* other-dot
+transposition_text | letter_v letter_V letter_a letter_A
+transposition_text | numeral_1 numeral_5 numeral_8
+figured_bass_text | numeral_* sharp flat double_sharp double_flat natural
 
 bar_number | numeral_*
 other_numeric_sign | numeral_*
+*_text | continuation/connection_dash
+
+# Figured bass is attached to noteheads
+notehead-* | figured_bass_text
 
 *_text{1,} |
 rehearsal_mark{1,} |
