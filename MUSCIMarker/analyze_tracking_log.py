@@ -39,6 +39,11 @@ from muscimarker_io import parse_cropobject_list
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
 
+if __name__ != '__main__':
+    logger = logging.getLogger(__name__)
+else:
+    # Defer after basicConfig call, before main() call
+    logger = None
 
 
 def freqdict(l, sort=True):
@@ -76,7 +81,7 @@ def logs_from_package(package):
 
     :return: List of filenames (full paths).
     """
-    logging.info('Collecting log files from package {0}'.format(package))
+    logger.info('Collecting log files from package {0}'.format(package))
     if not os.path.isdir(package):
         raise OSError('Package {0} not found!'.format(package))
     log_path = os.path.join(package, 'annotation_logs')
@@ -89,7 +94,7 @@ def logs_from_package(package):
     # Dealing with people who copied the entire .muscimarker-tracking directory
     # (potentially without the dot, as just "muscimarker-tracking")
     if len(log_days) == 0:
-        logging.info('No logs in package {0}!'.format(package))
+        logger.info('No logs in package {0}!'.format(package))
         return []
 
     if log_days[-1].endswith('muscimarker-tracking'):
@@ -105,22 +110,22 @@ def logs_from_package(package):
 
         # Dealing with people who copied only the JSON files
         if day.endswith('json'):
-            logging.info('Found log file that is not inside a day dir: {0}'
+            logger.info('Found log file that is not inside a day dir: {0}'
                          ''.format(day))
             log_files.append(os.path.join(log_path, day))
             continue
 
         if day.endswith('xml'):
-            logging.info('Log file is for some reason XML instead of JSON; copied wrong files???')
+            logger.info('Log file is for some reason XML instead of JSON; copied wrong files???')
             continue
 
         day_log_path = os.path.join(log_path, day)
         day_log_files = [os.path.join(day_log_path, l)
                          for l in os.listdir(day_log_path)]
         log_files += day_log_files
-    logging.info('In package {0}: found {1} log files.'
+    logger.info('In package {0}: found {1} log files.'
                  ''.format(package, len(log_files)))
-    logging.debug('In package {0}: log files:\n{1}'
+    logger.debug('In package {0}: log files:\n{1}'
                   ''.format(package, pprint.pformat(log_files)))
     return log_files
 
@@ -139,13 +144,13 @@ def try_correct_crashed_json(fname):
     with open(fname, 'r') as hdl:
         lines = [l.rstrip() for l in hdl]
     if lines[-1][-1] == ',':
-        logging.info('Correcting JSON: found hanging comma!')
+        logger.info('Correcting JSON: found hanging comma!')
         lines[-1] = lines[-1][:-1]
         lines.append(']')
         return '\n'.join(lines)
 
     else:
-        logging.info('No hanging comma, cannot deal with this situation.')
+        logger.info('No hanging comma, cannot deal with this situation.')
         return None
 
 
@@ -160,7 +165,7 @@ def unique_logs(event_logs):
     unique = collections.OrderedDict()
     for log_file, l in event_logs.iteritems():
         if len(l) < 1:
-            logging.info('Got an empty log from file {0}'.format(log_file))
+            logger.info('Got an empty log from file {0}'.format(log_file))
             continue
         init_event = l[0]
         if '-time-' not in init_event:
@@ -168,7 +173,7 @@ def unique_logs(event_logs):
                              ''.format(log_file, init_event))
         init_time  = init_event['-time-']
         if init_time in unique:
-            logging.info('Found non-unique event log {0} with timestamp {1} ({2} events)!'
+            logger.info('Found non-unique event log {0} with timestamp {1} ({2} events)!'
                          ' Using first ({3} events).'
                          ''.format(log_file, init_time, len(l), len(unique[init_time])))
         else:
@@ -183,7 +188,7 @@ def unique_logs(event_logs):
 def annotations_from_package(package):
     """Collect all annotation XML files (with complete paths)
     from the given package."""
-    logging.info('Collecting annotation files from package {0}'.format(package))
+    logger.info('Collecting annotation files from package {0}'.format(package))
     if not os.path.isdir(package):
         raise OSError('Package {0} not found!'.format(package))
     annot_path = os.path.join(package, 'annotations')
@@ -307,6 +312,9 @@ def build_argument_parser():
                              ' from all packages in the given person\'s'
                              ' annotation directory')
 
+    parser.add_argument('--exclude_packages', nargs='+', action='store',
+                        help='Do not count given package names.')
+
     parser.add_argument('-c', '--count_annotations', action='store_true',
                         help='If given, will collect annotation files from the'
                              ' supplied packages (or per-annotator packages)'
@@ -323,11 +331,11 @@ def build_argument_parser():
 
 
 def main(args):
-    logging.info('Starting main...')
+    logger.info('Starting main...')
     _start_time = time.clock()
 
     if args.annotator is not None:
-        logging.info('Collecting annotation packages for annotator {0}'
+        logger.info('Collecting annotation packages for annotator {0}'
                      ''.format(args.annotator))
         # Collect all packages, incl. training
         packages = []
@@ -337,18 +345,27 @@ def main(args):
                 continue
             packages.append(package_candidate)
 
-        logging.info('Found: {0} packages'.format(len(packages)))
+        logger.info('Found: {0} packages'.format(len(packages)))
 
         args.packages = packages
 
     if args.packages is not None:
-        logging.info('Collecting log files for {0} packages.'.format(len(args.packages)))
+
+        if args.exclude_packages is not None:
+            args.packages = [p for p in args.packages
+                             if len([e for e in args.exclude_packages
+                                     if p.endswith(e)]) == 0
+                             ]
+
+        logger.info('Collecting log files for {0} packages.'.format(len(args.packages)))
+        logger.warning('Found packages:\n{0}'.format('\n'.join(args.packages)))
+
         log_files = []
         for package in args.packages:
             current_log_files = logs_from_package(package)
             log_files += current_log_files
 
-        logging.info('Found: {0} log files'.format(len(log_files)))
+        logger.info('Found: {0} log files'.format(len(log_files)))
         args.input = log_files
 
     log_data_per_file = {}
@@ -363,26 +380,26 @@ def main(args):
                 current_log_data = json.load(hdl)
 
             except ValueError:
-                logging.info('Could not parse JSON file {0}'.format(input_file))
-                logging.info('Attempting to correct file.')
+                logger.info('Could not parse JSON file {0}'.format(input_file))
+                logger.info('Attempting to correct file.')
                 corrected = try_correct_crashed_json(input_file)
                 if corrected is not None:
-                    logging.info('Attempting to parse corrected JSON.')
+                    logger.info('Attempting to parse corrected JSON.')
                     try:
                         current_log_data = json.loads(corrected)
                     except ValueError:
-                        logging.warning('Could not even parse corrected JSON, skipping file {0}.'.format(input_file))
+                        logger.warning('Could not even parse corrected JSON, skipping file {0}.'.format(input_file))
                         #raise
-                    logging.info('Success!')
+                    logger.info('Success!')
                 else:
-                    logging.info('Unable to correct JSON, skipping file.')
+                    logger.info('Unable to correct JSON, skipping file.')
 
         log_data_per_file[input_file] = current_log_data
 
-    logging.info('Checking logs for uniqueness. Started with {0} log files.'
+    logger.info('Checking logs for uniqueness. Started with {0} log files.'
                  ''.format(len(log_data_per_file)))
     log_data_per_file = unique_logs(log_data_per_file)
-    logging.info('After uniqueness check: {0} logs left.'.format(len(log_data_per_file)))
+    logger.info('After uniqueness check: {0} logs left.'.format(len(log_data_per_file)))
 
     log_data = [e for e in itertools.chain(*log_data_per_file)]
     if len(log_data) == 0:
@@ -390,7 +407,7 @@ def main(args):
         n_minutes = None
         n_hours = None
     else:
-        logging.info('Parsed {0} data items.'.format(len(log_data)))
+        logger.info('Parsed {0} data items.'.format(len(log_data)))
         # Your code goes here
         # raise NotImplementedError()
 
@@ -417,10 +434,17 @@ def main(args):
         n_relationships = 0
         for package in args.packages:
             annot_files = annotations_from_package(package)
+            n_c_package = 0
+            n_r_package = 0
             for f in annot_files:
                 n_c, n_r = count_cropobjects_and_relationships(f)
                 n_cropobjects += n_c
                 n_relationships += n_r
+                n_c_package += n_c
+                n_r_package += n_r
+
+            logger.warn('Pkg. {0}: {1} objs., {2} rels. ({3} files)'
+                         ''.format(package, n_c_package, n_r_package, len(annot_files)))
 
         print('Total CropObjects: {0}'.format(n_cropobjects))
         print('Total Relationships: {0}'.format(n_relationships))
@@ -429,7 +453,7 @@ def main(args):
 
 
     _end_time = time.clock()
-    logging.info('analyze_tracking_log.py done in {0:.3f} s'.format(_end_time - _start_time))
+    logger.info('analyze_tracking_log.py done in {0:.3f} s'.format(_end_time - _start_time))
 
 
 ##############################################################################
@@ -439,9 +463,16 @@ if __name__ == '__main__':
     parser = build_argument_parser()
     args = parser.parse_args()
 
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.WARNING)
+
+    logger = logging.getLogger(__name__)
+
     if args.verbose:
-        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+        logger.setLevel(logging.INFO)
+        #logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     if args.debug:
-        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
+        #logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+
 
     main(args)
