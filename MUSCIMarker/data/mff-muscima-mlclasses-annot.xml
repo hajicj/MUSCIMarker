@@ -155,13 +155,13 @@
 			<Id>25</Id>
 			<Name>grace-notehead-full</Name>
 			<Folder>note-primitive/grace-notehead-full</Folder>
-			<Color>#FF6666</Color>
+			<Color>#66FFBA</Color>
 			</MLClass>
 		<MLClass>
 			<Id>26</Id>
 			<Name>grace-notehead-empty</Name>
 			<Folder>note-primitive/grace-notehead-empty</Folder>
-			<Color>#FF7566</Color>
+			<Color>#66FFC9</Color>
 			</MLClass>
 		<MLClass>
 			<Id>27</Id>
@@ -936,6 +936,12 @@
 			<Name>transposition_text</Name>
 			<Folder>text/transposition_text</Folder>
 			<Color>#BBFF66</Color>
+			</MLClass>
+		<MLClass>
+			<Id>156</Id>
+			<Name>letter_other</Name>
+			<Folder>text/letter_other</Folder>
+			<Color>#ACFF66</Color>
 			</MLClass>
 
 	</MLClasses>
