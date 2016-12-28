@@ -154,14 +154,14 @@
 		<MLClass>
 			<Id>25</Id>
 			<Name>grace-notehead-full</Name>
-			<Folder>note-primitivegrace-notehead-full</Folder>
-			<Color>#FF6666</Color>
+			<Folder>note-primitive/grace-notehead-full</Folder>
+			<Color>#66FFBA</Color>
 			</MLClass>
 		<MLClass>
 			<Id>26</Id>
 			<Name>grace-notehead-empty</Name>
 			<Folder>note-primitive/grace-notehead-empty</Folder>
-			<Color>#FF7566</Color>
+			<Color>#66FFC9</Color>
 			</MLClass>
 		<MLClass>
 			<Id>27</Id>
@@ -894,6 +894,54 @@
 			<Name>unclassified</Name>
 			<Folder>misc/unclassified</Folder>
 			<Color>#FF667B</Color>
+			</MLClass>
+		<MLClass>
+			<Id>149</Id>
+			<Name>horizontal_spanner</Name>
+			<Folder>notation/horizontal_spanner</Folder>
+			<Color>#69FF66</Color>
+			</MLClass>
+		<MLClass>
+			<Id>150</Id>
+			<Name>dotted_horizontal_spanner</Name>
+			<Folder>notation/dotted_horizontal_spanner</Folder>
+			<Color>#66FF72</Color>
+			</MLClass>
+		<MLClass>
+			<Id>151</Id>
+			<Name>system_separator</Name>
+			<Folder>layout/system_separator</Folder>
+			<Color>#FF6689</Color>
+			</MLClass>
+		<MLClass>
+			<Id>152</Id>
+			<Name>dotted_barline</Name>
+			<Folder>layout/dotted_barline</Folder>
+			<Color>#FF667A</Color>
+			</MLClass>
+		<MLClass>
+			<Id>153</Id>
+			<Name>figured_bass_text</Name>
+			<Folder>text/figured_bass_text</Folder>
+			<Color>#DAFF66</Color>
+			</MLClass>
+		<MLClass>
+			<Id>154</Id>
+			<Name>continuation/connection_dash</Name>
+			<Folder>text/continuation/connection_dash</Folder>
+			<Color>#CBFF66</Color>
+			</MLClass>
+		<MLClass>
+			<Id>155</Id>
+			<Name>transposition_text</Name>
+			<Folder>text/transposition_text</Folder>
+			<Color>#BBFF66</Color>
+			</MLClass>
+		<MLClass>
+			<Id>156</Id>
+			<Name>letter_other</Name>
+			<Folder>text/letter_other</Folder>
+			<Color>#ACFF66</Color>
 			</MLClass>
 
 	</MLClasses>
