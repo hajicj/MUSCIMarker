@@ -69,6 +69,7 @@ transposition_text | horizontal_spanner dotted_horizontal_spanner
 thin_barline | fermata
 thick_barline | fermata
 dotted_barline | fermata
+repeat | fermata
 
 *-clef | transposition_text
 

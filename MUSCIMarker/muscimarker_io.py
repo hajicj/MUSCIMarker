@@ -250,7 +250,7 @@ class CropObject(object):
     def __init__(self, objid, clsid, clsname, x, y, width, height,
                  outlinks=[], inlinks=[],
                  mask=None):
-        logging.info('Initializing CropObject with objid {0}, x={1}, '
+        logging.debug('Initializing CropObject with objid {0}, x={1}, '
                      'y={2}, h={3}, w={4}'.format(objid, x, y, height, width))
         self.objid = objid
         self.clsid = clsid
@@ -271,7 +271,7 @@ class CropObject(object):
         self.outlinks = outlinks
 
         self.is_selected = False
-        logging.info('...done!')
+        logging.debug('...done!')
 
     def set_mask(self, mask):
         if mask is None:
@@ -342,7 +342,7 @@ class CropObject(object):
         Returns the rounded-off integers (top, left, bottom, right)
         as `int`s.
         """
-        logging.info('bbox_to_integer_bounds: inputs {0}'.format((ftop, fleft, fbottom, fright)))
+        logging.debug('bbox_to_integer_bounds: inputs {0}'.format((ftop, fleft, fbottom, fright)))
 
         top = ftop - (ftop % 1.0)
         left = fleft - (fleft % 1.0)
@@ -354,13 +354,13 @@ class CropObject(object):
             right += 1.0
 
         if top != ftop:
-            logging.info('bbox_to_integer_bounds: rounded top by {0}'.format(top - ftop))
+            logging.debug('bbox_to_integer_bounds: rounded top by {0}'.format(top - ftop))
         if left != fleft:
-            logging.info('bbox_to_integer_bounds: rounded left by {0}'.format(left - fleft))
+            logging.debug('bbox_to_integer_bounds: rounded left by {0}'.format(left - fleft))
         if bottom != fbottom:
-            logging.info('bbox_to_integer_bounds: rounded bottom by {0}'.format(bottom - fbottom))
+            logging.debug('bbox_to_integer_bounds: rounded bottom by {0}'.format(bottom - fbottom))
         if right != fright:
-            logging.info('bbox_to_integer_bounds: rounded right by {0}'.format(right - fright))
+            logging.debug('bbox_to_integer_bounds: rounded right by {0}'.format(right - fright))
 
         return int(top), int(left), int(bottom), int(right)
 
@@ -401,14 +401,14 @@ class CropObject(object):
         :param img: A three-channel image (3-D numpy array,
             with the last dimension being 3)."""
         color = numpy.array(rgb)
-        logging.info('Rendering object {0}, clsid {1}, t/b/l/r: {2}'
+        logging.debug('Rendering object {0}, clsid {1}, t/b/l/r: {2}'
                       ''.format(self.objid, self.clsid,
                                 (self.top, self.bottom, self.left, self.right)))
-        # logging.info('Shape: {0}'.format((self.height, self.width, 3)))
+        # logging.debug('Shape: {0}'.format((self.height, self.width, 3)))
         mask = numpy.ones((self.height, self.width, 3)) * color
         crop = img[self.top:self.bottom, self.left:self.right]
-        # logging.info('Mask done, creating crop')
-        logging.info('Shape: {0}. Got crop. Crop shape: {1}, img shape: {2}'
+        # logging.debug('Mask done, creating crop')
+        logging.debug('Shape: {0}. Got crop. Crop shape: {1}, img shape: {2}'
                       ''.format((self.height, self.width, 3), crop.shape, img.shape))
         mix = (crop + alpha * mask) / (1 + alpha)
 
@@ -520,7 +520,7 @@ class CropObject(object):
                 trim_right = l
                 break
 
-        logging.info('Cropobject.crop: Trimming top={0}, left={1},'
+        logging.debug('Cropobject.crop: Trimming top={0}, left={1},'
                      'bottom={2}, right={3}'
                      ''.format(trim_top, trim_left, trim_bottom, trim_right))
 
@@ -533,7 +533,7 @@ class CropObject(object):
 
         new_mask = self.mask[rel_t:rel_b, rel_l:rel_r] * 1
 
-        logging.info('Cropobject.crop: Old mask shape {0}, new mask shape {1}'
+        logging.debug('Cropobject.crop: Old mask shape {0}, new mask shape {1}'
                      ''.format(self.mask.shape, new_mask.shape))
 
         # new bounding box, relative to image -- used to compute the CropObject's
@@ -777,15 +777,15 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         in the parsed CropObjectList. Keys are ``clsid``s, values are the
         MLClass objects.
     """
-    logging.info('Parsing CropObjectList, with_refs={0}, tolerate={1}.'
+    logging.debug('Parsing CropObjectList, with_refs={0}, tolerate={1}.'
                  ''.format(with_refs, tolerate_ref_absence))
     tree = etree.parse(filename)
     root = tree.getroot()
-    logging.info('XML parsed.')
+    logging.debug('XML parsed.')
     cropobject_list = []
 
     for i, cropobject in enumerate(root.iter('CropObject')):
-        logging.info('Parsing CropObject {0}'.format(i))
+        logging.debug('Parsing CropObject {0}'.format(i))
 
         objid = int(float(cropobject.findall('Id')[0].text))
 
@@ -842,17 +842,17 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
             mask = obj.decode_mask(cropobject.findall('Mask')[0].text,
                                    shape=(obj.height, obj.width))
         obj.set_mask(mask)
-        logging.info('Created CropObject with ID {0}'.format(obj.objid))
+        logging.debug('Created CropObject with ID {0}'.format(obj.objid))
         if integer_bounds is True:
             obj.to_integer_bounds()
         cropobject_list.append(obj)
 
-    logging.info('CropObjectList loaded.')
+    logging.debug('CropObjectList loaded.')
 
     validate_cropobjects_graph_structure(cropobject_list)
 
     if with_refs:
-        logging.info('Parsing CropObjectList refs.')
+        logging.debug('Parsing CropObjectList refs.')
         # This is pretty bad at this point. We should change it to a regular tag...
         with open(filename) as hdl:
             lines = [l.strip() for l in hdl]
@@ -895,6 +895,29 @@ def validate_cropobjects_graph_structure(cropobjects):
                 raise ValueError('Invalid graph structure in CropObjectList:'
                                  ' object {0} has outlink to non-existent'
                                  ' object {1}'.format(c, o))
+
+
+def export_cropobject_graph(cropobjects, validate=True):
+    """Collects the inlink/outlink CropObject graph
+    and returns it as a list of ``(from, to)`` edges.
+
+    :param cropobjects: A list of CropObject objects.
+
+    :param validate: If set, will raise a ValueError
+        if the graph defined by the CropObjects is
+        invalid.
+
+    :returns: A list of ``(from, to)`` objid pairs
+        that represent edges in the CropObject graph.
+    """
+    if validate:
+        validate_cropobjects_graph_structure(cropobjects)
+
+    edges = []
+    for c in cropobjects:
+        for o in c.outlinks:
+            edges.append((c.objid, o))
+    return edges
 
 
 def export_cropobject_list(cropobjects, mlclasslist_file=None, image_file=None, ref_root=None):
