@@ -343,7 +343,7 @@ class CropObjectListView(ListView):
             return
 
         a1, a2 = cropobjects[0].objid, cropobjects[1].objid
-        self._model.graph.ensure_add_edge((a1, a2))
+        self._model.ensure_add_edge((a1, a2))
 
     def process_detach(self):
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
@@ -485,7 +485,8 @@ class CropObjectListView(ListView):
         logging.info('CropObjectListView.parse_selection(): {0} edges to add'
                      ''.format(len(edges)))
 
-        self._model.graph.ensure_add_edges(edges)
+        #self._model.graph.ensure_add_edges(edges)
+        self._model.ensure_add_edges(edges)
 
     def get_cropobject_view(self, objid):
         """Retrieves the CropObjectView based on the objid. Useful e.g.

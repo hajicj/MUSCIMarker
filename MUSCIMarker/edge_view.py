@@ -122,6 +122,10 @@ class EdgeView(SelectableView, ToggleButton):
         return App.get_running_app().annot_model.graph
 
     @property
+    def model(self):
+        return App.get_running_app().annot_model
+
+    @property
     def edge_label(self):
         return self.graph.edges[self.edge]
 
@@ -195,7 +199,8 @@ class EdgeView(SelectableView, ToggleButton):
     def remove_from_model(self):
         self.remove_bindings()
         self.deselect()
-        self.graph.ensure_remove_edge(self.start_objid, self.end_objid)
+        self.model.ensure_remove_edge(self.start_objid, self.end_objid)
+        # Should sync this to model...
 
     def select(self, *args):
         logging.info('EdgeView\t{0}: called selection!'.format(self.edge))

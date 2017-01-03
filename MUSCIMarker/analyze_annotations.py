@@ -33,6 +33,35 @@ __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
 
 
+def compute_cropobject_stats(cropobjects, edges=None):
+    stats = collections.OrderedDict()
+
+    # Count cropobjects
+    stats['n_cropobjects'] = len(cropobjects)
+
+    # Count cropobjects by class
+    n_cropobjects_by_class = collections.defaultdict(int)
+    for c in cropobjects:
+        n_cropobjects_by_class[c.clsname] += 1
+    stats['n_cropobjects_by_class'] = n_cropobjects_by_class
+    stats['n_cropobjects_distinct'] = len(n_cropobjects_by_class)
+
+    if edges is not None:
+        # Count relationships
+        _cropobjects_dict = {c.objid: c for c in cropobjects}
+        stats['n_relationships'] = len(edges)
+        n_relationships_by_class = collections.defaultdict(int)
+        for e in edges:
+            fr, to = e
+            c_fr = _cropobjects_dict[fr].clsname
+            c_to = _cropobjects_dict[to].clsname
+            n_relationships_by_class[(c_fr, c_to)] += 1
+        stats['n_relationships_by_class'] = n_relationships_by_class
+        stats['n_relationships_distinct'] = len(n_relationships_by_class)
+
+    return stats
+
+
 
 def emit_stats_pprint(stats):
     # For now, just pretty-print. That means reformatting the insides
@@ -66,6 +95,7 @@ def emit_stats_pprint(stats):
     pprint.pprint(print_stats)
 
 
+##############################################################################
 
 def build_argument_parser():
     parser = argparse.ArgumentParser(description=__doc__, add_help=True,
@@ -120,39 +150,15 @@ def main(args):
 
     # Here's where the results are stored, for export into various
     # formats. (Currently, we only print them.)
-    stats = collections.OrderedDict()
-
-    # Count cropobjects
-    stats['n_cropobjects'] = len(cropobjects)
-
-    # Count cropobjects by class
-    n_cropobjects_by_class = collections.defaultdict(int)
-    for c in cropobjects:
-        n_cropobjects_by_class[c.clsname] += 1
-    stats['n_cropobjects_by_class'] = n_cropobjects_by_class
-    stats['n_cropobjects_distinct'] = len(n_cropobjects_by_class)
-
-    # Count relationships
-    _cropobjects_dict = {c.objid: c for c in cropobjects}
-    stats['n_relationships'] = len(edges)
-    n_relationships_by_class = collections.defaultdict(int)
-    for e in edges:
-        fr, to = e
-        c_fr = _cropobjects_dict[fr].clsname
-        c_to = _cropobjects_dict[to].clsname
-        n_relationships_by_class[(c_fr, c_to)] += 1
-    stats['n_relationships_by_class'] = n_relationships_by_class
-    stats['n_relationships_distinct'] = len(n_relationships_by_class)
+    stats = compute_cropobject_stats(cropobjects, edges=edges)
 
     ##########################################################################
     # Export
     if args.emit == 'print':
         emit_stats_pprint(stats)
-
     # More export options:
     #  - json
     #  - latex table
-
 
     _end_time = time.clock()
     logging.info('analyze_annotations.py done in {0:.3f} s'

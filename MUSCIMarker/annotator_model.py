@@ -6,6 +6,7 @@ import logging
 
 # import cv2
 # import matplotlib.pyplot as plt
+import itertools
 from kivy.app import App
 from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty
 from kivy.uix.widget import Widget
@@ -212,7 +213,6 @@ class ObjectGraph(Widget):
         self._inlinks = dict()
         self._outlinks = dict()
 
-
 ##############################################################################
 
 
@@ -369,7 +369,7 @@ class CropObjectAnnotatorModel(Widget):
 
     ##########################################################################
     # Synchronizing with the graph.
-    def sync_graph_to_cropobjects(self):
+    def sync_graph_to_cropobjects(self, cropobjects=None):
         """Ensures that the attachments are accurately reflected
         among the CropObjects. The attachments are build separately
         in the app, so they need to be written to the CropObjects
@@ -379,11 +379,17 @@ class CropObjectAnnotatorModel(Widget):
 
             Clears all outlinks and inlinks from the CropObjects and replaces
             them with the graph's structure!
+
+        :param cropobjects: A list of CropObjects which should be synced.
+            If left to ``None``, will sync everything.
         """
         logging.info('Model: Syncing {0} attachments to CropObjects.'
                      ''.format(len(self.graph.edges)))
 
-        for c in self.cropobjects.values():
+        if cropobjects is None:
+            cropobjects = self.cropobjects.values()
+
+        for c in cropobjects:
             if c.objid in self.graph._inlinks:
                 c.inlinks = list(self.graph._inlinks[c.objid])
             else:
@@ -394,7 +400,7 @@ class CropObjectAnnotatorModel(Widget):
             else:
                 c.outlinks = []
 
-    def sync_cropobjects_to_graph(self):
+    def sync_cropobjects_to_graph(self, cropobjects=None):
         """Ensures that the attachment structure in CropObjects
         is accurately reflected in the attachments data structure
         of the model. (Typically, you want to call this on importing
@@ -405,11 +411,19 @@ class CropObjectAnnotatorModel(Widget):
 
             Clears the current graph and replaces it with the edges inferred
             from CropObjects!
+
+        :param cropobjects: A list of CropObjects which should be synced.
+            If left to ``None``, will sync everything.
         """
-        self.graph.clear()
+        if cropobjects is None:
+            cropobjects = self.cropobjects.values()
+            self.graph.clear()
+        else:
+            for c in cropobjects:
+                self.graph.remove_obj_from_graph(c.objid)
 
         edges = []
-        for c in self.cropobjects.values():
+        for c in cropobjects:
             for o in c.outlinks:
                 edges.append((c.objid, o))
             self.graph.add_vertex(c.objid)
@@ -423,6 +437,36 @@ class CropObjectAnnotatorModel(Widget):
         """Make sure that the model is in a consistent state.
         (Fires all lazy synchronization routines between model components.)"""
         self.sync_graph_to_cropobjects()
+
+    def ensure_remove_edge(self, from_objid, to_objid):
+        """Make sure that the given edge is not in the model.
+        If it was there, it gets removed; otherwise, no action is taken.
+        As opposed to this operation on the graph, on the model, the
+        CropObjects in question have their inlink/outlink arrays
+        updated as well.
+        """
+        self.graph.ensure_remove_edge(from_objid, to_objid)
+        self.sync_graph_to_cropobjects(cropobjects=[self.cropobjects[from_objid],
+                                                    self.cropobjects[to_objid]])
+
+    def ensure_remove_edges(self, edges):
+        _affected_cropobjects = []
+        for from_objid, to_objid in edges:
+            self.graph.ensure_remove_edge(from_objid, to_objid)
+            _affected_cropobjects.append(self.cropobjects[from_objid])
+            _affected_cropobjects.append(self.cropobjects[to_objid])
+        self.sync_graph_to_cropobjects(cropobjects=_affected_cropobjects)
+
+    def ensure_add_edge(self, edge):
+        self.graph.ensure_add_edge(edge)
+        self.sync_graph_to_cropobjects(cropobjects=[self.cropobjects[edge[0]],
+                                                    self.cropobjects[edge[1]]])
+
+    def ensure_add_edges(self, edges, label='Attachment'):
+        self.graph.ensure_add_edges(edges=edges, label=label)
+        _affected_objids = set(itertools.chain(*edges))
+        _affected_cropobjects = [self.cropobjects[i] for i in _affected_objids]
+        self.sync_graph_to_cropobjects(cropobjects=_affected_cropobjects)
 
     ##########################################################################
     # Integrity
