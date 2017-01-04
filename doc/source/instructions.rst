@@ -37,6 +37,8 @@ start MUSCIMarker. Many situations are already in this example. Check it out!
 You can select a symbol and use the "i" keyboard shortcut to look at the annotation
 at the level of individual pixels, through the Inspection popup.
 
+(The instructions do *not* deal with how to properly receive data and submit
+your work. For that, see :ref:`organizing`.)
 
 .. note::
 
@@ -186,13 +188,10 @@ thinking about it and reviewing these guidelines, then send us an email
 to ``hajicj@ufal.mff.cuni.cz``!
 
 
-To learn how to properly receive data and submit your work, see :ref:`organizing`.
-
-
-
-
 **We now give the instructions for individual symbol classes. Make sure**
-**you understand these. If you don't, ask!** (``hajicj@ufal.mff.cuni.cz``)
+**you understand them all.** If there is something you don't understand,
+ask! (``hajicj@ufal.mff.cuni.cz``)
+
 
 
 .. _instructions_notes:
@@ -235,6 +234,7 @@ that they affect.
 We will now walk through some examples, going from individual notes
 to more complex situations.
 
+
 Simple notes
 ^^^^^^^^^^^^
 
@@ -256,6 +256,8 @@ the principles of only linking those primitives to a notehead that actually
 affect how we read the notehead.
 
 .. image:: images/guidelines/beamed_group_multilevel.png
+
+Rests are simple symbols.
 
 And don't forget that rests can have ``duration_dot``s:
 
@@ -344,6 +346,69 @@ Make sure you understand the reasons for the following:
 Other notation
 --------------
 
+In the section dedicated to notes themselves, we have also illustrated
+some basic principles of how to attach objects to each other. We will
+now define some more notational situations around notes:
+
+* ties and slurs
+* crescendo and decrescendo "hairpins"
+* tuples
+* accents and articulation
+* fermatas
+* trills
+* tremolos
+* arpeggios and glissandi
+* ornaments
+* segno, coda
+*
+* instrument_specific
+
+
+Layout
+------
+
+In this section, we will discuss objects that are related to the
+overall layout and structure of the music:
+
+* barlines
+* repeat
+* measure separator
+* system separator
+* staff grouping symbol
+* volta
+
+
+
+Part defaults
+-------------
+
+This includes:
+
+* clefs
+* key signatures
+* time signatures
+
+
+
+Text
+----
+
+A large part of notation is also expressed through letters
+that combine into different kinds of text:
+
+* letters and numerals
+* dynamics
+* tempo
+* lyrics
+* figured bass
+* bar and page numbers, rehearsal marks
+* other
+
+
+Others
+------
+
+* unclassified
 
 ...
 
