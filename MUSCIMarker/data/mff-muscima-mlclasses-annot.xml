@@ -943,6 +943,12 @@
 			<Folder>text/letter_other</Folder>
 			<Color>#ACFF66</Color>
 			</MLClass>
+		<MLClass>
+			<Id>157</Id>
+			<Name>system_start</Name>
+			<Folder>layout/system_start</Folder>
+			<Color>#FF666A</Color>
+			</MLClass>
 
 	</MLClasses>
 </MLClassList>
