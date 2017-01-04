@@ -21,7 +21,7 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
 from cropobject_view import CropObjectView
-from muscimarker_io import cropobjects_merge_bbox, cropobjects_merge_mask
+from muscimarker_io import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
 import tracker as tr
 
 __version__ = "0.0.1"
@@ -418,6 +418,7 @@ class CropObjectListView(ListView):
         model_cropobjects = [c._model_counterpart for c in self.adapter.selection]
         t, l, b, r = cropobjects_merge_bbox(model_cropobjects)
         mask = cropobjects_merge_mask(model_cropobjects)
+        inlinks, outlinks = cropobjects_merge_links(model_cropobjects)
 
         # Remove the merged CropObjects
         logging.info('CropObjectListView.merge(): Removing/deselecting selection {0}'
@@ -439,6 +440,9 @@ class CropObjectListView(ListView):
                                                                             'bottom': b,
                                                                             'right': r},
                                                                            mask=mask)
+        c.inlinks = inlinks
+        c.outlinks = outlinks
+
         self._model.add_cropobject(c)
         # Problem with retaining selection: this triggers repopulation
         self.render_new_to_back = False

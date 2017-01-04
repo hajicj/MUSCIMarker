@@ -296,6 +296,10 @@ class CropObjectAnnotatorModel(Widget):
 
         self.cropobjects[cropobject.objid] = cropobject
 
+        # Sync graph: the object might add inlinks/outlinks
+        # to other objects.
+        self.sync_graph_to_cropobjects()
+
     def _is_cropobject_valid(self, cropobject):
         t, l, b, r = cropobject.bounding_box
         if (b - t) * (r - l) < 10:

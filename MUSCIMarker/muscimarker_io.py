@@ -1121,6 +1121,30 @@ def cropobjects_merge_mask(cropobjects):
     return output_mask
 
 
+def cropobjects_merge_links(cropobjects):
+    """Collect all inlinks and outlinks of the given set of CropObjects
+    to CropObjects outside of this set. The rationale for this is that
+    these given ``cropobjects`` will be merged into one, so relationships
+    within the set would become loops and disappear.
+
+    (Note that this is not sufficient to update the relationships upon
+    a merge, because the affected CropObjects *outside* the given set
+    will need to have their inlinks/outlinks redirected to the new object.)
+
+    :returns: A tuple of lists: ``(inlinks, outlinks)``
+    """
+    _internal_objids = frozenset([c.objid for c in cropobjects])
+    outlinks = []
+    inlinks = []
+    for c in cropobjects:
+        # No duplicates
+        outlinks.extend([o for o in c.outlinks
+                         if (o not in _internal_objids) and (o not in outlinks)])
+        inlinks.extend([i for i in c.inlinks
+                        if (i not in _internal_objids) and (i not in inlinks)])
+    return inlinks, outlinks
+
+
 def merge_cropobject_lists(*cropobject_lists):
     """Combines the CropObject lists into one.
 
