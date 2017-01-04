@@ -20,8 +20,8 @@ experiments.
     designed to cover how to properly annotate the musical notation primitives
     supplied with the annotation packages: ``mff-muscima-mlclasses-annot.xml``.
 
-**Accurate annotation is absolutely critical to the success of our research.**
-Therefore, you are expected to understand these guidelines fully.
+Accurate annotation is absolutely critical to the success of our research.
+**Therefore, you are expected to understand these guidelines fully.**
 Mistakes may happen, of course, but if they happen at a frequency
 above some reasonable rate, you are going to see that reflected
 in your compensation.
@@ -32,19 +32,28 @@ by pictures of the problematic area) and generally communicating
 with us will never be discouraged. The e-mail address to direct
 questions to is ``hajicj@ufal.mff.cuni.cz``
 
+**There is an example annotation that comes up as the default image** when you
+start MUSCIMarker. Many situations are already in this example. Check it out!
+You can select a symbol and use the "i" keyboard shortcut to look at the annotation
+at the level of individual pixels, through the Inspection popup.
+
+
 .. note::
 
-    To learn how to properly receive data to annotate and submit
-    your work, see :ref:`organizing`.
+    *Note for researchers: these instructions have been used to annotate*
+    *MUSCIMA++ 1.0.x -- For other versions of the dataset, refer to the appropriate*
+    *version instructions.*
+
+    *We assume the reader is familiar with music notation terminology.*
+
+.. The changes will go away, to be replaced by a more coherent text.
 
 
-There is an example annotation that comes up as the default image when you
-start MUSCIMarker. Many situations are already in this example. Check it out!
-You can select a symbol and use "i" (inspection popup) to look at the annotation
-at the level of individual pixels.
+The instructions are organized loosely around the categories of symbols:
+notes themselves, notation, staff defaults (clefs, key signatures, etc.),
+layout-related symbols, text, and other stuff that may come up.
 
 
-  .. The changes will go away, to be replaced by a more coherent text.
 
 Changes in 1.0.1
 ----------------
@@ -131,7 +140,8 @@ the specifics.
 when you annotate objects, in the background, the exact objects
 are recorded: each pixel within the colored rectangle that you see
 has a Belongs/Doesn't Belong label, based on how you traced the
-edges of the symbol.
+edges of the symbol. Use the **i** keyboard shortcut to view which
+pixels exactly are annotated as a part of a selected symbol.
 
 **Background does not matter.** In black-and-white images, only
 the white pixels are ever recorded as belonging to a symbol.
@@ -176,8 +186,13 @@ thinking about it and reviewing these guidelines, then send us an email
 to ``hajicj@ufal.mff.cuni.cz``!
 
 
-We now give the instructions for individual symbol classes. Make sure
-you understand these. If you don't, ask! (``hajicj@ufal.mff.cuni.cz``)
+To learn how to properly receive data and submit your work, see :ref:`organizing`.
+
+
+
+
+**We now give the instructions for individual symbol classes. Make sure**
+**you understand these. If you don't, ask!** (``hajicj@ufal.mff.cuni.cz``)
 
 
 .. _instructions_notes:
@@ -191,22 +206,144 @@ is marking the notation primitives: notehead, stem, flags/beams.
 Then, add the note primitive relationships. Select ``notehead``-class
 primitive (``notehead-full``, ``notehead-empty``, ``grace-notehead-full``,
 ``grace-nothead-empty``) and all other objects that are attached to the
-notehead: stem, flag/beams, dots, sharps/flats, slurs/ties,
-grace noteheads, articulations, tremolo marks, dynamics, etc.
-Do not forget tuple markings.
+notehead:
+
+* stem,
+* flag/beams,
+* dots (duration, staccato, possibly other),
+* ledger lines,
+* sharps, flats, naturals,
+* grace noteheads,
+* tuple markings
+* other notations: slurs/ties, articulations, tremolo marks, dynamics, etc.
+
+(This is not an exhaustive list.)
 
 .. caution:: Do not have more than one notehead selected when auto-adding
              relationships with **p**. It can very easily lead to spurious
              edges (see :ref:`tutorial_relationships` in the Tutorial).
 
 For slurs and dynamic hairpins (cresc./decr.), attach them to *all* the noteheads
-that they affect, not just the first and last one.
+that they affect.
 
 .. tip:: The fastest way of selecting a bunch of primitives is to use
          the **Obj. Select** tool. If you have Active Selection turned
-         on in the settings, it will "preemtively" light up the current
+         on in the settings, it will "pre-emptively" light up the current
          selection as you draw the lasso, making it easier to know whether
          the right symbols are being selected.
+
+We will now walk through some examples, going from individual notes
+to more complex situations.
+
+Simple notes
+^^^^^^^^^^^^
+
+Isolated notes, one with a ``ledger_line``, one with a ``8th_flag``:
+
+.. image:: images/guidelines/isolated_notes.png
+
+A simple beamed group. Notice how the two noteheads share one beam,
+but only the 16th note links to the second beam.
+(The dot is a ``duration_dot``). :
+
+.. image:: images/guidelines/beamed_group_simple.png
+
+A more complex beamed group, with multiple types of notes. The 8th note
+only links to the outermost ``beam``; the 16th and 32nd notes link to
+the outermost and the second beam, and finally only the two 32nd notes
+in the middle link to the third, innermost beam. This illustrates
+the principles of only linking those primitives to a notehead that actually
+affect how we read the notehead.
+
+.. image:: images/guidelines/beamed_group_multilevel.png
+
+And don't forget that rests can have ``duration_dot``s:
+
+.. image:: images/guidelines/dotted_rest.png
+
+
+
+Chords
+^^^^^^
+
+In a chord, the noteheads do *not* interact. This implies that they share
+the stem, they share beams and flags, slurs, etc., but e.g. accidentals
+(flat, sharp, ...), ledger lines, ties or ornaments only have a relationship
+to the notehead which they directly affect. This should not be surprising --
+it's the same principle all over again.
+
+.. image:: images/guidelines/chord_simple.png
+
+
+Some chords in a beamed group:
+
+.. image:: images/guidelines/chord_beamed.png
+
+
+Chords can be tricky, especially with ledger lines. Make sure to only
+attach those ledger lines to a notehead that actually affect its
+pitch! Visually, this means all the notehead -- ledger line relationships
+lead one way: either down (if the notes are above the staff), or up
+(if the notes are below the staff). The stem is, of course, shared by
+all the noteheads in the chord.
+
+.. image:: images/guidelines/chord_with_ledger_lines.png
+
+
+Grace notes
+^^^^^^^^^^^
+
+Grace note (``grace-notehead-full``) with its "main" note (``notehead-empty``).
+They and their relationship is highlighted. The slur connecting the two notes
+is shared between the two notes. (However, their direct relationship would still
+be there, even if the slur wasn't.) Notice also the two flags on the isolated
+grace note: the outer is an ``8th_flag``, the inner is a ``16th_flag``.
+
+.. image:: images/guidelines/grace_note.png
+
+The "strikethrough" on a grace note is attached to its stem, not the notehead
+(the relationship is highlighted).
+Notice also the interaction between the grace note and the following chord.
+
+.. image:: images/guidelines/grace_strikethrough.png
+
+If there is a clear voicing relationship between a grace note (or a grace note
+chord) and a "main" note chord, the ``grace-notehead-*`` to ``notehead-*``
+relationships should respect voices (highlighted; the relationships to the slur
+on the bottom are omitted for clarity):
+
+.. image:: images/guidelines/grace_chord_voices.png
+
+
+Putting it all together
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Let's have a look at a complex notation situation which combines all these elements:
+
+.. image:: images/guidelines/notes_complex.png
+
+Make sure you understand the reasons for the following:
+
+* The short beam is only connected to the last notehead.
+* The natural signs are connected to only one note.
+* The arpeggio "wobble" is connected to all three notes of the chord.
+* The grace note is only connected to the bottom two notes.
+* The top note in the chord connects to the top stem, the bottom two notes
+  to the bottom stem.
+* It is not clear whether to connect the grace note to the top
+  note of the chord or not. (Same for the top note and the bottom slur:
+  both variants are possible.) This is a more polyphonic reading which
+  considers the topmost note as a part of a separate melodic voice.
+* The accent is connected to all three notes in the chord (it's a piano
+  score).
+
+
+.. _instructions_notations:
+
+
+Other notation
+--------------
+
 
 ...
 
@@ -312,7 +449,7 @@ Other Notations
 ---------------
 
 **Key signatures** The sharps or flats are marked as ``sharp`` or ``flat``,
-just as if the symbols are next to notes. However, the symbols making
+just as if the symbols are next to notes. Then, the symbols making
 up the key signature should all be marked as a part of a ``key_signature``
 symbol.
 
@@ -323,8 +460,8 @@ as the given numerals; then, the numeral-based time signatures should be
 marked as a symbol of the ``time_signature`` class.
 The "whole" time signature (a "C" symbol), the
 *alla breve* (a "C" with a vertical line) and other time signature symbols
-have their own distinct categories; they should *not* be marked
-as ``time_signature`` on top of these.
+have their own distinct categories, but they should be marked
+as ``time_signature`` on top of these as well.
 
 .. image:: images/guidelines/time_signature.png
 
