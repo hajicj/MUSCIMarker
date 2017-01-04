@@ -937,6 +937,23 @@ class MUSCIMarkerApp(App):
 
         logging.info('App: processing on_key_down(), dispatch_key: {0}'
                      ''.format(dispatch_key))
+        is_handled = self.handle_dispatch_key(dispatch_key)
+        return is_handled
+
+    def handle_dispatch_key(self, dispatch_key):
+        """Does the "heavy lifting" in keyboard controls of the App:
+        responds to a dispatch key.
+
+        Decoupling this into a separate method facillitates giving commands to
+        the ListView programmatically, not just through user input,
+        and this way makes automation easier.
+
+        :param dispatch_key: A string of the form e.g. ``109+alt,shift``: the ``key``
+            number, ``+``, and comma-separated modifiers.
+
+        :returns: True if the dispatch key got handled, False if there is
+            no response defined for the given dispatch key.
+        """
         if dispatch_key == '27':  # Escape
             self.currently_selected_tool_name = '_default'
 
@@ -953,7 +970,7 @@ class MUSCIMarkerApp(App):
             logging.info('Doing objid-based selection dialog.')
             self.open_objid_selection_dialog()
 
-        elif dispatch_key == '115+shift':  # "shift+S" -- select all of current clsname
+        elif dispatch_key == '115+shift':  # "shift+s" -- select all of current clsname
             logging.info('Selecting all CropObjects of the current clsname.')
             view = self.cropobject_list_renderer.view
             view.select_class(self.currently_selected_mlclass_name)
@@ -961,15 +978,17 @@ class MUSCIMarkerApp(App):
         elif dispatch_key == '118':  # "v" -- validate
             self.find_cropobjects_with_errors()
 
+        # alt+shift for automation commands
+        elif dispatch_key == '98+alt,shift':   # "alt+shift+b" -- barlines automation
+            self.auto_add_measure_separators()
 
-        logging.info('App: Checking keyboard dispatch, {0}'
-                     ''.format(self.keyboard_dispatch.keys()))
-        if dispatch_key in self.keyboard_dispatch:
+        # logging.info('App: Checking keyboard dispatch, {0}'
+        #              ''.format(self.keyboard_dispatch.keys()))
+        elif dispatch_key in self.keyboard_dispatch:
             action = self.keyboard_dispatch[dispatch_key]
             logging.info('App: \t Found dispatch key! Action: {0}'
                          ''.format(action))
             action()
-
         else:
             return False
 
@@ -1813,3 +1832,36 @@ class MUSCIMarkerApp(App):
         now = datetime.datetime.fromtimestamp(t)
         day_tag = '{:%Y-%m-%d}'.format(now)
         return os.path.join(root_dir, day_tag)
+
+    ##########################################################################
+    # Automation
+    def auto_add_measure_separators(self):
+        """Automatically wraps each *_barline that does not yet have
+        a parent in a ``measure_separator`` object."""
+        BARLINE_CLASSES = ['thin_barline', 'thick_barline', 'dotted_barline']
+        MEASURE_SEPARATOR_CLSNAME = 'measure_separator'
+
+        c_l_view = self.cropobject_list_renderer.view
+        _prev_selection = [c.objid for c in c_l_view.selected_views]
+        c_l_view.unselect_all()
+
+        _prev_clsname = self.currently_selected_mlclass_name
+        self.currently_selected_mlclass_name = MEASURE_SEPARATOR_CLSNAME
+
+
+        for c in self.annot_model.cropobjects.values():
+            if (c.clsname in BARLINE_CLASSES) and (len(c.inlinks) == 0):
+                # Add a measure separator from this one:
+                #  - create the new CropObject
+                #  - add the link from the measure_separator
+                # Basically, it's like passing shift+M on the barline
+                # with the measure_separator as current class.
+                c_view = c_l_view.get_cropobject_view(c.objid)
+                c_view.ensure_selected()
+                c_l_view.handle_dispatch_key('109+shift')
+                c_view.ensure_deselected()
+
+        # Restoring prev selection state and clsname
+        self.currently_selected_mlclass_name = _prev_clsname
+        for _objid in _prev_selection:
+            c_l_view.get_cropobject_view(_objid).ensure_selected()

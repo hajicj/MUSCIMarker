@@ -74,7 +74,11 @@ class KeypressBubblingStopperBehavior(object):
 
 def keypress_to_dispatch_key(key, scancode, codepoint, modifiers):
     """Converts the key_down event data into a single string for more convenient
-    keyboard shortcut dispatch."""
+    keyboard shortcut dispatch.
+
+    :returns: The dispatch key in format ``109+alt,shift`` -- key number, ``+``,
+        and the modifiers joined by commas.
+    """
     if modifiers:
         return '{0}+{1}'.format(key, ','.join(sorted(modifiers)))
     else:

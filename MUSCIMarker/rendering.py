@@ -23,6 +23,7 @@ from kivy.uix.widget import Widget
 from cropobject_view import CropObjectView
 from muscimarker_io import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
 import tracker as tr
+from utils import keypress_to_dispatch_key
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -210,8 +211,9 @@ class CropObjectListView(ListView):
         container = self.container
         for w in container.children[:]:
             # This binds to the adapter's handle_selection
-            if w.is_selected is True:
-                w.dispatch('on_release')
+            w.ensure_deselected()
+            #if w.is_selected is True:
+            #    w.dispatch('on_release')
             #w.deselect()
             #if hasattr(w, 'is_selected'):
             #    w.is_selected = False
@@ -258,9 +260,27 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView: NOT propagating keypress')
             return True
 
+        dispatch_key = keypress_to_dispatch_key(key, scancode, codepoint, modifier)
+
+        is_handled = self.handle_dispatch_key(dispatch_key)
+        return is_handled
+
+    def handle_dispatch_key(self, dispatch_key):
+        """Does the "heavy lifting" in keyboard controls of the CropObjectListView:
+        responds to a dispatch key.
+
+        Decoupling this into a separate method facillitates giving commands to
+        the ListView programmatically, not just through user input,
+        and this way makes automation easier.
+
+        :param dispatch_key: A string of the form e.g. ``109+alt,shift``: the ``key``
+            number, ``+``, and comma-separated modifiers.
+
+        :returns: True if the dispatch key got handled, False if there is
+            no response defined for the given dispatch key.
+        """
+
         # Keyboard shortcuts that affect the current selection:
-        dispatch_key = CropObjectView.keypress_to_dispatch_key(key, scancode,
-                                                               codepoint, modifier)
 
         # M for merge
         if dispatch_key == '109':
@@ -428,9 +448,6 @@ class CropObjectListView(ListView):
                 s.remove_from_model()
         elif deselect:
             self.unselect_all()
-            #for w in self.container.children[:]:
-            #    # Force the proper deselection that dispatches on_release
-            #    w.do_deselect()
 
         model_cropobjects = None  # Release refs
 

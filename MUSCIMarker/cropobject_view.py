@@ -801,7 +801,7 @@ class CropObjectView(SelectableView, ToggleButton):
     def deselect(self, *args):
         """Only handles self.is_selected, not the 'on_release'
         dispatch that the ListAdapter uses to maintain selection!
-        Use do_deselect()."""
+        Use ensure_deselected() instead."""
         # logging.debug('CropObjectView\t{0}: called deselection'
         #               ''.format(self.cropobject.objid))
         if self._info_label_shown:
@@ -815,16 +815,22 @@ class CropObjectView(SelectableView, ToggleButton):
             self.parent.deselect_from_child(self, *args)
         super(CropObjectView, self).deselect(*args)
 
-    def do_deselect(self):
-        """Proper deselection that will be reflected in a ListAdapter
-        containing this view."""
-        if self.is_selected:
-            self.dispatch('do_release')
+    # def do_deselect(self):
+    #     """Proper deselection that will be reflected in a ListAdapter
+    #     containing this view."""
+    #     if self.is_selected:
+    #         self.dispatch('do_release')
 
     def ensure_selected(self):
         """Proper selection that will be reflected in a ListAdapter
         containing this view."""
         if not self.is_selected:
+            self.dispatch('on_release')
+
+    def ensure_deselected(self):
+        """Proper unselection that will be reflected in a ListAdapter
+        containing this view."""
+        if self.is_selected:
             self.dispatch('on_release')
 
     def select_from_composite(self, *args):

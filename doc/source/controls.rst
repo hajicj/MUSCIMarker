@@ -407,6 +407,7 @@ the given selection is not supposed to react to the shortcut.
 **o**               Open ID-based object selection dialog. (See below.)
 **alt+h**           Hide/Show all relationships.
 **1, 2, ...**       Select the n-th tool from the top.
+**alt+shift+b**     Barline to measure separator automation.
 =================   ================================================================
 
 
@@ -455,3 +456,11 @@ Type to enter text.
 Enter to confirm, Escape to cancel (or just press the buttons).
 
 As opposed to the MLClass selection dialog, pressing "tab" does nothing.
+
+
+Barlines to measure separator automation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pressing ``alt+shift+b`` will cause all barlines (``thin_barline``,
+``thick_barline``, ``dotted_barline``) that currently have no inlinks
+to get a ``measure_separator`` parent.
