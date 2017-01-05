@@ -86,13 +86,16 @@ time_signature{1,} |
 
 measure_separator | *_barline
 measure_separator{1,} |
+
 repeat | repeat-dot thin_barline thick_barline
 repeat{1,} |
 | repeat-dot{1,}
 
-system_start | *_barline multi-staff_bracket multi-staff_brace
+staff_grouping | *_barline multi-staff_bracket multi-staff_brace
+staff_grouping | staff_grouping
+staff_grouping{1,}
 
-# Every barline is a measure_separator or repeat
+# Every barline is a measure_separator or staff grouping
 | *_barline{1,}
 
 # Non-duration fermatas are attached to a measure delimiter
