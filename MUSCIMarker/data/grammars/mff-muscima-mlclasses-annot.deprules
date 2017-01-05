@@ -100,8 +100,6 @@ staff_grouping{1,}
 
 # Non-duration fermatas are attached to a measure delimiter
 measure_separator | fermata
-repeat | fermata
-
 
 
 ##############################################################################

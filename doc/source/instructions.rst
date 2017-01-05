@@ -257,11 +257,13 @@ affect how we read the notehead.
 
 .. image:: images/guidelines/beamed_group_multilevel.png
 
-Rests are simple symbols.
+Rests are simple symbols - regardless whether quarter, 8th, 16th, ...
 
-And don't forget that rests can have ``duration_dot``s:
+.. image:: images/guidelines/rest_simple.png
 
-.. image:: images/guidelines/dotted_rest.png
+And don't forget that rests can have a ``duration_dot``:
+
+.. image:: images/guidelines/rest_dotted.png
 
 
 
@@ -377,9 +379,54 @@ overall layout and structure of the music:
 * system separator
 * volta
 
+Measure separators
+^^^^^^^^^^^^^^^^^^
 
-staff_grouping
-^^^^^^^^^^^^^^
+Barlines are not the end of dividing a piece into measures. There are
+double barlines, repeats, or back-to-back repeats, all of which break
+the assumption that 1 barline == separation between two bars.
+
+In order for our data to correctly indicate both barlines and separation
+into measures, we use the ``measure_separator`` overlay symbol. The rules
+are simple: any number of barlines that delimit one measure from another
+is grouped under one ``measure_separator``, be it a single barline,
+double, or barlines inside repeats.
+
+For example, a single barline is also a measure separator (the relationship
+from the top-level ``measure_separator`` object to the ``thin_barline``
+primitive is highlighted):
+
+.. image:: images/guidelines/measure_separator_simple.png
+
+A double barline is just one measure separator:
+
+.. image:: images/guidelines/measure_separator_double.png
+
+In a repeat, the barlines together form one ``measure_separator``.
+When the repeat is back-to-back, sharing the barlines, there is
+logically still just one ``measure_separator`` -- it indicates just
+the boundary of just two measures, nothing else. In other words,
+just like there is no interaction between notes in a chord, there is
+no interaction between repeats and measure separators. In the following
+example, the ``measure_separator`` object is highlighted:
+
+.. image:: images/guidelines/measure_separator_repeats.png
+
+It's hard to see, but it only has relationships to the two barlines.
+The ``repeat`` symbols, on the other hand, also have relationships
+to the ``repeat_dot`` primitives.
+
+In multi-staff pieces, the measure separator should span the whole system,
+again following the principle of one ``measure_separator`` symbol per measure
+boundary. The barline might be a long one or many short ones, it doesn't matter:
+
+.. image:: images/guidelines/measure_separator_multistaff.png
+
+
+
+
+Staff grouping symbols
+^^^^^^^^^^^^^^^^^^^^^^
 
 There are notation primitives that indicate which staves are part
 of the same system, and which staves are a group within a system
@@ -388,6 +435,8 @@ of the same system, and which staves are a group within a system
 * ``multi-staff_bracket`` (the "horned" one)
 * ``multi-staff_brace`` (the "curly" one, rarely spanning more than 2 staves)
 * ``thin_barline`` (a simple line)
+
+You will practically always find these symbols at the beginnings of systems.
 
 In this example, there are two brackets, one which spans all staves and one
 for the bottom four, and one brace:
@@ -412,7 +461,13 @@ three relationships:
 
 .. image:: images/guidelines/staff_grouping_recursive.png
 
+.. caution::
 
+    This is one of the situations where you will have to use the "a" keyboard
+    shortcut to attach symbols to each other. If you used "p" to create
+    relationships automatically, you would get an extra relationship from the
+    sub-group ``staff_grouping`` to the top-level ``staff_grouping``, as well
+    as the "downward"-pointing arrow in the staff groups hierarchy.
 
 
 Part defaults
