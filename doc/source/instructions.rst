@@ -371,11 +371,47 @@ In this section, we will discuss objects that are related to the
 overall layout and structure of the music:
 
 * barlines
-* repeat
+* repeat, repeat dots
 * measure separator
+* staff grouping symbols
 * system separator
-* staff grouping symbol
 * volta
+
+
+staff_grouping
+^^^^^^^^^^^^^^
+
+There are notation primitives that indicate which staves are part
+of the same system, and which staves are a group within a system
+(e.g., right and left hand staves for a piano part). These are:
+
+* ``multi-staff_bracket`` (the "horned" one)
+* ``multi-staff_brace`` (the "curly" one, rarely spanning more than 2 staves)
+* ``thin_barline`` (a simple line)
+
+In this example, there are two brackets, one which spans all staves and one
+for the bottom four, and one brace:
+
+.. image:: images/guidelines/staff_grouping_primitives.png
+
+Then, the ``staff_grouping`` higher-level symbol indicates how these
+primitives work together to actually perform staff grouping. This symbol
+can be a parent of another ``staff_grouping``, to indicate sub-groups.
+The subgroup only contains the primitive that delimits the given subgroup
+(usually the curly ``multi-staff_brace``). The following example illustrates
+three relationships:
+
+* the top-level ``staff_grouping`` to the ``multi-staff_bracket`` which
+  indicates that the large ``multi-staff_bracket`` defines a grouping
+  (short red line on the bottom),
+* the bottom-level ``staff_grouping`` to its own ``multi-staff_bracket``,
+  which indicates that the smaller ``multi-staff_bracket`` also indicates
+  a staff grouping (short red line near the top),
+* the top-level ``staff_grouping`` to the bottom-level ``staff_grouping``,
+  which indicates that the second staff group is a subgroup of the first one.
+
+.. image:: images/guidelines/staff_grouping_recursive.png
+
 
 
 
