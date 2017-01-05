@@ -161,12 +161,31 @@ class EdgeView(SelectableView, ToggleButton):
 
     def on_key_down(self, window, key, scancode, codepoint, modifier):
 
+        if not self.is_selected:
+            return False
+
         dispatch_key = self.keypress_to_dispatch_key(key, scancode, codepoint, modifier)
         #logging.info('EdgeView\t{0}: Handling key {1}, self.is_selected={2}'
         #             ''.format(self.edge, dispatch_key, self.is_selected))
+        is_handled = self.handle_dispatch_key(dispatch_key)
+        if is_handled:
+            self.dispatch('on_key_captured')
 
-        if not self.is_selected:
-            return False
+        return False
+
+    def handle_dispatch_key(self, dispatch_key):
+        """Does the "heavy lifting" in keyboard controls: responds to a dispatch key.
+
+        Decoupling this into a separate method facillitates giving commands to
+        the ListView programmatically, not just through user input,
+        and this way makes automation easier.
+
+        :param dispatch_key: A string of the form e.g. ``109+alt,shift``: the ``key``
+            number, ``+``, and comma-separated modifiers.
+
+        :returns: True if the dispatch key got handled, False if there is
+            no response defined for the given dispatch key.
+        """
 
         if dispatch_key == '8':
             self.remove_from_model()
@@ -176,8 +195,7 @@ class EdgeView(SelectableView, ToggleButton):
         else:
             return False
 
-        self.dispatch('on_key_captured')
-        return False
+        return True
 
     def on_key_up(self, window, key, scancode, *args, **kwargs):
         # logging.info('EdgeView\t{0}: Handling key_up {1}'.format(self.edge, key))

@@ -26,7 +26,7 @@ from kivy.uix.spinner import Spinner
 from kivy.uix.togglebutton import ToggleButton
 
 import tracker as tr
-from utils import InspectionPopup
+from utils import InspectionPopup, keypress_to_dispatch_key
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -206,17 +206,36 @@ class CropObjectView(SelectableView, ToggleButton):
         #                  ''.format(self,
         #                            (key, scancode, codepoint, modifier)))
 
+        if not self.is_selected:
+            return False
+
         # Get the dispatch key
         # ------------
-        dispatch_key = self.keypress_to_dispatch_key(key, scancode, codepoint, modifier)
+        dispatch_key = keypress_to_dispatch_key(key, scancode, codepoint, modifier)
 
         #logging.info('CropObjectView: Handling key {0}, self.is_selected={1},'
         #             ' self.cropobject={2}'
         #             ''.format(dispatch_key, self.is_selected, str(self.cropobject.objid)))
 
-        # At most one CropObject may be selected.
-        if not self.is_selected:
-            return False
+        is_handled = self.handle_dispatch_key(dispatch_key)
+        if is_handled:
+            self.dispatch('on_key_captured')
+        return False
+
+
+    def handle_dispatch_key(self, dispatch_key):
+        """Does the "heavy lifting" in keyboard controls: responds to a dispatch key.
+
+        Decoupling this into a separate method facillitates giving commands to
+        the ListView programmatically, not just through user input,
+        and this way makes automation easier.
+
+        :param dispatch_key: A string of the form e.g. ``109+alt,shift``: the ``key``
+            number, ``+``, and comma-separated modifiers.
+
+        :returns: True if the dispatch key got handled, False if there is
+            no response defined for the given dispatch key.
+        """
 
         # Deletion
         if dispatch_key == '8':  # Delete
@@ -326,8 +345,7 @@ class CropObjectView(SelectableView, ToggleButton):
         # from propagating further.
         # Current policy: if any CropObjectView captures a key signal, it will propagate
         # past the CropObjectListView.
-        self.dispatch('on_key_captured')
-        return False
+        return True
 
     def on_key_up(self, window, key, scancode, *args, **kwargs):
         return False
@@ -336,14 +354,15 @@ class CropObjectView(SelectableView, ToggleButton):
         """Default handler for on_key_captured event."""
         pass
 
-    @staticmethod
-    def keypress_to_dispatch_key(key, scancode, codepoint, modifiers):
-        """Converts the key_down event data into a single string for more convenient
-        keyboard shortcut dispatch."""
-        if modifiers:
-            return '{0}+{1}'.format(key, ','.join(sorted(modifiers)))
-        else:
-            return '{0}'.format(key)
+    # TODO: Remove this (replaced from utils)
+    # @staticmethod
+    # def keypress_to_dispatch_key(key, scancode, codepoint, modifiers):
+    #     """Converts the key_down event data into a single string for more convenient
+    #     keyboard shortcut dispatch."""
+    #     if modifiers:
+    #         return '{0}+{1}'.format(key, ','.join(sorted(modifiers)))
+    #     else:
+    #         return '{0}'.format(key)
 
     ##########################################################################
     # Accessing the model & the cropobject in the model, so that the user

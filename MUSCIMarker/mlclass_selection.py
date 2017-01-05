@@ -143,6 +143,24 @@ class MLClassSelectionDialog(Popup):
         dispatch_key = keypress_to_dispatch_key(key, scancode, codepoint, modifier)
 
         logging.info('MLClassSelectionDialog: Handling keypress: {0}'.format(dispatch_key))
+        is_handled = self.handle_dispatch_key(dispatch_key)
+
+        # Don't let the event propagate through the dialog.
+        return True
+
+    def handle_dispatch_key(self, dispatch_key):
+        """Does the "heavy lifting" in keyboard controls: responds to a dispatch key.
+
+        Decoupling this into a separate method facillitates giving commands to
+        the ListView programmatically, not just through user input,
+        and this way makes automation easier.
+
+        :param dispatch_key: A string of the form e.g. ``109+alt,shift``: the ``key``
+            number, ``+``, and comma-separated modifiers.
+
+        :returns: True if the dispatch key got handled, False if there is
+            no response defined for the given dispatch key.
+        """
 
         if dispatch_key == '13':  # Enter
             logging.info('Confirming MLClassSelectionDialog!')
@@ -168,8 +186,9 @@ class MLClassSelectionDialog(Popup):
             logging.info('MLClassSelectionDialog: Found LCP {0}, inf {1}'
                          ''.format(lcp, infix))
             self.ids['text_input'].text = self.text + infix
+        else:
+            return False
 
-        # Do not let the event propagate!
         return True
 
     def on_key_up(self, window, key, scancode, *args, **kwargs):
