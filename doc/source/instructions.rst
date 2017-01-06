@@ -257,9 +257,12 @@ affect how we read the notehead.
 
 .. image:: images/guidelines/beamed_group_multilevel.png
 
-Rests are simple symbols - regardless whether quarter, 8th, 16th, ...
+Rests are simple symbols - regardless whether quarter, 8th, 16th, etc.,
+or even multi-measure rests, like in the following example (note also
+that it is indeed possible to tell apart whole and half rests, even
+without staff lines):
 
-.. image:: images/guidelines/rest_simple.png
+.. image:: image/guidelines/rest_gallery.png
 
 And don't forget that rests can have a ``duration_dot``:
 
