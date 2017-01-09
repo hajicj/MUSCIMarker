@@ -64,10 +64,12 @@ tuple | tuple_bracket/line numeral_*
 tuple{1,}
 | tuple_bracket/line{1,}
 
-volta | numeral_* other-dot horizontal_spanner dotted_horizontal_spanner
+volta | other_numeric_sign horizontal_spanner dotted_horizontal_spanner
 transposition_text | horizontal_spanner dotted_horizontal_spanner
 
 *-clef | transposition_text
+
+| arpeggio_"wobble"{1,}
 
 
 ##############################################################################
@@ -124,7 +126,7 @@ figured_bass_text | numeral_* sharp flat double_sharp double_flat natural
 other_text | letter_* numeral_* other-dot
 
 bar_number | numeral_*
-other_numeric_sign | numeral_*
+other_numeric_sign | numeral_* other-dot letter_other
 *_text | continuation/connection_dash
 
 # Figured bass is attached to noteheads

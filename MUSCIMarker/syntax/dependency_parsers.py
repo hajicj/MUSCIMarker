@@ -41,7 +41,9 @@ class SimpleDeterministicDependencyParser(object):
         for i, s1, in enumerate(symbol_names):
             for j, s2 in enumerate(symbol_names):
                 if self.grammar.is_head(s1, s2):
-                    edges.append((i, j))
+                    # No loops!
+                    if i != j:
+                        edges.append((i, j))
 
         return edges
 

@@ -473,6 +473,28 @@ three relationships:
     as the "downward"-pointing arrow in the staff groups hierarchy.
 
 
+Volta
+^^^^^
+
+The *volta* is a relatively complex construction. Like the key signature or time
+signature, it is a top-level symbol that consists of some others. The components
+of a *volta* are, canonically, a ``horizontal_spanner`` and an ``other_numeric_sign``.
+The numeric sign consists of a ``numeral_X`` (1, 2, 3, etc.), possibly an ``other-dot``
+after the numbers, or ``letter_other`` for commas, parentheses, etc.
+
+These are the components of a ``volta`` (spanner in green):
+
+.. image:: images/guidelines/volta_components.png
+
+And the ``volta`` goes on top of this all, with relationships to the spanner
+and the numeric sign highlighted (the spanner relationship is very short, as
+the bounding box of the ``volta`` is in this case identical to the bounding
+box of the ``horizontal_spanner`` component):
+
+.. image:: images/guidelines/volta_complete.png
+
+
+
 Part defaults
 -------------
 
