@@ -18,6 +18,11 @@ any kind of 2-D object marking.)
 
 .. image:: images/screenshots/fancy_screenshot.png
 
+.. note::
+
+    This work is supported by the Czech Science Foundation,
+    grant number P103/12/G084.
+
 
 Installation
 ------------
