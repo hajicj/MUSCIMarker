@@ -17,3 +17,5 @@ Documentation: http://muscimarker.readthedocs.io/en/latest/
 ...is in the documentation:  http://muscimarker.readthedocs.io/en/latest/tutorial.html
 
 
+
+*This work is supported by the Czech Science Foundation, grant number P103/12/G084.*
