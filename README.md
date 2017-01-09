@@ -14,10 +14,8 @@ Documentation: http://muscimarker.readthedocs.io/en/latest/
 
 ## Tutorial
 
-Go into the `MUSCIMarker` folder and run
+...is in the documentation:  http://muscimarker.readthedocs.io/en/latest/tutorial.html
 
-``
-python main.py
-``
 
-A window should start up, showing an orange & green OMR logo.
+
+*This work is supported by the Czech Science Foundation, grant number P103/12/G084.*
