@@ -464,3 +464,36 @@ Barlines to measure separator automation
 Pressing ``alt+shift+b`` will cause all barlines (``thin_barline``,
 ``thick_barline``, ``dotted_barline``) that currently have no inlinks
 to get a ``measure_separator`` parent.
+
+
+Automated checks for objects with holes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes, there are mistakes in annotation that are hard to see
+from the bounding boxes: the annotator gets the bounding box correctly,
+but leaves out parts of the symbol itself from the mask. To discover
+these cases, there are two shortcuts:
+
+* ``alt+shift+t`` finds all objects where more than a given proportion
+  of foreground pixels in the object's bounding box is not a part of
+  its mask,
+* ``alt+shift+r`` finds all objects where more than a given proportion
+  of foreground pixels in the object's bounding box is not a part of
+  *any* object's mask.
+
+Both proportions, for the non-exclusive foreground and for the exclusive
+foreground counts, can be set in the Settings.
+
+Each check serves a slightly different purpose. The first check (the
+non-exclusive one) will show you symbols like flags, slurs, beams with
+a significant slope, etc. Sometimes, it is informative to see which objects
+are *not* highlighted and should be -- this helps to discover flags
+where the stem is erroneously marked as part of the flag. Slurs that
+clearly have other objects in their bounding box but don't light up
+even with low thresholds are indicative of someone not marking out
+the concave part of the slur and instead letting the Trimmed Lasso
+take a "shortcut".
+
+The second check is useful for straight-out mistakes where the annotators
+just did not mark a part of an object that clearly does not belong to any
+other object.

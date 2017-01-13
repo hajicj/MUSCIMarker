@@ -195,6 +195,7 @@ which is responsible for writing the event data into the tracking file.
 from __future__ import print_function, unicode_literals
 import argparse
 import codecs
+import copy
 import logging
 import os
 import pprint
@@ -706,6 +707,12 @@ class MUSCIMarkerApp(App):
                 'tracking_root_dir': self._get_default_tracking_root_dir(),
             })
         config.setdefaults('interface', {'center_on_resize': True})
+        config.setdefaults('automation',
+            {
+                'sparse_cropobject_threshold': 0.1,
+                'sparse_exclusive_cropobject_threshold': 0.2
+            })
+
         Config.set('kivy', 'exit_on_escape', '0')
 
     def build_settings(self, settings):
@@ -981,6 +988,10 @@ class MUSCIMarkerApp(App):
         # alt+shift for automation commands
         elif dispatch_key == '98+alt,shift':   # "alt+shift+b" -- barlines automation
             self.auto_add_measure_separators()
+        elif dispatch_key == '116+alt,shift':  # "alt+shift+t" -- suspiciously "sparse" cropobjects
+            self.find_objects_with_unannotated_pixels(exclusive=False)
+        elif dispatch_key == '114+alt,shift': # "alt+shift+r" -- exclusively "sparse" cropobjects, exclusive
+            self.find_objects_with_unannotated_pixels(exclusive=True)
 
         # logging.info('App: Checking keyboard dispatch, {0}'
         #              ''.format(self.keyboard_dispatch.keys()))
@@ -1865,3 +1876,65 @@ class MUSCIMarkerApp(App):
         self.currently_selected_mlclass_name = _prev_clsname
         for _objid in _prev_selection:
             c_l_view.get_cropobject_view(_objid).ensure_selected()
+
+    def find_objects_with_unannotated_pixels(self, threshold=None, exclusive=False):
+        """Finds all objects that have more than ``threshold`` of foreground
+        pixels within their bounding box not marked as part of the object.
+
+        The purpose is to find inaccuracies where the box is relatively OK,
+        but the annotator did not mark the object accurately within the box.
+
+        :param exclusive: If True, will only count pixels that are not a part
+            of any other CropObject against the threshold. (This will make
+            the computation much slower.)
+        """
+        if threshold is None:
+            if exclusive:
+                threshold = float(self.config.get('automation', 'sparse_exclusive_cropobject_threshold'))
+            else:
+                threshold = float(self.config.get('automation', 'sparse_cropobject_threshold'))
+
+        c_l_view = self.cropobject_list_renderer.view
+        cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
+        if len(cropobjects) == 0:
+            cropobjects = self.annot_model.cropobjects.values()
+
+        image = self.annot_model.image
+
+        #### Precompute which pixels are part of no object.
+        # These are exactly the pixels which will count towards
+        # the exclusive threshold.
+        if exclusive:
+            # _bbox = [
+            #     min([c.top for c in cropobjects]),
+            #     min([c.left for c in cropobjects]),
+            #     max([c.bottom for c in cropobjects]),
+            #     max([c.right for c in cropobjects])
+            # ]
+            image = copy.deepcopy(image)
+            for c in cropobjects:
+                # Modifies the copied image in-place. This will be sufficient
+                # later in the threshold-counting cycle.
+                crop = image[c.top:c.bottom, c.left:c.right]
+                crop[c.mask != 0] = 0
+
+        _objids_over_threshold = []
+        for c in cropobjects:
+            # Find proportion of bad pixels
+            n_fg = image[c.top:c.bottom, c.left:c.right].sum() / 255.0
+            n_mask = float(c.mask.sum())
+            logging.info('App.automation: Object {0} has {1} masked pixels, {2} image fg pixels, proportion:'
+                         ' {3}'.format(c.objid, n_mask, n_fg, n_mask / n_fg))
+
+            if exclusive:
+                # FG pixels are only the "not a part of any object" pixels within
+                # the bounding box.
+                if (n_fg / (n_fg + n_mask)) > threshold:
+                    _objids_over_threshold.append(c.objid)
+            elif (1 - (n_mask / n_fg)) > threshold:
+                _objids_over_threshold.append(c.objid)
+
+        logging.info('App.automation: Total objects over threshold: {0}'.format(len(_objids_over_threshold)))
+
+        c_l_view.unselect_all()
+        c_l_view.ensure_selected_objids(_objids_over_threshold)

@@ -207,6 +207,9 @@ class CropObjectListView(ListView):
                 return i
         return None
 
+    #########################################################################
+    # Handling mass selection/deselection
+
     def unselect_all(self):
         container = self.container
         for w in container.children[:]:
@@ -227,6 +230,13 @@ class CropObjectListView(ListView):
             else:
                 if c.is_selected is True:
                     c.dispatch('on_release')
+
+    def ensure_selected_objids(self, objids):
+        """Mass selection of the given list of ``objids``.
+
+        Fails with KeyError if an invalid objid is given."""
+        for objid in objids:
+            self.get_cropobject_view(objid).ensure_selected()
 
     ##########################################################################
     # Keyboard event trapping

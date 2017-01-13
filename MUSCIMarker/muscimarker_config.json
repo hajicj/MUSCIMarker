@@ -73,5 +73,23 @@
     "desc": "The Obj. and Rel. Select tools will try to highlight what has been selected so far.",
     "section": "toolkit",
     "key": "active_selection"
+  },
+
+  { "type": "title",
+    "title": "Automation"
+  },
+
+  { "type": "numeric",
+    "title": "Sparse CropObject threshold",
+    "desc": "The alt+shift+t shortcut will select all object where more than this many foreground pixels are not a part of the mask.",
+    "section": "automation",
+    "key": "sparse_cropobject_threshold"
+  },
+
+  { "type": "numeric",
+    "title": "Sparse Exclusive CropObject threshold",
+    "desc": "The alt+shift+t shortcut will select all object where more than this many foreground pixels are not a part of the mask, and are not a part of any other object.",
+    "section": "automation",
+    "key": "sparse_exclusive_cropobject_threshold"
   }
 ]
