@@ -237,7 +237,7 @@ from edge_view import ObjectGraphRenderer
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
 from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key, \
-    MessageDialog, OnBindFileSaver
+    MessageDialog, OnBindFileSaver, compute_connected_components
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
 import tracker as tr
@@ -990,8 +990,12 @@ class MUSCIMarkerApp(App):
             self.auto_add_measure_separators()
         elif dispatch_key == '116+alt,shift':  # "alt+shift+t" -- suspiciously "sparse" cropobjects
             self.find_objects_with_unannotated_pixels(exclusive=False)
-        elif dispatch_key == '114+alt,shift': # "alt+shift+r" -- exclusively "sparse" cropobjects, exclusive
+        elif dispatch_key == '114+alt,shift':  # "alt+shift+r" -- exclusively "sparse" cropobjects, exclusive
             self.find_objects_with_unannotated_pixels(exclusive=True)
+        elif dispatch_key == '100+alt,shift':  # "alt+shift+d" -- disconnected cropobjects
+            self.find_objects_with_disconnected_masks(leaves_only=False)
+        elif dispatch_key == '115+alt,shift':  # "alt+shift+s" -- disconnected cropobjects that have no outlinks,
+            self.find_objects_with_disconnected_masks(leaves_only=True)
 
         # logging.info('App: Checking keyboard dispatch, {0}'
         #              ''.format(self.keyboard_dispatch.keys()))
@@ -1938,3 +1942,28 @@ class MUSCIMarkerApp(App):
 
         c_l_view.unselect_all()
         c_l_view.ensure_selected_objids(_objids_over_threshold)
+
+    def find_objects_with_disconnected_masks(self, leaves_only=False):
+        """Find all objects with masks consisting of more than one
+        connected foreground component.
+
+        :param leaves_only: If set, will only highlight those objects
+            with disconnected masks that have no descendants in the
+            object graph.
+        """
+        c_l_view = self.cropobject_list_renderer.view
+        cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
+        if len(cropobjects) == 0:
+            cropobjects = self.annot_model.cropobjects.values()
+
+        _objids_disconnected = []
+        for c in cropobjects:
+            if leaves_only and len(c.outlinks) > 0:
+                    continue
+
+            cc, labels, _ = compute_connected_components(c.mask)
+            if cc > 1:
+                _objids_disconnected.append(c.objid)
+
+        c_l_view.unselect_all()
+        c_l_view.ensure_selected_objids(_objids_disconnected)

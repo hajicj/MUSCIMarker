@@ -497,3 +497,18 @@ take a "shortcut".
 The second check is useful for straight-out mistakes where the annotators
 just did not mark a part of an object that clearly does not belong to any
 other object.
+
+
+Automated checks for disconnected objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To find all objects that consist of more than one contiguous "blob",
+use ``alt+shift+d``. To exclude from this search all object that have
+some other objects attached, such as key signatures or time signatures,
+use ``alt+shift+s``. This avoids "false alarms", also from texts, but
+on the other hand does not cover noteheads or stems with tremolos.
+The recommendation is to use both: first make sure there are no ``alt+shift+s``
+problems (except for those where the object is legitimately split
+into more parts, such as because of staff removal mistakes), then use
+``alt+shift+d`` to find the noteheads and other symbols that did not
+show up on ``alt+shift+s`` due to having outlinks.
