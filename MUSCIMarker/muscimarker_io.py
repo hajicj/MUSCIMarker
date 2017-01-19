@@ -236,14 +236,17 @@ class CropObject(object):
     Implementation notes on the mask
     --------------------------------
 
-    **DEPRECATED**
+    The mask is a numpy array that will be saved using run-length encoding.
+    The numpy array is first flattened, then runs of successive 0's and 1's
+    are encoded as e.g. ``0:10 `` for a run of 10 zeros.
 
-    The mask is a numpy array that will be saved as a `base64` string directly.
-    This is not ideal for compatibility, as loading is only possible with
-    python/numpy. Ideally, we would base64-encode the pattern of 1/0: the width
-    and height of the CropObject at the same time give you the dimension
-    of the mask, so we don't need to save the mask shape extra.
+    How much space does this take?
 
+    Objects tend to be relatively convex, so after flattening, we can expect
+    more or less two runs per row (flattening is done in ``C`` order). Because
+    each run takes (approximately) 5 characters, each mask takes roughly ``5 * n_rows``
+    bytes to encode. This makes it efficient for objects wider than 5 pixels, with
+    a compression ratio approximately ``n_cols / 5``.
     (Also, the numpy array needs to be made C-contiguous for that, which
     explains the `order='C'` hack in `set_mask()`.)
     """
