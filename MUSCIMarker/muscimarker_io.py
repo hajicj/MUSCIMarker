@@ -166,7 +166,7 @@ class CropObject(object):
         <CropObject>
           <Id>25</Id>
           <MLClassId>7</MLClassId>
-          <MLClassName>PRIM__beam</MLClassName>
+          <MLClassName>grace-notehead-full</MLClassName>
           <X>413</X>
           <Y>119</Y>
           <Width>16</Width>
@@ -180,23 +180,64 @@ class CropObject(object):
     The CropObjects are themselves kept as a list::
 
         <CropObjectList>
-          <Classes>
-            <URL> ... </URL>
-            <md5> ... <md5>
-          </Classes>
           <CropObjects>
             <CropObject> ... </CropObject>
             <CropObject> ... </CropObject>
           </CropObjects>
         </CropObjectList>
 
-    The ``<Classes>`` element keeps a reference to the list of classes
-    that were used to label the CropObjects. The CropObjects themselves
-    are inside the ``<CropObjects>`` element.
+    Individual elements of a ``<CropObject>``:
 
-    The ``<Classes>`` element *might not be present*. In that case,
-    it is necessary to match the list of classes document to the
-    CropObjects manually. However, since the class names are present
+    * ``<Id>`` is a unique identifier of the CropObject inside a given
+      ``<CropObjectList>`` (which generally corresponds to one XML file
+      of CropObjects).
+    * ``<MLClassID>`` is the ID of the object's class. You can safely ignore
+      this attribute.
+    * ``<MLClassName>`` is the name of the object's class (such as
+      ``notehead-full``, ``beam``, ``numeral_3``, etc.).
+    * ``<X>`` is the HORIZONTAL coordinate of the object's upper left corner.
+    * ``<Y>`` is the VERTICAL coordinate of the object's upper left corner.
+      The X and Y elements will soon be superseded by the Top and Left
+      elements (see below)
+
+    The trouble with X, Y, and positions
+    ------------------------------------
+
+    Due to legacy issues, the ``<X>`` in the XML file records the horizontal
+    position (column) and ``<Y>`` records the vertical position (row). However,
+    a ``CropObject`` instance uses these attributes in the more natural sense:
+    ``cropobject.x`` is the **top** coordinate, ``cropobject.y`` is the **bottom**
+    coordinate.
+
+    [NOT IMPLEMENTED]
+
+    This is unfortunate, and mostly caused by ambiguity of what X and Y mean.
+    So, there is another option: instead of storing nondescript letters, we
+    will use tags ``<Top>`` and ``<Left>``. The ``<CropObject>`` element will
+    then look like this::
+
+        <CropObject>
+          <Id>25</Id>
+          <MLClassId>7</MLClassId>
+          <MLClassName>grace-notehead-full</MLClassName>
+          <Top>119</Top>
+          <Left>413</Left>
+          <Width>16</Width>
+          <Height>6</Height>
+          <Selected>false</Selected>
+          <Mask>1:5 0:11 (...) 1:4 0:6 1:5 0:1</Mask>
+          <Outlinks>12 24 26</Outlinks>
+          <Inlinks>13</Inlinks>
+        </CropObject>
+
+    Note that we also swapped the order, to make ``<Top>`` first
+    and ``<Left>`` second.
+
+
+    Disambiguating class names
+    --------------------------
+
+    Since the class names are present
     through the ``clsname`` attribute (``<MLClassName>`` element),
     matching the list is no longer necessary for general understanding
     of the file. The MLClassList file serves as a disambiguation tool:
@@ -250,16 +291,16 @@ class CropObject(object):
     (Also, the numpy array needs to be made C-contiguous for that, which
     explains the `order='C'` hack in `set_mask()`.)
     """
-    def __init__(self, objid, clsid, clsname, x, y, width, height,
+    def __init__(self, objid, clsid, clsname, top, left, width, height,
                  outlinks=[], inlinks=[],
                  mask=None):
         logging.debug('Initializing CropObject with objid {0}, x={1}, '
-                     'y={2}, h={3}, w={4}'.format(objid, x, y, height, width))
+                     'y={2}, h={3}, w={4}'.format(objid, top, left, height, width))
         self.objid = objid
         self.clsid = clsid
         self.clsname = clsname
-        self.x = x
-        self.y = y
+        self.x = top
+        self.y = left
         self.width = width
         self.height = height
 
@@ -755,7 +796,8 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
                           fill_mlclass_names=False,
                           mlclass_dict={}):
     """From a xml file with a CropObjectList as the top element, parse
-    a list of CropObjects.
+    a list of CropObjects. (See ``CropObject`` class documentation
+    for a description of the XMl format.)
 
     Note that what is Y in the data gets translated to cropobj.x (vertical),
     what is X gets translated to cropobj.y (horizontal).
@@ -787,6 +829,7 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
     logging.debug('XML parsed.')
     cropobject_list = []
 
+    # Parsing one CropObject
     for i, cropobject in enumerate(root.iter('CropObject')):
         logging.debug('Parsing CropObject {0}'.format(i))
 
@@ -807,13 +850,45 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
                 raise ValueError('Requested MLClass names filled in from'
                                  ' MLClassList, but the list does not contain'
                                  ' id {0}'.format(clsid))
+        else:
+            raise ValueError('CropObject {0}: no clsname provided and no way'
+                             ' of inferring it from clsid provided.'.format(objid))
 
-        # NOTE THE SWAP OF COORDINATES
-        x = float(cropobject.findall('Y')[0].text)
-        y = float(cropobject.findall('X')[0].text)
+        #################################
+        # Top left corner position
+
+        # Helper functions for TopLeft/XY transition
+        def _uses_xy(cropobject):
+            xs = cropobject.findall('Y')
+            ys = cropobject.findall('X')
+            return (len(xs) > 0) and (len(ys) > 0)
+        def _uses_topleft(cropobject):
+            xs = cropobject.findall('Top')
+            ys = cropobject.findall('Left')
+            return (len(xs) > 0) and (len(ys) > 0)
+
+        if _uses_xy(cropobject):
+            ###########################################
+            # DANGER! DANGER! DANGER! DANGER! DANGER! #
+            #                                         #
+            #      NOTE THE SWAP OF COORDINATES!      #
+            #                                         #
+            ###########################################
+            top = float(cropobject.findall('Y')[0].text)
+            left = float(cropobject.findall('X')[0].text)
+        elif _uses_topleft(cropobject):
+            top = float(cropobject.findall('Top')[0].text)
+            left = float(cropobject.findall('Left')[0].text)
+        else:
+            raise KeyError('Cropobject {0} has neither Top/Left, nor Y/Y'
+                           ' position information!'.format(objid))
+
+        #################################
+        # Shape
         width = float(cropobject.findall('Width')[0].text)
         height = float(cropobject.findall('Height')[0].text)
 
+        #################################
         # Parsing the graph structure (Can deal with missing Inlinks/Outlinks)
         inlinks = []
         i_s = cropobject.findall('Inlinks')
@@ -829,16 +904,20 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
             if o_s_text is not None:
                 outlinks = map(int, o_s_text.split(' '))
 
+        #################################
+        # Create the object.
         obj = CropObject(objid=objid,
                          clsid=clsid,
                          clsname=clsname,
-                         x=x,
-                         y=y,
+                         top=top,
+                         left=left,
                          width=width,
                          height=height,
                          inlinks=inlinks,
                          outlinks=outlinks)
 
+        #################################
+        # Add mask.
         mask = None
         m = cropobject.findall('Mask')
         if len(m) > 0:
@@ -846,8 +925,15 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
                                    shape=(obj.height, obj.width))
         obj.set_mask(mask)
         logging.debug('Created CropObject with ID {0}'.format(obj.objid))
+
+        #################################
+        # Enforce integer bounds.
+        # (This is somewhat redundant now, because of masks:
+        #  the CropObject already calls to_integer_bounds() when
+        #  it is created.)
         if integer_bounds is True:
             obj.to_integer_bounds()
+
         cropobject_list.append(obj)
 
     logging.debug('CropObjectList loaded.')
