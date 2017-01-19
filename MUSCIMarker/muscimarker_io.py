@@ -1062,7 +1062,7 @@ def position_cropobject_list_by_muscimage(cropobject_list, muscimage):
             new_y = c.y - muscimage.bounding_box[1]
             c_out = CropObject(objid=c.objid,
                                clsid=c.clsid, clsname=c.clsname,
-                               x=new_x, y=new_y,
+                               top=new_x, left=new_y,
                                width=c.width, height=c.height)
             output.append(c_out)
     return output

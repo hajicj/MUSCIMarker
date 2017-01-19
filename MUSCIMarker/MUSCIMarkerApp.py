@@ -1457,8 +1457,8 @@ class MUSCIMarkerApp(App):
                                       clsname=new_cropobject_clsname,
                                       # Hah -- here, having the Image as the parent widget
                                       # of the bbox selection tool is kind of useful...
-                                      x=x_scaled_inverted,
-                                      y=y_scaled,
+                                      top=x_scaled_inverted,
+                                      left=y_scaled,
                                       width=width_scaled,
                                       height=height_scaled,
                                       mask=mask)
@@ -1502,7 +1502,7 @@ class MUSCIMarkerApp(App):
         c = muscimarker_io.CropObject(objid=new_cropobject_objid,
                                       clsid=new_cropobject_clsid,
                                       clsname=new_cropobject_clsname,
-                                      x=mT, y=mL, width=mW, height=mH,
+                                      top=mT, left=mL, width=mW, height=mH,
                                       mask=mask)
         if integer_bounds:
             c.to_integer_bounds()
