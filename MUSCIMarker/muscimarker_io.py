@@ -799,6 +799,31 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
     a list of CropObjects. (See ``CropObject`` class documentation
     for a description of the XMl format.)
 
+    >>> test_data_dir = os.path.join(os.path.dirname(__file__),
+    ...                              'test_data', 'cropobjects_xy_vs_topleft')
+    >>> clfile = os.path.join(test_data_dir, '01_basic_topleft.xml')
+    >>> cropobjects = parse_cropobject_list(clfile)
+    >>> len(cropobjects)
+    48
+
+    This parsing function can deal with the old-style CropObject XML
+    that uses ``<Y>`` and ``<X>`` to index the top left corner:
+
+    >>> clfile_xy = os.path.join(test_data_dir, '01_basic_xy.xml')
+    >>> cropobjects_xy = parse_cropobject_list(clfile_xy)
+    >>> len(cropobjects_xy)
+    48
+    >>> len(cropobjects) == len(cropobjects_xy)
+    True
+
+    However, the CropObjects export themselves back only with ``<Top>``
+    and ``<Left>``.
+
+    >>> export_xy = export_cropobject_list(cropobjects_xy)
+    >>> raw_data_topleft = '\\n'.join([l.rstrip() for l in open(clfile)])
+    >>> raw_data_topleft == export_xy
+    True
+
     Note that what is Y in the data gets translated to cropobj.x (vertical),
     what is X gets translated to cropobj.y (horizontal).
 
@@ -821,6 +846,8 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         also supply the dict of MLClasses that have names for the ``clsid``s
         in the parsed CropObjectList. Keys are ``clsid``s, values are the
         MLClass objects.
+
+    :returns: A list of ``CropObject``s.
     """
     logging.debug('Parsing CropObjectList, with_refs={0}, tolerate={1}.'
                  ''.format(with_refs, tolerate_ref_absence))
@@ -1198,12 +1225,12 @@ def cropobjects_merge_mask(cropobjects):
     h = b - t
     w = r - l
     output_mask = numpy.zeros((h, w), dtype=cropobjects[0].mask.dtype)
-    logging.warn('Output mask shape: {0}'.format(output_mask.shape))
+    #logging.warn('Output mask shape: {0}'.format(output_mask.shape))
     for c in cropobjects:
-        logging.debug('C. shape: {0}'.format(c.bounding_box))
-        logging.debug('TLBR: {0}'.format((t, l, b, r)))
+        #logging.debug('C. shape: {0}'.format(c.bounding_box))
+        #logging.debug('TLBR: {0}'.format((t, l, b, r)))
         ct, cl, cb, cr = c.top - t, c.left - l, h - (b - c.bottom), w - (r - c.right)
-        logging.debug('Mask shape: {0}, curr. shape: {1}'.format(c.mask.shape, (cb - ct, cr - cl)))
+        #logging.debug('Mask shape: {0}, curr. shape: {1}'.format(c.mask.shape, (cb - ct, cr - cl)))
         output_mask[ct:cb, cl:cr] += c.mask
 
     output_mask[output_mask > 0] = 1
