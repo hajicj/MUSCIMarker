@@ -167,8 +167,8 @@ class CropObject(object):
           <Id>25</Id>
           <MLClassId>7</MLClassId>
           <MLClassName>grace-notehead-full</MLClassName>
-          <X>413</X>
-          <Y>119</Y>
+          <Top>119</Top>
+          <Left>413</Left>
           <Width>16</Width>
           <Height>6</Height>
           <Selected>false</Selected>
@@ -195,43 +195,38 @@ class CropObject(object):
       this attribute.
     * ``<MLClassName>`` is the name of the object's class (such as
       ``notehead-full``, ``beam``, ``numeral_3``, etc.).
-    * ``<X>`` is the HORIZONTAL coordinate of the object's upper left corner.
-    * ``<Y>`` is the VERTICAL coordinate of the object's upper left corner.
-      The X and Y elements will soon be superseded by the Top and Left
-      elements (see below)
+    * ``<Top>`` is the vertical coordinate of the upper left corner of the object's
+      bounding box. (Supersedes ``<Y>`` in older CropObjectList files.)
+    * ``<Left>`` is the horizontal coordinate of the upper left corner of
+      the object's bounding box. (Supersedes ``<X>`` in older CropObjectList files.)
 
-    The trouble with X, Y, and positions
+    Legacy issues with X, Y, and positions
     ------------------------------------
 
-    Due to legacy issues, the ``<X>`` in the XML file records the horizontal
-    position (column) and ``<Y>`` records the vertical position (row). However,
+    Formerly, instead of ``<Top>`` and ``<Left>``, there was a different way
+    of marking CropObject position:
+
+    * ``<X>`` was the HORIZONTAL coordinate of the object's upper left corner.
+    * ``<Y>`` was the VERTICAL coordinate of the object's upper left corner.
+
+    Due to legacy issues, the ``<X>`` in the XML file recorded the horizontal
+    position (column) and ``<Y>`` recorded the vertical position (row). However,
     a ``CropObject`` instance uses these attributes in the more natural sense:
     ``cropobject.x`` is the **top** coordinate, ``cropobject.y`` is the **bottom**
     coordinate.
 
-    [NOT IMPLEMENTED]
+    This was unfortunate, and mostly caused by ambiguity of what X and Y mean.
+    So, the definition of the XML changed: instead of storing nondescript letters,
+    we will use tags ``<Top>`` and ``<Left>``. Note that we also swapped the order:
+    where previously the ordering was ``<X>`` (left) first and ``<Y>`` (top)
+    second, we make ``<Top>`` first and ``<Left>`` second. This corresponds
+    to how 2-D numpy arrays are indexed: row first, column second.
 
-    This is unfortunate, and mostly caused by ambiguity of what X and Y mean.
-    So, there is another option: instead of storing nondescript letters, we
-    will use tags ``<Top>`` and ``<Left>``. The ``<CropObject>`` element will
-    then look like this::
-
-        <CropObject>
-          <Id>25</Id>
-          <MLClassId>7</MLClassId>
-          <MLClassName>grace-notehead-full</MLClassName>
-          <Top>119</Top>
-          <Left>413</Left>
-          <Width>16</Width>
-          <Height>6</Height>
-          <Selected>false</Selected>
-          <Mask>1:5 0:11 (...) 1:4 0:6 1:5 0:1</Mask>
-          <Outlinks>12 24 26</Outlinks>
-          <Inlinks>13</Inlinks>
-        </CropObject>
-
-    Note that we also swapped the order, to make ``<Top>`` first
-    and ``<Left>`` second.
+    You may still run into CropObjectList files that use ``<X>`` and ``<Y>``.
+    The function for reading CropObjectList files, ``parse_cropobject_list()``,
+    can deal with it and correctly assign the coordinates, but the CropObjects
+    will be exported with ``<Top>`` and ``<Left>``. (This may break some
+    there-and-back reencoding tests.)
 
 
     Disambiguating class names
@@ -799,6 +794,8 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
     a list of CropObjects. (See ``CropObject`` class documentation
     for a description of the XMl format.)
 
+    Let's test whether the parsing function works:
+
     >>> test_data_dir = os.path.join(os.path.dirname(__file__),
     ...                              'test_data', 'cropobjects_xy_vs_topleft')
     >>> clfile = os.path.join(test_data_dir, '01_basic_topleft.xml')
@@ -1036,7 +1033,9 @@ def export_cropobject_graph(cropobjects, validate=True):
     return edges
 
 
-def export_cropobject_list(cropobjects, mlclasslist_file=None, image_file=None, ref_root=None):
+def export_cropobject_list(cropobjects,
+                           mlclasslist_file=None, image_file=None, ref_root=None):
+    """Writes the CropObject data as a XML string."""
     # This is the data string, the rest is formalities
     cropobj_string = '\n'.join([str(c) for c in cropobjects])
 
