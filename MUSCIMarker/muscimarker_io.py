@@ -4,7 +4,7 @@ symbolic layer: CropObject and MLClass lists.
 Only the function `position_cropobject_list_by_muscimage()`
 requires a `MUSCImage` instance as an argument.
 """
-from __future__ import print_function, unicode_literals
+from __future__ import print_function, unicode_literals, division
 
 import copy
 import logging
@@ -107,7 +107,6 @@ class CropObject(object):
 
     * `objid`: the unique number of the given annotation instance in the set
       of annotations encoded in the containing `CropObjectList`.
-    * `clsid`: the identifier of the label that was given to the annotation.
     * `clsname`: the name of the label that was given to the annotation
       (this is the human-readable string such as ``notehead-full``).
     * `x`: the vertical dimension (row) of the upper left corner pixel.
@@ -256,9 +255,9 @@ class CropObject(object):
 
     * Compute the new object's bounding box: ``croobjects_merge_bbox()``
     * Compute the new object's mask: ``cropobjects_merge_mask()``
-    * Determine the clsid and objid of the new object.
+    * Determine the clsname and objid of the new object.
 
-    Since objid and clsid of merges may depend on external settings
+    Since objid and clsname of merges may depend on external settings
     and generally cannot be reliably determined from the merged
     objects themselves (e.g. the merge of a notehead and a stem
     should be a new note symbol), you need to supply them externally.
@@ -286,13 +285,12 @@ class CropObject(object):
     (Also, the numpy array needs to be made C-contiguous for that, which
     explains the `order='C'` hack in `set_mask()`.)
     """
-    def __init__(self, objid, clsid, clsname, top, left, width, height,
+    def __init__(self, objid, clsname, top, left, width, height,
                  outlinks=[], inlinks=[],
                  mask=None):
         logging.debug('Initializing CropObject with objid {0}, x={1}, '
                      'y={2}, h={3}, w={4}'.format(objid, top, left, height, width))
         self.objid = objid
-        self.clsid = clsid
         self.clsname = clsname
         self.x = top
         self.y = left
@@ -358,8 +356,8 @@ class CropObject(object):
 
         The integers just get rounded down.
         """
-        vmid = self.top + (self.bottom - self.top) / 2
-        hmid = self.left + (self.right - self.left) / 2
+        vmid = self.top + (self.bottom - self.top) // 2
+        hmid = self.left + (self.right - self.left) // 2
         return int(vmid), int(hmid)
 
     @property
@@ -440,8 +438,8 @@ class CropObject(object):
         :param img: A three-channel image (3-D numpy array,
             with the last dimension being 3)."""
         color = numpy.array(rgb)
-        logging.debug('Rendering object {0}, clsid {1}, t/b/l/r: {2}'
-                      ''.format(self.objid, self.clsid,
+        logging.debug('Rendering object {0}, clsname {1}, t/b/l/r: {2}'
+                      ''.format(self.objid, self.clsname,
                                 (self.top, self.bottom, self.left, self.right)))
         # logging.debug('Shape: {0}'.format((self.height, self.width, 3)))
         mask = numpy.ones((self.height, self.width, 3)) * color
@@ -593,7 +591,6 @@ class CropObject(object):
         lines = []
         lines.append('<CropObject>')
         lines.append('\t<Id>{0}</Id>'.format(self.objid))
-        lines.append('\t<MLClassId>{0}</MLClassId>'.format(self.clsid))
         lines.append('\t<MLClassName>{0}</MLClassName>'.format(self.clsname))
         lines.append('\t<Top>{0}</Top>'.format(self.top))
         lines.append('\t<Left>{0}</Left>'.format(self.left))
@@ -840,8 +837,8 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         that do include this, so that old files aren't lost.
 
     :param mlclass_dict: If ``fill_mlclass_names`` is requested, you have to
-        also supply the dict of MLClasses that have names for the ``clsid``s
-        in the parsed CropObjectList. Keys are ``clsid``s, values are the
+        also supply the dict of MLClasses that have names for the ``clsname``s
+        in the parsed CropObjectList. Keys are ``clsname``s, values are the
         MLClass objects.
 
     :returns: A list of ``CropObject``s.
@@ -859,24 +856,13 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
 
         objid = int(float(cropobject.findall('Id')[0].text))
 
-        # Class ID
-        clsid = int(float(cropobject.findall('MLClassId')[0].text))
-
         # Dealing with clsname transition
         clsname=None
         _has_clsname = False
         if len(cropobject.findall('MLClassName')) > 0:
             clsname = cropobject.findall('MLClassName')[0].text
-        elif fill_mlclass_names:
-            if clsid in mlclass_dict:
-                clsname = mlclass_dict[clsid].name
-            else:
-                raise ValueError('Requested MLClass names filled in from'
-                                 ' MLClassList, but the list does not contain'
-                                 ' id {0}'.format(clsid))
         else:
-            raise ValueError('CropObject {0}: no clsname provided and no way'
-                             ' of inferring it from clsid provided.'.format(objid))
+            raise ValueError('CropObject {0}: no clsname provided.'.format(objid))
 
         #################################
         # Top left corner position
@@ -931,7 +917,6 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         #################################
         # Create the object.
         obj = CropObject(objid=objid,
-                         clsid=clsid,
                          clsname=clsname,
                          top=top,
                          left=left,
@@ -1087,7 +1072,7 @@ def position_cropobject_list_by_muscimage(cropobject_list, muscimage):
             new_x = c.x - muscimage.bounding_box[0]
             new_y = c.y - muscimage.bounding_box[1]
             c_out = CropObject(objid=c.objid,
-                               clsid=c.clsid, clsname=c.clsname,
+                               clsname=c.clsname,
                                top=new_x, left=new_y,
                                width=c.width, height=c.height)
             output.append(c_out)
@@ -1137,7 +1122,7 @@ def render_annotations(img, cropoboject_list, mlclass_list=None, alpha=1.0,
 
     mlclass_dict = None
     if mlclass_list is not None:
-        mlclass_dict = {m.clsid: m for m in mlclass_list}
+        mlclass_dict = {m.clsname: m for m in mlclass_list}
 
     if grayscale:
         reimg = numpy.zeros((img.shape[0], img.shape[1], 3), dtype=img.dtype)
@@ -1154,7 +1139,7 @@ def render_annotations(img, cropoboject_list, mlclass_list=None, alpha=1.0,
                       ' {0}, {1}, {2}, {3}'.format(obj.x, obj.y, obj.height,
                                                    obj.width))
         if mlclass_dict is not None:
-            rgb = mlclass_dict[obj.clsid].color
+            rgb = mlclass_dict[obj.clsname].color
         else:
             rgb = (0.8, 0.8, 0.8)
 

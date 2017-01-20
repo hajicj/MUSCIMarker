@@ -181,7 +181,7 @@ Each tracked event generates one JSON dictionary. All events have:
 The arguments with which the tracked function was called can also be
 captured. The tracker also allows for some simple transformations for
 the tracked arguments: for instance, cropobject creation tracking
-logs just the `objid` and `clsid` attributes instead of the entire CropObject.
+logs just the `objid` and `clsname` attributes instead of the entire CropObject.
 
 Tracking implementation
 -----------------------
@@ -1394,7 +1394,7 @@ class MUSCIMarkerApp(App):
 
         return m_vertical, m_horizontal
 
-    def generate_cropobject_from_selection(self, selection, clsid=None, mask=None,
+    def generate_cropobject_from_selection(self, selection, clsname=None, mask=None,
                                            integer_bounds=True):
         """After a selection is made, create the new CropObject.
         (To add it to the model, use add_cropobject_from_selection() instead.)
@@ -1420,11 +1420,10 @@ class MUSCIMarkerApp(App):
         # (To add to the confusion, numpy indexes from top-left and uses X
         # for rows, Y for columns.)
         new_cropobject_objid = self.annot_model.get_next_cropobject_id()
-        new_cropobject_clsid = clsid
-        if clsid is None:
-            new_cropobject_clsid = self.annot_model.mlclasses_by_name[self.currently_selected_mlclass_name].clsid
+        new_cropobject_clsname = clsname
+        if clsname is None:
+            new_cropobject_clsname = self.currently_selected_mlclass_name
 
-        new_cropobject_clsname = self.annot_model.mlclasses[new_cropobject_clsid].name
 
         # (The scaling from model-world to editor should be refactored out:
         #  working on utils/ImageToModelScaler)
@@ -1453,7 +1452,6 @@ class MUSCIMarkerApp(App):
                      ' x={0}, y={1}, h={2}, w={3}'.format(mT, mL, mH, mW))
 
         c = muscimarker_io.CropObject(objid=new_cropobject_objid,
-                                      clsid=new_cropobject_clsid,
                                       clsname=new_cropobject_clsname,
                                       # Hah -- here, having the Image as the parent widget
                                       # of the bbox selection tool is kind of useful...
@@ -1466,14 +1464,13 @@ class MUSCIMarkerApp(App):
             c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
                      ''.format(selection, {'objid': c.objid,
-                                           'clsid': c.clsid,
                                            'clsname': c.clsname,
                                            'x': c.x, 'y': c.y,
                                            'width': c.width,
                                            'height': c.height}))
         return c
 
-    def generate_cropobject_from_model_selection(self, selection, clsid=None, mask=None,
+    def generate_cropobject_from_model_selection(self, selection, clsname=None, mask=None,
                                                  integer_bounds=True):
         """After a selection is made **in the model world**, create the new CropObject.
         (To add it to the model, use add_cropobject_from_model_selection() instead.)
@@ -1488,11 +1485,10 @@ class MUSCIMarkerApp(App):
         """
         logging.info('App: Generating cropobject from model selection {0}'.format(selection))
         new_cropobject_objid = self.annot_model.get_next_cropobject_id()
-        new_cropobject_clsid = clsid
-        if clsid is None:
-            new_cropobject_clsid = self.annot_model.mlclasses_by_name[self.currently_selected_mlclass_name].clsid
+        new_cropobject_clsname = clsname
+        if clsname is None:
+            new_cropobject_clsname = self.currently_selected_mlclass_name
 
-        new_cropobject_clsname = self.annot_model.mlclasses[new_cropobject_clsid].name
 
         mT, mL, mB, mR = selection['top'], selection['left'], \
                          selection['bottom'], selection['right']
@@ -1500,7 +1496,6 @@ class MUSCIMarkerApp(App):
         mW = mR - mL
 
         c = muscimarker_io.CropObject(objid=new_cropobject_objid,
-                                      clsid=new_cropobject_clsid,
                                       clsname=new_cropobject_clsname,
                                       top=mT, left=mL, width=mW, height=mH,
                                       mask=mask)
@@ -1508,32 +1503,31 @@ class MUSCIMarkerApp(App):
             c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
                      ''.format(selection, {'objid': c.objid,
-                                           'clsid': c.clsid,
                                            'clsname': c.clsname,
                                            'x': c.x, 'y': c.y,
                                            'width': c.width,
                                            'height': c.height}))
         return c
 
-    def add_cropobject_from_selection(self, selection, clsid=None, mask=None):
+    def add_cropobject_from_selection(self, selection, clsname=None, mask=None):
         logging.info('App: Will add cropobject from selection {0}'.format(selection))
         c = self.generate_cropobject_from_selection(selection,
-                                                    clsid=clsid,
+                                                    clsname=clsname,
                                                     mask=mask)
         logging.info('App: Adding cropobject from selection {0}'.format(selection))
         self.annot_model.add_cropobject(c)  # This should trigger rendering
         # self.current_n_cropobjects = len(self.annot_model.cropobjects)
 
-    def add_cropobject_from_model_selection(self, selection, clsid=None, mask=None):
+    def add_cropobject_from_model_selection(self, selection, clsname=None, mask=None):
         logging.info('App: Will add cropobject from model_selection {0}'.format(selection))
         c = self.generate_cropobject_from_model_selection(selection,
-                                                          clsid=clsid,
+                                                          clsname=clsname,
                                                           mask=mask)
         logging.info('App: Adding cropobject from model_selection {0}'.format(selection))
         self.annot_model.add_cropobject(c)  # This should trigger rendering
 
     def generate_model_bbox_from_selection(self, selection):
-        c = self.generate_cropobject_from_selection(selection, clsid=None)
+        c = self.generate_cropobject_from_selection(selection, clsname=None)
         t, l, b, r = c.bounding_box
         return t, l, b, r
 

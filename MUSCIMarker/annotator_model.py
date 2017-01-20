@@ -271,8 +271,7 @@ class CropObjectAnnotatorModel(Widget):
 
     @Tracker(track_names=['cropobject'],
              transformations={'cropobject': [lambda c: ('objid', c.objid),
-                                             lambda c: ('clsid', c.clsid),
-                                             lambda c: ('mlclass_name', c.clsname),
+                                             lambda c: ('clsname', c.clsname),
                                              lambda c: ('tool_used', App.get_running_app().currently_selected_tool_name)]
                               },
              fn_name='model.add_cropobject',
@@ -482,18 +481,18 @@ class CropObjectAnnotatorModel(Widget):
             raise ValueError('Cannot validate cropobjects without image')
         shape = self.image.shape
 
-        invalid_clsid_objs = []
+        invalid_clsname_objs = []
         oversized_objs = []
         for c in self.cropobjects.values():
-            clsid = c.clsid
-            if clsid not in self.mlclasses:
-                invalid_clsid_objs.append(c)
+            clsname = c.clsname
+            if clsname not in self.mlclasses_by_name:
+                invalid_clsname_objs.append(c)
             if c.top < 0 or c.left < 0:
                 oversized_objs.append(c)
             if c.bottom > shape[0] or c.right > shape[1]:
                 oversized_objs.append(c)
 
-        if len(invalid_clsid_objs) > 0:
+        if len(invalid_clsname_objs) > 0:
             return False
         if len(oversized_objs) > 0:
             return False

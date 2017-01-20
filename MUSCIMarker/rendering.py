@@ -478,7 +478,7 @@ class CropObjectListView(ListView):
 
     def apply_mlclass_to_selection(self, clsid, clsname):
         for s in self.adapter.selection:
-            s.set_mlclass(clsid=clsid, clsname=clsname)
+            s.set_mlclass(clsname=clsname)
 
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [
@@ -774,17 +774,18 @@ class CropObjectRenderer(FloatLayout):
         """On MLClassList change, the color dictionary needs to be updated."""
         logging.info('Render: Recomputing mlclasses color dict...')
         for clsid in pos:
-            self.mlclasses_colors[clsid] = pos[clsid].color
+            clsname = pos[clsid].name
+            self.mlclasses_colors[clsname] = pos[clsid].color
 
     def selectable_cropobject_converter(self, row_index, rec):
         """Interfacing the CropObjectView and the intermediate data structure.
         Note that as it currently stands, this intermediate structure is
         also a CropObject, although the position params X and Y have been
         switched around."""
-        if max(self.mlclasses_colors[rec.clsid]) > 1.0:
-            rgb = tuple([float(x) / 255.0 for x in self.mlclasses_colors[rec.clsid]])
+        if max(self.mlclasses_colors[rec.clsname]) > 1.0:
+            rgb = tuple([float(x) / 255.0 for x in self.mlclasses_colors[rec.clsname]])
         else:
-            rgb = tuple([float(x) for x in self.mlclasses_colors[rec.clsid]])
+            rgb = tuple([float(x) for x in self.mlclasses_colors[rec.clsname]])
         output = {
             #'text': str(rec.objid),
             #'size_hint': (None, None),

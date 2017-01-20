@@ -383,7 +383,7 @@ class CropObjectView(SelectableView, ToggleButton):
     # Class selection
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.toggle_class_selection',
                 tracker_name='editing')
     def toggle_class_selection(self):
@@ -398,7 +398,7 @@ class CropObjectView(SelectableView, ToggleButton):
         self.mlclass_selection_spinner = Spinner(
             id='mlclass_cropobject_selection_spinner_{0}'.format(self.cropobject.objid),
             pos=self.pos,
-            text='{0}'.format(self._model.mlclasses[self.cropobject.clsid].name),
+            text='{0}'.format(self.cropobject.clsname),
             font_size=15,
             values=sorted(self._model.mlclasses_by_name.keys(),
                           key=lambda k: self._model.mlclasses_by_name[k].clsid),
@@ -415,30 +415,27 @@ class CropObjectView(SelectableView, ToggleButton):
 
     @tr.Tracker(track_names=['self', 'text'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.do_class_selection',
                 tracker_name='editing')
-    def do_class_selection(self, spinner_widget, text):
+    def do_class_selection(self, spinner_widget, clsname):
         logging.info('CropObjectView\t{0}: do_class_selection() fired.'
                      ''.format(self.cropobject.objid))
-        clsid = self._model.mlclasses_by_name[text].clsid
 
-        if clsid != self.cropobject.clsid:
-            self.set_mlclass(clsid=clsid, clsname=text)
+        if clsname != self.cropobject.clsname:
+            self.set_mlclass(clsname=clsname)
         self.destroy_mlclass_selection_spinner()
 
-    def set_mlclass(self, clsid, clsname):
+    def set_mlclass(self, clsname):
         # This should be wrapped in some cropobject's set_class method.
-        self._model_counterpart.clsid = clsid
         self._model_counterpart.clsname = clsname
-        self.cropobject.clsid = clsid
         self.cropobject.clsname = clsname
         # We should also check that the new class name is consistent
         # with the edges...
         self.update_info_label()
 
         # Update color
-        rgb = tuple([float(x) for x in self._model.mlclasses[clsid].color])
+        rgb = tuple([float(x) for x in self._model.mlclasses_by_name[clsname].color])
         self.update_color(rgb)
 
     def destroy_mlclass_selection_spinner(self, *args, **kwargs):
@@ -476,7 +473,6 @@ class CropObjectView(SelectableView, ToggleButton):
         output_lines = list()
         output_lines.append('objid:            {0}'.format(e_cropobject.objid))
         output_lines.append('cls:                {0}'.format(e_cropobject.clsname))
-        #output_lines.append('cls:                {0}'.format(self._model.mlclasses[e_cropobject.clsid].name))
         output_lines.append('M.x, M.y:      {0:.2f}, {1:.2f}'
                             ''.format(self._model_counterpart.x,
                                       self._model_counterpart.y))
@@ -539,7 +535,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     @tr.Tracker(track_names=['self', 'vertical', 'horizontal'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.move',
                 tracker_name='editing')
     def move(self, vertical=0, horizontal=0):
@@ -598,7 +594,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     @tr.Tracker(track_names=['self', 'vertical', 'horizontal'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.stretch',
                 tracker_name='editing')
     def stretch(self, vertical=0, horizontal=0):
@@ -653,7 +649,6 @@ class CropObjectView(SelectableView, ToggleButton):
     # Split
     @tr.Tracker(track_names=['self', 'ratio'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid),
                                           lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.split',
                 tracker_name='editing')
@@ -690,9 +685,9 @@ class CropObjectView(SelectableView, ToggleButton):
         coords_1 = {'top': t1, 'bottom': b1, 'left': l1, 'right': r1}
         coords_2 = {'top': t2, 'bottom': b2, 'left': l2, 'right': r2}
 
-        clsid = self.cropobject.clsid
-        App.get_running_app().add_cropobject_from_selection(coords_1, clsid=clsid)
-        App.get_running_app().add_cropobject_from_selection(coords_2, clsid=clsid)
+        clsname= self.cropobject.clsname
+        App.get_running_app().add_cropobject_from_selection(coords_1, clsname=clsname)
+        App.get_running_app().add_cropobject_from_selection(coords_2, clsname=clsname)
 
         self.remove_from_model()
 
@@ -700,7 +695,6 @@ class CropObjectView(SelectableView, ToggleButton):
     # Clone class
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid),
                                           lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.clone_class_to_app',
                 tracker_name='editing')
@@ -712,7 +706,6 @@ class CropObjectView(SelectableView, ToggleButton):
     # Hide relationships
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid),
                                           lambda s: ('clsname', s._model_counterpart.clsname),
                                           lambda s: ('inlinks', s._model_counterpart.inlinks),
                                           lambda s: ('outlinks', s._model_counterpart.outlinks)]},
@@ -725,7 +718,6 @@ class CropObjectView(SelectableView, ToggleButton):
 
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid),
                                           lambda s: ('clsname', s._model_counterpart.clsname),
                                           lambda s: ('inlinks', s._model_counterpart.inlinks),
                                           lambda s: ('outlinks', s._model_counterpart.outlinks)]},
@@ -760,7 +752,6 @@ class CropObjectView(SelectableView, ToggleButton):
     # Inspect mask
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid),
                                           lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.clone_class_to_app',
                 tracker_name='editing')
@@ -798,7 +789,7 @@ class CropObjectView(SelectableView, ToggleButton):
     # Copied over from ListItemButton
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.select',
                 tracker_name='editing')
     def select(self, *args):
@@ -814,7 +805,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.deselect',
                 tracker_name='editing')
     def deselect(self, *args):
