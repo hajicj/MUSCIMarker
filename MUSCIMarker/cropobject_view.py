@@ -514,7 +514,7 @@ class CropObjectView(SelectableView, ToggleButton):
         # Easy workaround: unselect self first. This does not fix the memory
         # leak, but at least the 'invisible' CropObjectView will not
         # capture any events.
-        self.deselect()
+        self.ensure_deselected()
         # Another workaround: schedule self-deletion for slightly later,
         # after the widget gets removed from the call stack.
 

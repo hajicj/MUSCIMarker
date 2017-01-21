@@ -451,8 +451,10 @@ class CropObjectListView(ListView):
         inlinks, outlinks = cropobjects_merge_links(model_cropobjects)
 
         # Remove the merged CropObjects
+        # logging.info('CropObjectListView.merge(): inlinks {0}, outlinks {1}'
+        #              ''.format(inlinks, outlinks))
         logging.info('CropObjectListView.merge(): Removing/deselecting selection {0}'
-                     ''.format(self.adapter.selection))
+                     ''.format([c.objid for c in self.adapter.selection]))
         if destructive:
             for s in self.adapter.selection:
                 s.remove_from_model()

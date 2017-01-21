@@ -213,6 +213,24 @@ class ObjectGraph(Widget):
         self._inlinks = dict()
         self._outlinks = dict()
 
+    def get_neighborhood(self, objid, inclusive=True):
+        """Returns a list of ``objid``s of the undirected neighbors
+        of the given object. Useful e.g. for only removing
+
+        :param objid: Object ID of the "center" of the neighborhood
+
+        :param inclusive: Should the output include the "center" object?
+        """
+        neighbors = []
+        if inclusive:
+            neighbors.append(objid)
+        if objid in self._inlinks:
+            neighbors.extend(self._inlinks[objid])
+        if objid in self._outlinks:
+            neighbors.extend(self._outlinks[objid])
+        return list(set(neighbors))     # Removing duplicates
+
+
 ##############################################################################
 
 
@@ -291,6 +309,8 @@ class CropObjectAnnotatorModel(Widget):
             edges.append((i, cropobject.objid))
         for o in cropobject.outlinks:
             edges.append((cropobject.objid, o))
+        #logging.info('Model: Adding cropobject {0}: Will add edges: {1}'
+        #             ''.format(cropobject.objid, edges))
         self.graph.add_edges(edges)
 
         self.cropobjects[cropobject.objid] = cropobject
@@ -313,7 +333,10 @@ class CropObjectAnnotatorModel(Widget):
              tracker_name='model')
     def remove_cropobject(self, key):
         # Could graph sync be solved by binding?
+        neighborhood = [self.cropobjects[k]
+             for k in self.graph.get_neighborhood(key, inclusive=True)]
         self.graph.remove_obj_from_graph(key)
+        self.sync_graph_to_cropobjects(neighborhood)
         del self.cropobjects[key]
 
     @Tracker(track_names=['cropobjects'],
