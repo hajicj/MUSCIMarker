@@ -188,6 +188,32 @@ thinking about it and reviewing these guidelines, then send us an email
 to ``hajicj@ufal.mff.cuni.cz``!
 
 
+
+.. note::
+
+    **Validation**
+
+    The MUSCIMarker tool includes functionality to check the current annotation
+    against errors. Press ``v`` to select all objects that the validation
+    algorithm suspects of having errors. However, validation is *not* perfect:
+    it is merely a helper, not a substitute for paying attention. For instance,
+    in the situation where two noteheads share a stem, validation cannot distinguish
+    whether it is a mistake (and the second notehead should be attached to its
+    own stem), or a chord (and the noteheads are legitimately bunched on the same
+    stem). If we could distinguish things like this perfectly, we wouldn't need
+    annotation...
+
+    Passing validation, therefore, is a *neccessary*, but *not sufficient*
+    condition of correctness. Sorry, you still need to really pay attention!
+
+    There are exceptions to passing validation with no suspicious objects.
+    Sometimes (rarely), there will be non-standard notation situations where
+    validation will complain even with correct annotation. This is a calculated
+    "cautionary" behavior: if something like that happens, you had better be
+    sure about it, because *usually* situations like this are a mistake.
+
+
+
 **We now give the instructions for individual symbol classes. Make sure**
 **you understand them all.** If there is something you don't understand,
 ask! (``hajicj@ufal.mff.cuni.cz``)
@@ -367,6 +393,15 @@ now define some more notational situations around notes:
 * segno, coda
 * instrument_specific
 * transposition
+
+Fermatas
+^^^^^^^^
+
+Fermatas are attached to a ``notehead``-class object, a rest,
+or a ``measure_separator``, if they are clearly related
+to a barline (or a double barline..., see ``measure_separator``
+guidelines below). In case a fermata is written above an empty space,
+leave it unattached.
 
 
 Layout
