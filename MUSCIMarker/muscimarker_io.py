@@ -164,7 +164,6 @@ class CropObject(object):
 
         <CropObject>
           <Id>25</Id>
-          <MLClassId>7</MLClassId>
           <MLClassName>grace-notehead-full</MLClassName>
           <Top>119</Top>
           <Left>413</Left>
@@ -190,8 +189,6 @@ class CropObject(object):
     * ``<Id>`` is a unique identifier of the CropObject inside a given
       ``<CropObjectList>`` (which generally corresponds to one XML file
       of CropObjects).
-    * ``<MLClassID>`` is the ID of the object's class. You can safely ignore
-      this attribute.
     * ``<MLClassName>`` is the name of the object's class (such as
       ``notehead-full``, ``beam``, ``numeral_3``, etc.).
     * ``<Top>`` is the vertical coordinate of the upper left corner of the object's
@@ -596,7 +593,6 @@ class CropObject(object):
         lines.append('\t<Left>{0}</Left>'.format(self.left))
         lines.append('\t<Width>{0}</Width>'.format(self.width))
         lines.append('\t<Height>{0}</Height>'.format(self.height))
-        lines.append('\t<Selected>false</Selected>')
 
         mask_string = self.encode_mask(self.mask)
         lines.append('\t<Mask>{0}</Mask>'.format(mask_string))

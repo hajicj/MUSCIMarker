@@ -365,8 +365,8 @@ now define some more notational situations around notes:
 * arpeggios and glissandi
 * ornaments
 * segno, coda
-*
 * instrument_specific
+* transposition
 
 
 Layout
@@ -381,6 +381,56 @@ overall layout and structure of the music:
 * staff grouping symbols
 * system separator
 * volta
+
+Barlines
+^^^^^^^^
+
+There are three kinds of barlines: thin, thick, and dotted.
+(The ``dotted_barline`` class applies to any non-contiguous barline.)
+Note that barlines are "low-level" objects, notation primitives:
+one barline does not automatically equal a measure boundary (e.g.:
+double barlines, barlines in repeats, barlines denoting the grouping
+of staffs into systems). For example, this double barline is annotated
+as two ``thin_barline`` symbols:
+
+.. image:: images/guidelines/barlines_thin_double.png
+
+The difference between a ``thin_barline`` and ``thick_barline`` is
+basically just intent: if you think the writer just drew one line,
+mark it as a ``thin_barline``; if you think the writer made an attempt
+to make a barline thick, use ``thick_barline``. Here, we have a print-like
+combination of barlines in a repeat:
+
+.. image:: images/guidelines/barlines_repeat_thin_thick.png
+
+Sometimes, what would be *typeset* as a thick barline will be written out
+as a ``thin_barline``:
+
+.. image:: images/guidelines/barlines_repeat_thin_thin.png
+
+In multi-staff music, don't group per-staff or staff-group barlines
+together under one! This is handled by the ``measure_separator``
+object (see below). These are two separate ``thin_barline`` objects:
+
+.. image:: images/guidelines/barlines_simultaneous.png
+
+
+Repeats, repeat dots
+^^^^^^^^^^^^^^^^^^^^
+
+The ``repeat`` symbol is a high-level symbol that consists of barline
+and ``repeat-dot`` primitives:
+
+.. image:: images/guidelines/repeat.png
+
+Back-to-back repeats share barlines:
+
+.. image:: images/guidelines/repeat_back-to-back.png
+
+Repeats that span multiple staves form a single ``repeat`` object
+(with many ``repeat_dot`` "subordinate" primitives):
+
+.. image:: images/guidelines/repeat_multistaff.png
 
 Measure separators
 ^^^^^^^^^^^^^^^^^^
@@ -424,6 +474,15 @@ again following the principle of one ``measure_separator`` symbol per measure
 boundary. The barline might be a long one or many short ones, it doesn't matter:
 
 .. image:: images/guidelines/measure_separator_multistaff.png
+
+.. warning::
+
+    Not every repeat hides a measure_separator inside! For instance,
+    here, the repeat comes before an *Auftakt*, a pickup 8th. If you
+    annotated a ``measure_separator`` here, the measure count would
+    be wrong!
+
+.. image:: images/guidelines/repeat_without_measure_separator.png
 
 
 
