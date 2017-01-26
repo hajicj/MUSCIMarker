@@ -394,6 +394,36 @@ now define some more notational situations around notes:
 * instrument_specific
 * transposition
 
+Ties and slurs
+^^^^^^^^^^^^^^
+
+Mark relationships to the symbol from all affected noteheads. With ties,
+this will generally be 2; with slurs, there may be a lot of notes:
+
+.. image:: images/guidelines/slur_normal.png
+
+In multi-voice scores, pay attention to voice leading: use your judgment
+to determine which voices the slur applies to. The previous example in fact
+illustrates this as well: notice the middle voice notes which are *not*
+marked as belonging under the slur:
+
+.. image:: images/guidelines/slur_multivoice.png
+
+If a tie/slur leads from one line to the next: annotate each "half" separately
+and attach the notes only to the given half.
+
+.. image:: images/guidelines/slur_half.png
+
+If there is just one note with a slur at the start or end of the line, like
+in the example above, validation will complain, but you can safely ignore that.
+(Just make sure that both ends are marked the same -- in fact, the example
+had to be corrected: one end was marked as a tie, the other as a slur.)
+
+Crescendo and decrescendo hairpins
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The same rules apply to
+
 Fermatas
 ^^^^^^^^
 
@@ -401,7 +431,9 @@ Fermatas are attached to a ``notehead``-class object, a rest,
 or a ``measure_separator``, if they are clearly related
 to a barline (or a double barline..., see ``measure_separator``
 guidelines below). In case a fermata is written above an empty space,
-leave it unattached.
+or otherwise cannot be resolved, leave it unattached (even though validation
+will complain).
+
 
 
 Layout
@@ -415,7 +447,10 @@ overall layout and structure of the music:
 * measure separator
 * staff grouping symbols
 * system separator
+* horizontal spanners
 * volta
+* transposition spans
+* ossia
 
 Barlines
 ^^^^^^^^
@@ -520,6 +555,14 @@ boundary. The barline might be a long one or many short ones, it doesn't matter:
 .. image:: images/guidelines/repeat_without_measure_separator.png
 
 
+The same warning applies to repeats at the start of a new system. The MUSCIMA++
+annotation policy is: only the previous end-of-line barline(s) form
+a ``measure_separator``, the start-of-line repeat sign does not necessarily
+"hide" one. This holds even if there is no barline at the end of a line: that's
+an ambiguous situation anyway; and we can then *use* the presence of a repeat
+at the start of the next line to decide that yes, indeed, there should
+be an "invisible" ``measure_separator`` there. But that is a post-processing
+step, not an annotation step that you should be concerned with.
 
 
 Staff grouping symbols
@@ -586,6 +629,28 @@ the bounding box of the ``volta`` is in this case identical to the bounding
 box of the ``horizontal_spanner`` component):
 
 .. image:: images/guidelines/volta_complete.png
+
+
+Transposition
+^^^^^^^^^^^^^
+
+The transposition mark is somewhat similar to a volta: it also consists of some
+numeral or text (usually "8va", or just "8") and a horizontal spanner (usually
+dotted, so a ``dotted_horizontal_spanner`` symbol). The text, which encompasses
+the numeral(s) and the letters (and the occasional dot), is called
+``transposition_text``. The difference is that while voltas encompass the horizontal
+spanner (if present), ``transposition_text`` does not.
+
+.. image:: images/guidelines/transposition_inline.png
+
+This is because the transposition text may often be attached to a clef
+(indicating an octave or two-octave transposition of the entire part), with no spanner.
+However, as the ``transposition_text`` has a *relationship* to its horizontal
+spanner, when present, this is just an aesthetic choice.
+
+.. image:: images/guidelines/transposition_clef.png
+
+
 
 
 

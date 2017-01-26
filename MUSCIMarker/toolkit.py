@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals
 
 import collections
+import copy
 import logging
 
 import numpy
@@ -710,7 +711,7 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
         logging.info('MaskEraser: got bounding box: {0}'.format(bbox))
 
         for cropobject_view in self.app_ref.cropobject_list_renderer.view.selected_views:
-            c = cropobject_view._model_counterpart
+            c = copy.deepcopy(cropobject_view._model_counterpart)
             # Guards:
             if c.mask is None:
                 logging.info('MaskErarser: cropobject {0} has no mask.'
@@ -779,7 +780,7 @@ class MaskAdditionTool(LassoBoundingBoxSelectTool):
         c_lasso.crop_to_mask()
 
         for cropobject_view in self.app_ref.cropobject_list_renderer.view.selected_views:
-            c = cropobject_view._model_counterpart
+            c = copy.deepcopy(cropobject_view._model_counterpart)
             c.join(c_lasso)
 
             # Redraw:
