@@ -733,7 +733,7 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
             logging.info('MaskEraser: got mask intersection {0}'
                          ''.format((m_t, m_l, m_b, m_r)))
 
-            logging.info('MaskErarser: cropobject nnz previous = {0}'
+            logging.info('MaskEraser: cropobject nnz previous = {0}'
                          ''.format(c.mask.sum()))
 
             # We need to invert the current mask, as we want to mask *out*
@@ -750,12 +750,12 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
 
             # Now add the CropObject back to redraw. Note that this way,
             # the object's objid stays the same, which is essential for
-            # maintaining inlinks and outlinks!
+            # maintaining intact inlinks and outlinks!
             self._model.add_cropobject(c)
 
             try:
                 new_view = self.app_ref.cropobject_list_renderer.view.get_cropobject_view(c.objid)
-                new_view.select()
+                new_view.ensure_selected()
             except KeyError:
                 logging.info('MaskEraser: View for modified CropObject {0} has'
                              ' not been rendered yet, cannot select it.'
