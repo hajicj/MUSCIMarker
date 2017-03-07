@@ -228,7 +228,10 @@ from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
-import muscimarker_io
+from muscima.io import parse_cropobject_list, parse_cropobject_class_list
+from muscima.cropobject import CropObject
+#import muscimarker_io
+
 from objid_selection import ObjidSelectionDialog
 from mlclass_selection import MLClassSelectionDialog
 from syntax.dependency_grammar import DependencyGrammar
@@ -1017,7 +1020,8 @@ class MUSCIMarkerApp(App):
 
     def import_mlclass_list(self, instance, pos):
         try:
-            mlclass_list = muscimarker_io.parse_mlclass_list(pos)
+            #mlclass_list = muscimarker_io.parse_mlclass_list(pos)
+            mlclass_list = parse_cropobject_class_list(pos)
         except:
             logging.info('App: Loading MLClassList from file \'{0}\' failed.'
                          ''.format(pos))
@@ -1053,23 +1057,24 @@ class MUSCIMarkerApp(App):
 
 
         try:
-            cropobject_list, mfile, ifile = muscimarker_io.parse_cropobject_list(pos,
-                                                                                 with_refs=True,
-                                                                                 tolerate_ref_absence=True,
-                                                                                 fill_mlclass_names=True,
-                                                                                 mlclass_dict=self.annot_model.mlclasses)
+            cropobject_list = parse_cropobject_list(pos,
+                                                    #with_refs=True,
+                                                    #tolerate_ref_absence=True,
+                                                    #fill_mlclass_names=True,
+                                                    #mlclass_dict=self.annot_model.mlclasses
+                                                    )
 
-            # Handling MLClassList and Image conflicts. Currently just warns.
-            if mfile is not None:
-                if mfile != self.mlclass_list_loader.filename:
-                    logging.warn('Loaded CropObjectList for different MLClassList ({0}),'
-                                 ' colors are off and any annotation entered is invalid!'
-                                 ''.format(mfile))
-            if ifile is not None:
-                if ifile != self.image_loader.filename:
-                    logging.warn('Loaded CropObjectList for different image file ({0}),'
-                                 ' colors are off and any annotation entered is invalid!'
-                                 ''.format(ifile))
+            # # Handling MLClassList and Image conflicts. Currently just warns.
+            # if mfile is not None:
+            #     if mfile != self.mlclass_list_loader.filename:
+            #         logging.warn('Loaded CropObjectList for different MLClassList ({0}),'
+            #                      ' colors are off and any annotation entered is invalid!'
+            #                      ''.format(mfile))
+            # if ifile is not None:
+            #     if ifile != self.image_loader.filename:
+            #         logging.warn('Loaded CropObjectList for different image file ({0}),'
+            #                      ' colors are off and any annotation entered is invalid!'
+            #                      ''.format(ifile))
         except:
             logging.info('App: Loading CropObjectList from file \'{0}\' failed.'
                          ''.format(pos))
@@ -1452,15 +1457,15 @@ class MUSCIMarkerApp(App):
         logging.info('App.scaler: Scaler would generate numpy-world'
                      ' x={0}, y={1}, h={2}, w={3}'.format(mT, mL, mH, mW))
 
-        c = muscimarker_io.CropObject(objid=new_cropobject_objid,
-                                      clsname=new_cropobject_clsname,
-                                      # Hah -- here, having the Image as the parent widget
-                                      # of the bbox selection tool is kind of useful...
-                                      top=x_scaled_inverted,
-                                      left=y_scaled,
-                                      width=width_scaled,
-                                      height=height_scaled,
-                                      mask=mask)
+        c = CropObject(objid=new_cropobject_objid,
+                       clsname=new_cropobject_clsname,
+                       # Hah -- here, having the Image as the parent widget
+                       # of the bbox selection tool is kind of useful...
+                       top=x_scaled_inverted,
+                       left=y_scaled,
+                       width=width_scaled,
+                       height=height_scaled,
+                       mask=mask)
         if integer_bounds:
             c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
@@ -1496,10 +1501,10 @@ class MUSCIMarkerApp(App):
         mH = mB - mT
         mW = mR - mL
 
-        c = muscimarker_io.CropObject(objid=new_cropobject_objid,
-                                      clsname=new_cropobject_clsname,
-                                      top=mT, left=mL, width=mW, height=mH,
-                                      mask=mask)
+        c = CropObject(objid=new_cropobject_objid,
+                       clsname=new_cropobject_clsname,
+                       top=mT, left=mL, width=mW, height=mH,
+                       mask=mask)
         if integer_bounds:
             c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'

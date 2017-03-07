@@ -27,7 +27,8 @@ import time
 
 import operator
 
-from muscimarker_io import parse_cropobject_list, merge_cropobject_lists, export_cropobject_graph
+from muscima.io import parse_cropobject_list, export_cropobject_graph
+from muscima.cropobject import merge_cropobject_lists
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."

@@ -11,7 +11,7 @@ from kivy.app import App
 from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty
 from kivy.uix.widget import Widget
 
-import muscimarker_io
+import muscima.io as muscimarker_io
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from utils import compute_connected_components
 from tracker import Tracker
