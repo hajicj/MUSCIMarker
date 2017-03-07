@@ -240,7 +240,7 @@ from edge_view import ObjectGraphRenderer
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
 from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key, \
-    MessageDialog, OnBindFileSaver, compute_connected_components
+    MessageDialog, OnBindFileSaver, compute_connected_components, filename2docname
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
 import tracker as tr
@@ -604,7 +604,7 @@ class MUSCIMarkerApp(App):
         self.cropobject_list_saver.last_output_path = saver_output_path
         self.cropobject_list_saver.bind(filename=lambda *args, **kwargs: self.annot_model.export_cropobjects(
             self.cropobject_list_saver.filename,
-            docname=self.cropobject_current_docname))
+            docname=filename2docname(self.cropobject_list_saver.filename)))
 
         logging.info('Build: started loading grammar from config')
         _grammar_abspath = os.path.abspath(conf.get('default_input_files',

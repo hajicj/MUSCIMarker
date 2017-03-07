@@ -492,6 +492,11 @@ def image_mask_overlaps_model_edge(mask, edge_start, edge_end, margin=2):
 
 ##############################################################################
 
+def filename2docname(filename):
+    return os.path.splitext(os.path.basename(filename))[0]
+
+##############################################################################
+
 
 class ImageToModelScaler(Widget):
     """Use this class when you have an image inside a ScatterLayout
