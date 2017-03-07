@@ -486,6 +486,8 @@ class MUSCIMarkerApp(App):
     cropobject_list_saver = ObjectProperty(OnBindFileSaver(overwrite=True))
     cropobject_list_export_path = StringProperty()
 
+    cropobject_current_docname = StringProperty()
+
     ##########################################################################
     # View of the annotated CropObjects and relationships, and exposing
     # them to the rest of the app.
@@ -601,7 +603,8 @@ class MUSCIMarkerApp(App):
                      ''.format(saver_output_path))
         self.cropobject_list_saver.last_output_path = saver_output_path
         self.cropobject_list_saver.bind(filename=lambda *args, **kwargs: self.annot_model.export_cropobjects(
-            self.cropobject_list_saver.filename))
+            self.cropobject_list_saver.filename,
+            docname=self.cropobject_current_docname))
 
         logging.info('Build: started loading grammar from config')
         _grammar_abspath = os.path.abspath(conf.get('default_input_files',
@@ -1081,6 +1084,22 @@ class MUSCIMarkerApp(App):
             raise
             #return
 
+        ###############
+        # docname behavior:
+        #  - If importing an existing CropObject list, take their docname.
+        #    Chances are, someone is editing a list after a pause, or QC is going
+        #    on; in both of these cases, the document name should not change.
+        #  - The only exception is when loading a file with the default docname.
+        #    In that case, because MUSCIMarker *must* have first loaded an image,
+        #    use the docname derived from the image file.
+        # Set docname for UIDs
+        docnames = list(set([c.doc for c in cropobject_list]))
+        if len(docnames) > 1:
+            raise ValueError('Mixing CropObjects from {0} different documents:'
+                             '{1}!'.format(len(docnames), '\n'.join(docnames)))
+        if docnames[0] != CropObject.UID_DEFAULT_DOCUMENT_NAMESPACE:
+            self.cropobject_current_docname = docnames[0]
+
         logging.info('App: Imported CropObjectList has {0} items.'
                      ''.format(len(cropobject_list)))
         self.cropobject_list_renderer.view.unselect_all()
@@ -1142,6 +1161,22 @@ class MUSCIMarkerApp(App):
         self.do_center_and_rescale_current_image()
         image_widget = self._get_editor_widget()
         image_widget.texture.mag_filter = 'nearest'
+
+        ###############
+        # docname behavior:
+        #  - If importing an image, the current annotation gets deleted.
+        #    The assumption is that for a new image, you will either:
+        #     - (a) import an existing CropObject list, in which case its docname
+        #       will supersede whatever we set here in accordance with the policy
+        #       of "getting back to work",
+        #     - (b) this is the first time you are  annotating this image, and so
+        #       we should choose a good docname for you.
+        # - Therefore, at this point, we just come up with what we think is the
+        #   right docname for an annotation of this image.
+        # - This "good enough" docname is the base filename of the image file,
+        #   minus the file type extension.
+        # Set docname for UIDs
+        self.cropobject_current_docname = os.path.splitext(os.path.basename(pos))[0]
 
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('grammar_file', x)]},

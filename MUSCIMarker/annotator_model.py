@@ -11,7 +11,7 @@ from kivy.app import App
 from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty
 from kivy.uix.widget import Widget
 
-import muscima.io as muscimarker_io
+from muscima.io import export_cropobject_list
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from utils import compute_connected_components
 from tracker import Tracker
@@ -358,7 +358,7 @@ class CropObjectAnnotatorModel(Widget):
              tracker_name='model')
     def export_cropobjects_string(self, **kwargs):
         self.sync_graph_to_cropobjects()
-        return muscimarker_io.export_cropobject_list(self.cropobjects.values(), **kwargs)
+        return export_cropobject_list(self.cropobjects.values(), **kwargs)
 
     @Tracker(track_names=['output'],
              fn_name='model.export_cropobjects',
