@@ -203,13 +203,13 @@
 			<Id>33</Id>
 			<Name>staff_line</Name>
 			<GroupName>layout/staff_line</GroupName>
-			<Color>#A966FF</Color>
+			<Color>#191126</Color>
 			</CropObjectClass>
 		<CropObjectClass>
 			<Id>34</Id>
 			<Name>staff</Name>
 			<GroupName>layout/staff</GroupName>
-			<Color>#B866FF</Color>
+			<Color>#211126</Color>
 			</CropObjectClass>
 		<CropObjectClass>
 			<Id>35</Id>
