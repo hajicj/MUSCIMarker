@@ -105,6 +105,18 @@ measure_separator | fermata
 
 
 ##############################################################################
+# Staff rules
+
+staff | staff_line
+key_signature time_signature g-clef c-clef f-clef | staff
+measure_separator | staff
+staff_grouping | staff
+
+| staff_line{1,}
+
+
+
+##############################################################################
 # Text rules
 
 dynamics_text | letter_p letter_f letter_m letter_s letter_z letter_r other-dot
