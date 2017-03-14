@@ -288,7 +288,7 @@ or even multi-measure rests, like in the following example (note also
 that it is indeed possible to tell apart whole and half rests, even
 without staff lines):
 
-.. image:: image/guidelines/rest_gallery.png
+.. image:: images/guidelines/rest_gallery.png
 
 And don't forget that rests can have a ``duration_dot``:
 
