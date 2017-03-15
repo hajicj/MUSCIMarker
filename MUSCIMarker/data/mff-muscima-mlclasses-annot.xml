@@ -1,948 +1,954 @@
 <?xml version="1.0" encoding="utf-8"?>
-<MLClassList noNamespaceSchema="mff-muscima-mlclasses.xsd">
-	<MLClasses>
-		<MLClass>
+<CropObjectClassList noNamespaceSchema="mff-muscima-mlclasses.xsd">
+	<CropObjectClasses>
+		<CropObjectClass>
 			<Id>0</Id>
 			<Name>notehead-full</Name>
-			<Folder>note-primitive/notehead-full</Folder>
+			<GroupName>note-primitive/notehead-full</GroupName>
 			<Color>#FF6666</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>1</Id>
 			<Name>notehead-empty</Name>
-			<Folder>note-primitive/notehead-empty</Folder>
+			<GroupName>note-primitive/notehead-empty</GroupName>
 			<Color>#FF7566</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>2</Id>
 			<Name>stem</Name>
-			<Folder>note-primitive/stem</Folder>
+			<GroupName>note-primitive/stem</GroupName>
 			<Color>#FF8566</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>3</Id>
 			<Name>8th_flag</Name>
-			<Folder>note-primitive/8th_flag</Folder>
+			<GroupName>note-primitive/8th_flag</GroupName>
 			<Color>#FF9466</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>4</Id>
 			<Name>16th_flag</Name>
-			<Folder>note-primitive/16th_flag</Folder>
+			<GroupName>note-primitive/16th_flag</GroupName>
 			<Color>#FFA466</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>5</Id>
 			<Name>32th_flag</Name>
-			<Folder>note-primitive/32th_flag</Folder>
+			<GroupName>note-primitive/32th_flag</GroupName>
 			<Color>#FFB466</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>6</Id>
 			<Name>64th_and_higher_flag</Name>
-			<Folder>note-primitive/64th_and_higher_flag</Folder>
+			<GroupName>note-primitive/64th_and_higher_flag</GroupName>
 			<Color>#FFC366</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>7</Id>
 			<Name>beam</Name>
-			<Folder>note-primitive/beam</Folder>
+			<GroupName>note-primitive/beam</GroupName>
 			<Color>#FFD366</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>8</Id>
 			<Name>duration-dot</Name>
-			<Folder>note-primitive/duration-dot</Folder>
+			<GroupName>note-primitive/duration-dot</GroupName>
 			<Color>#FFE266</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>9</Id>
 			<Name>sharp</Name>
-			<Folder>note-primitive/sharp</Folder>
+			<GroupName>note-primitive/sharp</GroupName>
 			<Color>#FFF266</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>10</Id>
 			<Name>flat</Name>
-			<Folder>note-primitive/flat</Folder>
+			<GroupName>note-primitive/flat</GroupName>
 			<Color>#FBFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>11</Id>
 			<Name>natural</Name>
-			<Folder>note-primitive/natural</Folder>
+			<GroupName>note-primitive/natural</GroupName>
 			<Color>#ECFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>12</Id>
 			<Name>double_sharp</Name>
-			<Folder>note-primitive/double_sharp</Folder>
+			<GroupName>note-primitive/double_sharp</GroupName>
 			<Color>#DCFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>13</Id>
 			<Name>double_flat</Name>
-			<Folder>note-primitive/double_flat</Folder>
+			<GroupName>note-primitive/double_flat</GroupName>
 			<Color>#CDFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>14</Id>
 			<Name>whole_rest</Name>
-			<Folder>note-primitive/whole_rest</Folder>
+			<GroupName>note-primitive/whole_rest</GroupName>
 			<Color>#BDFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>15</Id>
 			<Name>half_rest</Name>
-			<Folder>note-primitive/half_rest</Folder>
+			<GroupName>note-primitive/half_rest</GroupName>
 			<Color>#ADFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>16</Id>
 			<Name>quarter_rest</Name>
-			<Folder>note-primitive/quarter_rest</Folder>
+			<GroupName>note-primitive/quarter_rest</GroupName>
 			<Color>#9EFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>17</Id>
 			<Name>8th_rest</Name>
-			<Folder>note-primitive/8th_rest</Folder>
+			<GroupName>note-primitive/8th_rest</GroupName>
 			<Color>#8EFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>18</Id>
 			<Name>16th_rest</Name>
-			<Folder>note-primitive/16th_rest</Folder>
+			<GroupName>note-primitive/16th_rest</GroupName>
 			<Color>#7FFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>19</Id>
 			<Name>32th_rest</Name>
-			<Folder>note-primitive/32th_rest</Folder>
+			<GroupName>note-primitive/32th_rest</GroupName>
 			<Color>#6FFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>20</Id>
 			<Name>64th_and_higher_rest</Name>
-			<Folder>note-primitive/64th_and_higher_rest</Folder>
+			<GroupName>note-primitive/64th_and_higher_rest</GroupName>
 			<Color>#66FF6C</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>21</Id>
 			<Name>multi-measure_rest</Name>
-			<Folder>note-primitive/multi-measure_rest</Folder>
+			<GroupName>note-primitive/multi-measure_rest</GroupName>
 			<Color>#66FF7B</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>22</Id>
 			<Name>repeat_measure</Name>
-			<Folder>note-primitive/repeat_measure</Folder>
+			<GroupName>note-primitive/repeat_measure</GroupName>
 			<Color>#66FF8B</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>23</Id>
 			<Name>ledger_line</Name>
-			<Folder>note-primitive/ledger_line</Folder>
+			<GroupName>note-primitive/ledger_line</GroupName>
 			<Color>#66FF9A</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>24</Id>
 			<Name>grace_strikethrough</Name>
-			<Folder>note-primitive/grace_strikethrough</Folder>
+			<GroupName>note-primitive/grace_strikethrough</GroupName>
 			<Color>#66FFAA</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>25</Id>
 			<Name>grace-notehead-full</Name>
-			<Folder>note-primitive/grace-notehead-full</Folder>
+			<GroupName>note-primitive/grace-notehead-full</GroupName>
 			<Color>#66FFBA</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>26</Id>
 			<Name>grace-notehead-empty</Name>
-			<Folder>note-primitive/grace-notehead-empty</Folder>
+			<GroupName>note-primitive/grace-notehead-empty</GroupName>
 			<Color>#66FFC9</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>27</Id>
 			<Name>solitary_note</Name>
-			<Folder>note-complex/solitary_note</Folder>
+			<GroupName>note-complex/solitary_note</GroupName>
 			<Color>#66FF87</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>28</Id>
 			<Name>solitary_chord</Name>
-			<Folder>note-complex/solitary_chord</Folder>
+			<GroupName>note-complex/solitary_chord</GroupName>
 			<Color>#66FF97</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>29</Id>
 			<Name>beamed_group</Name>
-			<Folder>note-complex/beamed_group</Folder>
+			<GroupName>note-complex/beamed_group</GroupName>
 			<Color>#66FFA6</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>30</Id>
 			<Name>grace_note</Name>
-			<Folder>note-complex/grace_note</Folder>
+			<GroupName>note-complex/grace_note</GroupName>
 			<Color>#66FFB6</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>31</Id>
 			<Name>grace_chord</Name>
-			<Folder>note-complex/grace_chord</Folder>
+			<GroupName>note-complex/grace_chord</GroupName>
 			<Color>#66FFC6</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>32</Id>
 			<Name>grace_beamed_group</Name>
-			<Folder>note-complex/grace_beamed_group</Folder>
+			<GroupName>note-complex/grace_beamed_group</GroupName>
 			<Color>#66FFD5</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>33</Id>
 			<Name>staff_line</Name>
-			<Folder>layout/staff_line</Folder>
-			<Color>#A966FF</Color>
-			</MLClass>
-		<MLClass>
+			<GroupName>layout/staff_line</GroupName>
+			<Color>#191126</Color>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>34</Id>
 			<Name>staff</Name>
-			<Folder>layout/staff</Folder>
-			<Color>#B866FF</Color>
-			</MLClass>
-		<MLClass>
+			<GroupName>layout/staff</GroupName>
+			<Color>#211126</Color>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>35</Id>
 			<Name>multi-staff_bracket</Name>
-			<Folder>layout/multi-staff_bracket</Folder>
+			<GroupName>layout/multi-staff_bracket</GroupName>
 			<Color>#C866FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>36</Id>
 			<Name>multi-staff_brace</Name>
-			<Folder>layout/multi-staff_brace</Folder>
+			<GroupName>layout/multi-staff_brace</GroupName>
 			<Color>#D866FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>37</Id>
 			<Name>staff_grouping</Name>
-			<Folder>layout/staff_grouping</Folder>
+			<GroupName>layout/staff_grouping</GroupName>
 			<Color>#E766FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>38</Id>
 			<Name>thin_barline</Name>
-			<Folder>layout/thin_barline</Folder>
+			<GroupName>layout/thin_barline</GroupName>
 			<Color>#F766FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>39</Id>
 			<Name>thick_barline</Name>
-			<Folder>layout/thick_barline</Folder>
+			<GroupName>layout/thick_barline</GroupName>
 			<Color>#FF66F7</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>40</Id>
 			<Name>measure_separator</Name>
-			<Folder>layout/measure_separator</Folder>
+			<GroupName>layout/measure_separator</GroupName>
 			<Color>#FF66E7</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>41</Id>
 			<Name>repeat</Name>
-			<Folder>layout/repeat</Folder>
+			<GroupName>layout/repeat</GroupName>
 			<Color>#FF66D7</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>42</Id>
 			<Name>repeat-dot</Name>
-			<Folder>layout/repeat-dot</Folder>
+			<GroupName>layout/repeat-dot</GroupName>
 			<Color>#FF66C8</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>43</Id>
 			<Name>segno</Name>
-			<Folder>layout/segno</Folder>
+			<GroupName>layout/segno</GroupName>
 			<Color>#FF66B8</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>44</Id>
 			<Name>coda</Name>
-			<Folder>layout/coda</Folder>
+			<GroupName>layout/coda</GroupName>
 			<Color>#FF66A9</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>45</Id>
 			<Name>volta</Name>
-			<Folder>layout/volta</Folder>
+			<GroupName>layout/volta</GroupName>
 			<Color>#FF6699</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>46</Id>
 			<Name>staccato-dot</Name>
-			<Folder>notations/staccato-dot</Folder>
+			<GroupName>notations/staccato-dot</GroupName>
 			<Color>#FFCA66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>47</Id>
 			<Name>other-dot</Name>
-			<Folder>notations/other-dot</Folder>
+			<GroupName>notations/other-dot</GroupName>
 			<Color>#FFDA66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>48</Id>
 			<Name>tenuto</Name>
-			<Folder>notations/tenuto</Folder>
+			<GroupName>notations/tenuto</GroupName>
 			<Color>#FFEA66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>49</Id>
 			<Name>accent</Name>
-			<Folder>notations/accent</Folder>
+			<GroupName>notations/accent</GroupName>
 			<Color>#FFF966</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>50</Id>
 			<Name>strong_accent</Name>
-			<Folder>notations/strong_accent</Folder>
+			<GroupName>notations/strong_accent</GroupName>
 			<Color>#F4FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>51</Id>
 			<Name>curved-line_(tie-or-slur)</Name>
-			<Folder>notations/curved-line_(tie-or-slur)</Folder>
+			<GroupName>notations/curved-line_(tie-or-slur)</GroupName>
 			<Color>#E4FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>52</Id>
 			<Name>slur</Name>
-			<Folder>notations/slur</Folder>
+			<GroupName>notations/slur</GroupName>
 			<Color>#D5FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>53</Id>
 			<Name>tie</Name>
-			<Folder>notations/tie</Folder>
+			<GroupName>notations/tie</GroupName>
 			<Color>#C5FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>54</Id>
 			<Name>hairpin-cresc.</Name>
-			<Folder>notations/hairpin-cresc.</Folder>
+			<GroupName>notations/hairpin-cresc.</GroupName>
 			<Color>#B6FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>55</Id>
 			<Name>hairpin-decr.</Name>
-			<Folder>notations/hairpin-decr.</Folder>
+			<GroupName>notations/hairpin-decr.</GroupName>
 			<Color>#A6FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>56</Id>
 			<Name>ornament(s)</Name>
-			<Folder>notations/ornament(s)</Folder>
+			<GroupName>notations/ornament(s)</GroupName>
 			<Color>#96FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>57</Id>
 			<Name>trill_"wobble"</Name>
-			<Folder>notations/trill_"wobble"</Folder>
+			<GroupName>notations/trill_"wobble"</GroupName>
 			<Color>#87FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>58</Id>
 			<Name>trill</Name>
-			<Folder>notations/trill</Folder>
+			<GroupName>notations/trill</GroupName>
 			<Color>#77FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>59</Id>
 			<Name>arpeggio_"wobble"</Name>
-			<Folder>notations/arpeggio_"wobble"</Folder>
+			<GroupName>notations/arpeggio_"wobble"</GroupName>
 			<Color>#68FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>60</Id>
 			<Name>glissando</Name>
-			<Folder>notations/glissando</Folder>
+			<GroupName>notations/glissando</GroupName>
 			<Color>#66FF73</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>61</Id>
 			<Name>fermata</Name>
-			<Folder>notations/fermata</Folder>
+			<GroupName>notations/fermata</GroupName>
 			<Color>#66FF83</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>62</Id>
 			<Name>tremolo_mark</Name>
-			<Folder>notations/tremolo_mark</Folder>
+			<GroupName>notations/tremolo_mark</GroupName>
 			<Color>#66FF92</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>63</Id>
 			<Name>single-note_tremolo</Name>
-			<Folder>notations/single-note_tremolo</Folder>
+			<GroupName>notations/single-note_tremolo</GroupName>
 			<Color>#66FFA2</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>64</Id>
 			<Name>multiple-note_tremolo</Name>
-			<Folder>notations/multiple-note_tremolo</Folder>
+			<GroupName>notations/multiple-note_tremolo</GroupName>
 			<Color>#66FFB1</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>65</Id>
 			<Name>tuple_bracket/line</Name>
-			<Folder>notations/tuple_bracket/line</Folder>
+			<GroupName>notations/tuple_bracket/line</GroupName>
 			<Color>#66FFC1</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>66</Id>
 			<Name>tuple</Name>
-			<Folder>notations/tuple</Folder>
+			<GroupName>notations/tuple</GroupName>
 			<Color>#66FFD1</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>67</Id>
 			<Name>g-clef</Name>
-			<Folder>part-defaults/g-clef</Folder>
+			<GroupName>part-defaults/g-clef</GroupName>
 			<Color>#66FFEC</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>68</Id>
 			<Name>f-clef</Name>
-			<Folder>part-defaults/f-clef</Folder>
+			<GroupName>part-defaults/f-clef</GroupName>
 			<Color>#66FFFC</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>69</Id>
 			<Name>c-clef</Name>
-			<Folder>part-defaults/c-clef</Folder>
+			<GroupName>part-defaults/c-clef</GroupName>
 			<Color>#66F2FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>70</Id>
 			<Name>other-clef</Name>
-			<Folder>part-defaults/other-clef</Folder>
+			<GroupName>part-defaults/other-clef</GroupName>
 			<Color>#66E2FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>71</Id>
 			<Name>key_signature</Name>
-			<Folder>part-defaults/key_signature</Folder>
+			<GroupName>part-defaults/key_signature</GroupName>
 			<Color>#66D2FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>72</Id>
 			<Name>time_signature</Name>
-			<Folder>part-defaults/time_signature</Folder>
+			<GroupName>part-defaults/time_signature</GroupName>
 			<Color>#66C3FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>73</Id>
 			<Name>whole-time_mark</Name>
-			<Folder>part-defaults/whole-time_mark</Folder>
+			<GroupName>part-defaults/whole-time_mark</GroupName>
 			<Color>#66B3FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>74</Id>
 			<Name>alla_breve</Name>
-			<Folder>part-defaults/alla_breve</Folder>
+			<GroupName>part-defaults/alla_breve</GroupName>
 			<Color>#66A4FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>75</Id>
 			<Name>other_time_signature</Name>
-			<Folder>part-defaults/other_time_signature</Folder>
+			<GroupName>part-defaults/other_time_signature</GroupName>
 			<Color>#6694FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>76</Id>
 			<Name>ossia</Name>
-			<Folder>special/ossia</Folder>
+			<GroupName>special/ossia</GroupName>
 			<Color>#FF66EF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>77</Id>
 			<Name>dynamics_text</Name>
-			<Folder>text/dynamics_text</Folder>
+			<GroupName>text/dynamics_text</GroupName>
 			<Color>#CEFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>78</Id>
 			<Name>tempo_text</Name>
-			<Folder>text/tempo_text</Folder>
+			<GroupName>text/tempo_text</GroupName>
 			<Color>#BEFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>79</Id>
 			<Name>instrument_name</Name>
-			<Folder>text/instrument_name</Folder>
+			<GroupName>text/instrument_name</GroupName>
 			<Color>#AEFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>80</Id>
 			<Name>lyrics_text</Name>
-			<Folder>text/lyrics_text</Folder>
+			<GroupName>text/lyrics_text</GroupName>
 			<Color>#9FFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>81</Id>
 			<Name>rehearsal_mark</Name>
-			<Folder>text/rehearsal_mark</Folder>
+			<GroupName>text/rehearsal_mark</GroupName>
 			<Color>#8FFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>82</Id>
 			<Name>other_text</Name>
-			<Folder>text/other_text</Folder>
+			<GroupName>text/other_text</GroupName>
 			<Color>#80FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>83</Id>
 			<Name>letter_a</Name>
-			<Folder>text/letter_a</Folder>
+			<GroupName>text/letter_a</GroupName>
 			<Color>#70FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>84</Id>
 			<Name>letter_b</Name>
-			<Folder>text/letter_b</Folder>
+			<GroupName>text/letter_b</GroupName>
 			<Color>#66FF6B</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>85</Id>
 			<Name>letter_c</Name>
-			<Folder>text/letter_c</Folder>
+			<GroupName>text/letter_c</GroupName>
 			<Color>#66FF7A</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>86</Id>
 			<Name>letter_d</Name>
-			<Folder>text/letter_d</Folder>
+			<GroupName>text/letter_d</GroupName>
 			<Color>#66FF8A</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>87</Id>
 			<Name>letter_e</Name>
-			<Folder>text/letter_e</Folder>
+			<GroupName>text/letter_e</GroupName>
 			<Color>#66FF9A</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>88</Id>
 			<Name>letter_f</Name>
-			<Folder>text/letter_f</Folder>
+			<GroupName>text/letter_f</GroupName>
 			<Color>#66FFA9</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>89</Id>
 			<Name>letter_g</Name>
-			<Folder>text/letter_g</Folder>
+			<GroupName>text/letter_g</GroupName>
 			<Color>#66FFB9</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>90</Id>
 			<Name>letter_h</Name>
-			<Folder>text/letter_h</Folder>
+			<GroupName>text/letter_h</GroupName>
 			<Color>#66FFC8</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>91</Id>
 			<Name>letter_i</Name>
-			<Folder>text/letter_i</Folder>
+			<GroupName>text/letter_i</GroupName>
 			<Color>#66FFD8</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>92</Id>
 			<Name>letter_j</Name>
-			<Folder>text/letter_j</Folder>
+			<GroupName>text/letter_j</GroupName>
 			<Color>#66FFE8</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>93</Id>
 			<Name>letter_k</Name>
-			<Folder>text/letter_k</Folder>
+			<GroupName>text/letter_k</GroupName>
 			<Color>#66FFF7</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>94</Id>
 			<Name>letter_l</Name>
-			<Folder>text/letter_l</Folder>
+			<GroupName>text/letter_l</GroupName>
 			<Color>#66F6FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>95</Id>
 			<Name>letter_m</Name>
-			<Folder>text/letter_m</Folder>
+			<GroupName>text/letter_m</GroupName>
 			<Color>#66E7FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>96</Id>
 			<Name>letter_n</Name>
-			<Folder>text/letter_n</Folder>
+			<GroupName>text/letter_n</GroupName>
 			<Color>#66D7FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>97</Id>
 			<Name>letter_o</Name>
-			<Folder>text/letter_o</Folder>
+			<GroupName>text/letter_o</GroupName>
 			<Color>#66C7FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>98</Id>
 			<Name>letter_p</Name>
-			<Folder>text/letter_p</Folder>
+			<GroupName>text/letter_p</GroupName>
 			<Color>#66B8FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>99</Id>
 			<Name>letter_q</Name>
-			<Folder>text/letter_q</Folder>
+			<GroupName>text/letter_q</GroupName>
 			<Color>#66A8FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>100</Id>
 			<Name>letter_r</Name>
-			<Folder>text/letter_r</Folder>
+			<GroupName>text/letter_r</GroupName>
 			<Color>#6699FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>101</Id>
 			<Name>letter_s</Name>
-			<Folder>text/letter_s</Folder>
+			<GroupName>text/letter_s</GroupName>
 			<Color>#6689FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>102</Id>
 			<Name>letter_t</Name>
-			<Folder>text/letter_t</Folder>
+			<GroupName>text/letter_t</GroupName>
 			<Color>#6679FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>103</Id>
 			<Name>letter_u</Name>
-			<Folder>text/letter_u</Folder>
+			<GroupName>text/letter_u</GroupName>
 			<Color>#666AFF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>104</Id>
 			<Name>letter_v</Name>
-			<Folder>text/letter_v</Folder>
+			<GroupName>text/letter_v</GroupName>
 			<Color>#7166FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>105</Id>
 			<Name>letter_w</Name>
-			<Folder>text/letter_w</Folder>
+			<GroupName>text/letter_w</GroupName>
 			<Color>#8066FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>106</Id>
 			<Name>letter_x</Name>
-			<Folder>text/letter_x</Folder>
+			<GroupName>text/letter_x</GroupName>
 			<Color>#9066FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>107</Id>
 			<Name>letter_y</Name>
-			<Folder>text/letter_y</Folder>
+			<GroupName>text/letter_y</GroupName>
 			<Color>#A066FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>108</Id>
 			<Name>letter_z</Name>
-			<Folder>text/letter_z</Folder>
+			<GroupName>text/letter_z</GroupName>
 			<Color>#AF66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>109</Id>
 			<Name>letter_A</Name>
-			<Folder>text/letter_A</Folder>
+			<GroupName>text/letter_A</GroupName>
 			<Color>#BF66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>110</Id>
 			<Name>letter_B</Name>
-			<Folder>text/letter_B</Folder>
+			<GroupName>text/letter_B</GroupName>
 			<Color>#CE66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>111</Id>
 			<Name>letter_C</Name>
-			<Folder>text/letter_C</Folder>
+			<GroupName>text/letter_C</GroupName>
 			<Color>#DE66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>112</Id>
 			<Name>letter_D</Name>
-			<Folder>text/letter_D</Folder>
+			<GroupName>text/letter_D</GroupName>
 			<Color>#EE66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>113</Id>
 			<Name>letter_E</Name>
-			<Folder>text/letter_E</Folder>
+			<GroupName>text/letter_E</GroupName>
 			<Color>#FD66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>114</Id>
 			<Name>letter_F</Name>
-			<Folder>text/letter_F</Folder>
+			<GroupName>text/letter_F</GroupName>
 			<Color>#FF66F0</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>115</Id>
 			<Name>letter_G</Name>
-			<Folder>text/letter_G</Folder>
+			<GroupName>text/letter_G</GroupName>
 			<Color>#FF66E1</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>116</Id>
 			<Name>letter_H</Name>
-			<Folder>text/letter_H</Folder>
+			<GroupName>text/letter_H</GroupName>
 			<Color>#FF66D1</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>117</Id>
 			<Name>letter_I</Name>
-			<Folder>text/letter_I</Folder>
+			<GroupName>text/letter_I</GroupName>
 			<Color>#FF66C1</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>118</Id>
 			<Name>letter_J</Name>
-			<Folder>text/letter_J</Folder>
+			<GroupName>text/letter_J</GroupName>
 			<Color>#FF66B2</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>119</Id>
 			<Name>letter_K</Name>
-			<Folder>text/letter_K</Folder>
+			<GroupName>text/letter_K</GroupName>
 			<Color>#FF66A2</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>120</Id>
 			<Name>letter_L</Name>
-			<Folder>text/letter_L</Folder>
+			<GroupName>text/letter_L</GroupName>
 			<Color>#FF6692</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>121</Id>
 			<Name>letter_M</Name>
-			<Folder>text/letter_M</Folder>
+			<GroupName>text/letter_M</GroupName>
 			<Color>#FF6683</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>122</Id>
 			<Name>letter_N</Name>
-			<Folder>text/letter_N</Folder>
+			<GroupName>text/letter_N</GroupName>
 			<Color>#FF6673</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>123</Id>
 			<Name>letter_O</Name>
-			<Folder>text/letter_O</Folder>
+			<GroupName>text/letter_O</GroupName>
 			<Color>#FF6766</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>124</Id>
 			<Name>letter_P</Name>
-			<Folder>text/letter_P</Folder>
+			<GroupName>text/letter_P</GroupName>
 			<Color>#FF7766</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>125</Id>
 			<Name>letter_Q</Name>
-			<Folder>text/letter_Q</Folder>
+			<GroupName>text/letter_Q</GroupName>
 			<Color>#FF8766</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>126</Id>
 			<Name>letter_R</Name>
-			<Folder>text/letter_R</Folder>
+			<GroupName>text/letter_R</GroupName>
 			<Color>#FF9666</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>127</Id>
 			<Name>letter_S</Name>
-			<Folder>text/letter_S</Folder>
+			<GroupName>text/letter_S</GroupName>
 			<Color>#FFA666</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>128</Id>
 			<Name>letter_T</Name>
-			<Folder>text/letter_T</Folder>
+			<GroupName>text/letter_T</GroupName>
 			<Color>#FFB566</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>129</Id>
 			<Name>letter_U</Name>
-			<Folder>text/letter_U</Folder>
+			<GroupName>text/letter_U</GroupName>
 			<Color>#FFC566</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>130</Id>
 			<Name>letter_V</Name>
-			<Folder>text/letter_V</Folder>
+			<GroupName>text/letter_V</GroupName>
 			<Color>#FFD566</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>131</Id>
 			<Name>letter_W</Name>
-			<Folder>text/letter_W</Folder>
+			<GroupName>text/letter_W</GroupName>
 			<Color>#FFE466</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>132</Id>
 			<Name>letter_X</Name>
-			<Folder>text/letter_X</Folder>
+			<GroupName>text/letter_X</GroupName>
 			<Color>#FFF466</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>133</Id>
 			<Name>letter_Y</Name>
-			<Folder>text/letter_Y</Folder>
+			<GroupName>text/letter_Y</GroupName>
 			<Color>#FAFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>134</Id>
 			<Name>letter_Z</Name>
-			<Folder>text/letter_Z</Folder>
+			<GroupName>text/letter_Z</GroupName>
 			<Color>#EAFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>135</Id>
 			<Name>numeral_0</Name>
-			<Folder>numeral/numeral_0</Folder>
+			<GroupName>numeral/numeral_0</GroupName>
 			<Color>#66ACFF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>136</Id>
 			<Name>numeral_1</Name>
-			<Folder>numeral/numeral_1</Folder>
+			<GroupName>numeral/numeral_1</GroupName>
 			<Color>#669CFF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>137</Id>
 			<Name>numeral_2</Name>
-			<Folder>numeral/numeral_2</Folder>
+			<GroupName>numeral/numeral_2</GroupName>
 			<Color>#668DFF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>138</Id>
 			<Name>numeral_3</Name>
-			<Folder>numeral/numeral_3</Folder>
+			<GroupName>numeral/numeral_3</GroupName>
 			<Color>#667DFF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>139</Id>
 			<Name>numeral_4</Name>
-			<Folder>numeral/numeral_4</Folder>
+			<GroupName>numeral/numeral_4</GroupName>
 			<Color>#666DFF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>140</Id>
 			<Name>numeral_5</Name>
-			<Folder>numeral/numeral_5</Folder>
+			<GroupName>numeral/numeral_5</GroupName>
 			<Color>#6D66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>141</Id>
 			<Name>numeral_6</Name>
-			<Folder>numeral/numeral_6</Folder>
+			<GroupName>numeral/numeral_6</GroupName>
 			<Color>#7D66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>142</Id>
 			<Name>numeral_7</Name>
-			<Folder>numeral/numeral_7</Folder>
+			<GroupName>numeral/numeral_7</GroupName>
 			<Color>#8C66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>143</Id>
 			<Name>numeral_8</Name>
-			<Folder>numeral/numeral_8</Folder>
+			<GroupName>numeral/numeral_8</GroupName>
 			<Color>#9C66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>144</Id>
 			<Name>numeral_9</Name>
-			<Folder>numeral/numeral_9</Folder>
+			<GroupName>numeral/numeral_9</GroupName>
 			<Color>#AC66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>145</Id>
 			<Name>bar_number</Name>
-			<Folder>numeral/bar_number</Folder>
+			<GroupName>numeral/bar_number</GroupName>
 			<Color>#BB66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>146</Id>
 			<Name>other_numeric_sign</Name>
-			<Folder>numeral/other_numeric_sign</Folder>
+			<GroupName>numeral/other_numeric_sign</GroupName>
 			<Color>#CB66FF</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>147</Id>
 			<Name>instrument_specific</Name>
-			<Folder>misc/instrument_specific</Folder>
+			<GroupName>misc/instrument_specific</GroupName>
 			<Color>#FF668A</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>148</Id>
 			<Name>unclassified</Name>
-			<Folder>misc/unclassified</Folder>
+			<GroupName>misc/unclassified</GroupName>
 			<Color>#FF667B</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>149</Id>
 			<Name>horizontal_spanner</Name>
-			<Folder>notation/horizontal_spanner</Folder>
+			<GroupName>notation/horizontal_spanner</GroupName>
 			<Color>#69FF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>150</Id>
 			<Name>dotted_horizontal_spanner</Name>
-			<Folder>notation/dotted_horizontal_spanner</Folder>
+			<GroupName>notation/dotted_horizontal_spanner</GroupName>
 			<Color>#66FF72</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>151</Id>
 			<Name>system_separator</Name>
-			<Folder>layout/system_separator</Folder>
+			<GroupName>layout/system_separator</GroupName>
 			<Color>#FF6689</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>152</Id>
 			<Name>dotted_barline</Name>
-			<Folder>layout/dotted_barline</Folder>
+			<GroupName>layout/dotted_barline</GroupName>
 			<Color>#FF667A</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>153</Id>
 			<Name>figured_bass_text</Name>
-			<Folder>text/figured_bass_text</Folder>
+			<GroupName>text/figured_bass_text</GroupName>
 			<Color>#DAFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>154</Id>
 			<Name>continuation/connection_dash</Name>
-			<Folder>text/continuation/connection_dash</Folder>
+			<GroupName>text/continuation/connection_dash</GroupName>
 			<Color>#CBFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>155</Id>
 			<Name>transposition_text</Name>
-			<Folder>text/transposition_text</Folder>
+			<GroupName>text/transposition_text</GroupName>
 			<Color>#BBFF66</Color>
-			</MLClass>
-		<MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
 			<Id>156</Id>
 			<Name>letter_other</Name>
-			<Folder>text/letter_other</Folder>
+			<GroupName>text/letter_other</GroupName>
 			<Color>#ACFF66</Color>
-			</MLClass>
+			</CropObjectClass>
+		<CropObjectClass>
+			<Id>157</Id>
+			<Name>breath_mark</Name>
+			<GroupName>notations/breath_mark</GroupName>
+			<Color>#66FFE0</Color>
+			</CropObjectClass>
 
-	</MLClasses>
-</MLClassList>
+	</CropObjectClasses>
+</CropObjectClassList>

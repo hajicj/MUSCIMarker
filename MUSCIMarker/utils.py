@@ -19,8 +19,10 @@ from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 from kivy.uix.textinput import TextInput
 
-import muscimarker_io as mmio
+from muscima.cropobject import CropObject
 # import mhr.muscima as mm
+
+from kivy.input.recorder import Recorder
 
 
 __version__ = "0.0.1"
@@ -63,7 +65,7 @@ class KeypressBubblingStopperBehavior(object):
                      ''.format((key, scancode, codepoint, modifier)))
         return True
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         logging.info('KeypressBubblingStopper: stopping key_up {0}'
                      ''.format((key, scancode)))
         return True
@@ -72,7 +74,11 @@ class KeypressBubblingStopperBehavior(object):
 
 def keypress_to_dispatch_key(key, scancode, codepoint, modifiers):
     """Converts the key_down event data into a single string for more convenient
-    keyboard shortcut dispatch."""
+    keyboard shortcut dispatch.
+
+    :returns: The dispatch key in format ``109+alt,shift`` -- key number, ``+``,
+        and the modifiers joined by commas.
+    """
     if modifiers:
         return '{0}+{1}'.format(key, ','.join(sorted(modifiers)))
     else:
@@ -101,7 +107,7 @@ class FileLoadDialog(FloatLayout):
     # def on_key_down(self, window, key, scancode, codepoint, modifier):
     #     return True
     #
-    # def on_key_up(self, window, key, scancode):
+    # def on_key_up(self, window, key, scancode, *args, **kwargs):
     #     return True
 
 
@@ -172,7 +178,7 @@ class FileSaveDialog(FloatLayout):
     #                  ''.format(key, scancode, modifier))
     #     return True
     #
-    # def on_key_up(self, window, key, scancode):
+    # def on_key_up(self, window, key, scancode, *args, **kwargs):
     #     logging.info('FileSaveDialog: Captured up-key {0}/{1}'.format(key, scancode))
     #     return True
 
@@ -329,7 +335,7 @@ def bbox_to_integer_bounds(ftop, fleft, fbottom, fright, to_integer=True):
 
     :returns: top, left, bottom, right (4-tuple).
     """
-    t, l, b, r = mmio.CropObject.bbox_to_integer_bounds(ftop, fleft, fbottom, fright)
+    t, l, b, r = CropObject.bbox_to_integer_bounds(ftop, fleft, fbottom, fright)
     if not to_integer:
         t, l, b, r = float(t), float(l), float(b), float(r)
 
@@ -355,7 +361,6 @@ def bbox_intersection(origin, intersect):
     >>> non_overlapping_bbox = 0, 0, 3, 3
     >>> bbox_intersection(bounding_box, non_overlapping_bbox) is None
     True
-
 
     """
     o_t, o_l, o_b, o_r = origin
@@ -484,6 +489,11 @@ def image_mask_overlaps_model_edge(mask, edge_start, edge_end, margin=2):
     logging.warn('Middle: {0}:{1}, {2}:{3}'.format(t_mid, b_mid, l_mid, r_mid))
     return s > 0
 
+
+##############################################################################
+
+def filename2docname(filename):
+    return os.path.splitext(os.path.basename(filename))[0]
 
 ##############################################################################
 

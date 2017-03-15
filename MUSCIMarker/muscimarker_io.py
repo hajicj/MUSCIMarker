@@ -1,13 +1,21 @@
 """This module implements tools for loading the MUSCIMA++ dataset
 symbolic layer: CropObject and MLClass lists.
 
+.. warning::
+
+    This file is being deprecated, and superseded by the ``muscima``
+    module for manipulating the dataset files.
+
 Only the function `position_cropobject_list_by_muscimage()`
 requires a `MUSCImage` instance as an argument.
 """
-from __future__ import print_function, unicode_literals
+from __future__ import print_function, unicode_literals, division
+
+import copy
 import logging
 import os
 
+import itertools
 import numpy
 from lxml import etree
 
@@ -104,7 +112,6 @@ class CropObject(object):
 
     * `objid`: the unique number of the given annotation instance in the set
       of annotations encoded in the containing `CropObjectList`.
-    * `clsid`: the identifier of the label that was given to the annotation.
     * `clsname`: the name of the label that was given to the annotation
       (this is the human-readable string such as ``notehead-full``).
     * `x`: the vertical dimension (row) of the upper left corner pixel.
@@ -162,10 +169,9 @@ class CropObject(object):
 
         <CropObject>
           <Id>25</Id>
-          <MLClassId>7</MLClassId>
-          <MLClassName>PRIM__beam</MLClassName>
-          <X>413</X>
-          <Y>119</Y>
+          <MLClassName>grace-notehead-full</MLClassName>
+          <Top>119</Top>
+          <Left>413</Left>
           <Width>16</Width>
           <Height>6</Height>
           <Selected>false</Selected>
@@ -177,23 +183,57 @@ class CropObject(object):
     The CropObjects are themselves kept as a list::
 
         <CropObjectList>
-          <Classes>
-            <URL> ... </URL>
-            <md5> ... <md5>
-          </Classes>
           <CropObjects>
             <CropObject> ... </CropObject>
             <CropObject> ... </CropObject>
           </CropObjects>
         </CropObjectList>
 
-    The ``<Classes>`` element keeps a reference to the list of classes
-    that were used to label the CropObjects. The CropObjects themselves
-    are inside the ``<CropObjects>`` element.
+    Individual elements of a ``<CropObject>``:
 
-    The ``<Classes>`` element *might not be present*. In that case,
-    it is necessary to match the list of classes document to the
-    CropObjects manually. However, since the class names are present
+    * ``<Id>`` is a unique identifier of the CropObject inside a given
+      ``<CropObjectList>`` (which generally corresponds to one XML file
+      of CropObjects).
+    * ``<MLClassName>`` is the name of the object's class (such as
+      ``notehead-full``, ``beam``, ``numeral_3``, etc.).
+    * ``<Top>`` is the vertical coordinate of the upper left corner of the object's
+      bounding box. (Supersedes ``<Y>`` in older CropObjectList files.)
+    * ``<Left>`` is the horizontal coordinate of the upper left corner of
+      the object's bounding box. (Supersedes ``<X>`` in older CropObjectList files.)
+
+    Legacy issues with X, Y, and positions
+    ------------------------------------
+
+    Formerly, instead of ``<Top>`` and ``<Left>``, there was a different way
+    of marking CropObject position:
+
+    * ``<X>`` was the HORIZONTAL coordinate of the object's upper left corner.
+    * ``<Y>`` was the VERTICAL coordinate of the object's upper left corner.
+
+    Due to legacy issues, the ``<X>`` in the XML file recorded the horizontal
+    position (column) and ``<Y>`` recorded the vertical position (row). However,
+    a ``CropObject`` instance uses these attributes in the more natural sense:
+    ``cropobject.x`` is the **top** coordinate, ``cropobject.y`` is the **bottom**
+    coordinate.
+
+    This was unfortunate, and mostly caused by ambiguity of what X and Y mean.
+    So, the definition of the XML changed: instead of storing nondescript letters,
+    we will use tags ``<Top>`` and ``<Left>``. Note that we also swapped the order:
+    where previously the ordering was ``<X>`` (left) first and ``<Y>`` (top)
+    second, we make ``<Top>`` first and ``<Left>`` second. This corresponds
+    to how 2-D numpy arrays are indexed: row first, column second.
+
+    You may still run into CropObjectList files that use ``<X>`` and ``<Y>``.
+    The function for reading CropObjectList files, ``parse_cropobject_list()``,
+    can deal with it and correctly assign the coordinates, but the CropObjects
+    will be exported with ``<Top>`` and ``<Left>``. (This may break some
+    there-and-back reencoding tests.)
+
+
+    Disambiguating class names
+    --------------------------
+
+    Since the class names are present
     through the ``clsname`` attribute (``<MLClassName>`` element),
     matching the list is no longer necessary for general understanding
     of the file. The MLClassList file serves as a disambiguation tool:
@@ -217,9 +257,9 @@ class CropObject(object):
 
     * Compute the new object's bounding box: ``croobjects_merge_bbox()``
     * Compute the new object's mask: ``cropobjects_merge_mask()``
-    * Determine the clsid and objid of the new object.
+    * Determine the clsname and objid of the new object.
 
-    Since objid and clsid of merges may depend on external settings
+    Since objid and clsname of merges may depend on external settings
     and generally cannot be reliably determined from the merged
     objects themselves (e.g. the merge of a notehead and a stem
     should be a new note symbol), you need to supply them externally.
@@ -233,27 +273,29 @@ class CropObject(object):
     Implementation notes on the mask
     --------------------------------
 
-    **DEPRECATED**
+    The mask is a numpy array that will be saved using run-length encoding.
+    The numpy array is first flattened, then runs of successive 0's and 1's
+    are encoded as e.g. ``0:10 `` for a run of 10 zeros.
 
-    The mask is a numpy array that will be saved as a `base64` string directly.
-    This is not ideal for compatibility, as loading is only possible with
-    python/numpy. Ideally, we would base64-encode the pattern of 1/0: the width
-    and height of the CropObject at the same time give you the dimension
-    of the mask, so we don't need to save the mask shape extra.
+    How much space does this take?
 
+    Objects tend to be relatively convex, so after flattening, we can expect
+    more or less two runs per row (flattening is done in ``C`` order). Because
+    each run takes (approximately) 5 characters, each mask takes roughly ``5 * n_rows``
+    bytes to encode. This makes it efficient for objects wider than 5 pixels, with
+    a compression ratio approximately ``n_cols / 5``.
     (Also, the numpy array needs to be made C-contiguous for that, which
     explains the `order='C'` hack in `set_mask()`.)
     """
-    def __init__(self, objid, clsid, clsname, x, y, width, height,
+    def __init__(self, objid, clsname, top, left, width, height,
                  outlinks=[], inlinks=[],
                  mask=None):
-        logging.info('Initializing CropObject with objid {0}, x={1}, '
-                     'y={2}, h={3}, w={4}'.format(objid, x, y, height, width))
+        logging.debug('Initializing CropObject with objid {0}, x={1}, '
+                     'y={2}, h={3}, w={4}'.format(objid, top, left, height, width))
         self.objid = objid
-        self.clsid = clsid
         self.clsname = clsname
-        self.x = x
-        self.y = y
+        self.x = top
+        self.y = left
         self.width = width
         self.height = height
 
@@ -268,7 +310,7 @@ class CropObject(object):
         self.outlinks = outlinks
 
         self.is_selected = False
-        logging.info('...done!')
+        logging.debug('...done!')
 
     def set_mask(self, mask):
         if mask is None:
@@ -316,8 +358,8 @@ class CropObject(object):
 
         The integers just get rounded down.
         """
-        vmid = self.top + (self.bottom - self.top) / 2
-        hmid = self.left + (self.right - self.left) / 2
+        vmid = self.top + (self.bottom - self.top) // 2
+        hmid = self.left + (self.right - self.left) // 2
         return int(vmid), int(hmid)
 
     @property
@@ -339,7 +381,7 @@ class CropObject(object):
         Returns the rounded-off integers (top, left, bottom, right)
         as `int`s.
         """
-        logging.info('bbox_to_integer_bounds: inputs {0}'.format((ftop, fleft, fbottom, fright)))
+        logging.debug('bbox_to_integer_bounds: inputs {0}'.format((ftop, fleft, fbottom, fright)))
 
         top = ftop - (ftop % 1.0)
         left = fleft - (fleft % 1.0)
@@ -351,13 +393,13 @@ class CropObject(object):
             right += 1.0
 
         if top != ftop:
-            logging.info('bbox_to_integer_bounds: rounded top by {0}'.format(top - ftop))
+            logging.debug('bbox_to_integer_bounds: rounded top by {0}'.format(top - ftop))
         if left != fleft:
-            logging.info('bbox_to_integer_bounds: rounded left by {0}'.format(left - fleft))
+            logging.debug('bbox_to_integer_bounds: rounded left by {0}'.format(left - fleft))
         if bottom != fbottom:
-            logging.info('bbox_to_integer_bounds: rounded bottom by {0}'.format(bottom - fbottom))
+            logging.debug('bbox_to_integer_bounds: rounded bottom by {0}'.format(bottom - fbottom))
         if right != fright:
-            logging.info('bbox_to_integer_bounds: rounded right by {0}'.format(right - fright))
+            logging.debug('bbox_to_integer_bounds: rounded right by {0}'.format(right - fright))
 
         return int(top), int(left), int(bottom), int(right)
 
@@ -398,14 +440,14 @@ class CropObject(object):
         :param img: A three-channel image (3-D numpy array,
             with the last dimension being 3)."""
         color = numpy.array(rgb)
-        logging.info('Rendering object {0}, clsid {1}, t/b/l/r: {2}'
-                      ''.format(self.objid, self.clsid,
+        logging.debug('Rendering object {0}, clsname {1}, t/b/l/r: {2}'
+                      ''.format(self.objid, self.clsname,
                                 (self.top, self.bottom, self.left, self.right)))
-        # logging.info('Shape: {0}'.format((self.height, self.width, 3)))
+        # logging.debug('Shape: {0}'.format((self.height, self.width, 3)))
         mask = numpy.ones((self.height, self.width, 3)) * color
         crop = img[self.top:self.bottom, self.left:self.right]
-        # logging.info('Mask done, creating crop')
-        logging.info('Shape: {0}. Got crop. Crop shape: {1}, img shape: {2}'
+        # logging.debug('Mask done, creating crop')
+        logging.debug('Shape: {0}. Got crop. Crop shape: {1}, img shape: {2}'
                       ''.format((self.height, self.width, 3), crop.shape, img.shape))
         mix = (crop + alpha * mask) / (1 + alpha)
 
@@ -517,7 +559,7 @@ class CropObject(object):
                 trim_right = l
                 break
 
-        logging.info('Cropobject.crop: Trimming top={0}, left={1},'
+        logging.debug('Cropobject.crop: Trimming top={0}, left={1},'
                      'bottom={2}, right={3}'
                      ''.format(trim_top, trim_left, trim_bottom, trim_right))
 
@@ -530,7 +572,7 @@ class CropObject(object):
 
         new_mask = self.mask[rel_t:rel_b, rel_l:rel_r] * 1
 
-        logging.info('Cropobject.crop: Old mask shape {0}, new mask shape {1}'
+        logging.debug('Cropobject.crop: Old mask shape {0}, new mask shape {1}'
                      ''.format(self.mask.shape, new_mask.shape))
 
         # new bounding box, relative to image -- used to compute the CropObject's
@@ -551,13 +593,11 @@ class CropObject(object):
         lines = []
         lines.append('<CropObject>')
         lines.append('\t<Id>{0}</Id>'.format(self.objid))
-        lines.append('\t<MLClassId>{0}</MLClassId>'.format(self.clsid))
         lines.append('\t<MLClassName>{0}</MLClassName>'.format(self.clsname))
-        lines.append('\t<X>{0}</X>'.format(self.y))
-        lines.append('\t<Y>{0}</Y>'.format(self.x))
+        lines.append('\t<Top>{0}</Top>'.format(self.top))
+        lines.append('\t<Left>{0}</Left>'.format(self.left))
         lines.append('\t<Width>{0}</Width>'.format(self.width))
         lines.append('\t<Height>{0}</Height>'.format(self.height))
-        lines.append('\t<Selected>false</Selected>')
 
         mask_string = self.encode_mask(self.mask)
         lines.append('\t<Mask>{0}</Mask>'.format(mask_string))
@@ -749,7 +789,35 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
                           fill_mlclass_names=False,
                           mlclass_dict={}):
     """From a xml file with a CropObjectList as the top element, parse
-    a list of CropObjects.
+    a list of CropObjects. (See ``CropObject`` class documentation
+    for a description of the XMl format.)
+
+    Let's test whether the parsing function works:
+
+    >>> test_data_dir = os.path.join(os.path.dirname(__file__),
+    ...                              'test_data', 'cropobjects_xy_vs_topleft')
+    >>> clfile = os.path.join(test_data_dir, '01_basic_topleft.xml')
+    >>> cropobjects = parse_cropobject_list(clfile)
+    >>> len(cropobjects)
+    48
+
+    This parsing function can deal with the old-style CropObject XML
+    that uses ``<Y>`` and ``<X>`` to index the top left corner:
+
+    >>> clfile_xy = os.path.join(test_data_dir, '01_basic_xy.xml')
+    >>> cropobjects_xy = parse_cropobject_list(clfile_xy)
+    >>> len(cropobjects_xy)
+    48
+    >>> len(cropobjects) == len(cropobjects_xy)
+    True
+
+    However, the CropObjects export themselves back only with ``<Top>``
+    and ``<Left>``.
+
+    >>> export_xy = export_cropobject_list(cropobjects_xy)
+    >>> raw_data_topleft = '\\n'.join([l.rstrip() for l in open(clfile)])
+    >>> raw_data_topleft == export_xy
+    True
 
     Note that what is Y in the data gets translated to cropobj.x (vertical),
     what is X gets translated to cropobj.y (horizontal).
@@ -770,44 +838,68 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         that do include this, so that old files aren't lost.
 
     :param mlclass_dict: If ``fill_mlclass_names`` is requested, you have to
-        also supply the dict of MLClasses that have names for the ``clsid``s
-        in the parsed CropObjectList. Keys are ``clsid``s, values are the
+        also supply the dict of MLClasses that have names for the ``clsname``s
+        in the parsed CropObjectList. Keys are ``clsname``s, values are the
         MLClass objects.
+
+    :returns: A list of ``CropObject``s.
     """
-    logging.info('Parsing CropObjectList, with_refs={0}, tolerate={1}.'
+    logging.debug('Parsing CropObjectList, with_refs={0}, tolerate={1}.'
                  ''.format(with_refs, tolerate_ref_absence))
     tree = etree.parse(filename)
     root = tree.getroot()
-    logging.info('XML parsed.')
+    logging.debug('XML parsed.')
     cropobject_list = []
 
+    # Parsing one CropObject
     for i, cropobject in enumerate(root.iter('CropObject')):
-        logging.info('Parsing CropObject {0}'.format(i))
+        logging.debug('Parsing CropObject {0}'.format(i))
 
         objid = int(float(cropobject.findall('Id')[0].text))
-
-        # Class ID
-        clsid = int(float(cropobject.findall('MLClassId')[0].text))
 
         # Dealing with clsname transition
         clsname=None
         _has_clsname = False
         if len(cropobject.findall('MLClassName')) > 0:
             clsname = cropobject.findall('MLClassName')[0].text
-        elif fill_mlclass_names:
-            if clsid in mlclass_dict:
-                clsname = mlclass_dict[clsid].name
-            else:
-                raise ValueError('Requested MLClass names filled in from'
-                                 ' MLClassList, but the list does not contain'
-                                 ' id {0}'.format(clsid))
+        else:
+            raise ValueError('CropObject {0}: no clsname provided.'.format(objid))
 
-        # NOTE THE SWAP OF COORDINATES
-        x = float(cropobject.findall('Y')[0].text)
-        y = float(cropobject.findall('X')[0].text)
+        #################################
+        # Top left corner position
+
+        # Helper functions for TopLeft/XY transition
+        def _uses_xy(cropobject):
+            xs = cropobject.findall('Y')
+            ys = cropobject.findall('X')
+            return (len(xs) > 0) and (len(ys) > 0)
+        def _uses_topleft(cropobject):
+            xs = cropobject.findall('Top')
+            ys = cropobject.findall('Left')
+            return (len(xs) > 0) and (len(ys) > 0)
+
+        if _uses_xy(cropobject):
+            ###########################################
+            # DANGER! DANGER! DANGER! DANGER! DANGER! #
+            #                                         #
+            #      NOTE THE SWAP OF COORDINATES!      #
+            #                                         #
+            ###########################################
+            top = float(cropobject.findall('Y')[0].text)
+            left = float(cropobject.findall('X')[0].text)
+        elif _uses_topleft(cropobject):
+            top = float(cropobject.findall('Top')[0].text)
+            left = float(cropobject.findall('Left')[0].text)
+        else:
+            raise KeyError('Cropobject {0} has neither Top/Left, nor Y/Y'
+                           ' position information!'.format(objid))
+
+        #################################
+        # Shape
         width = float(cropobject.findall('Width')[0].text)
         height = float(cropobject.findall('Height')[0].text)
 
+        #################################
         # Parsing the graph structure (Can deal with missing Inlinks/Outlinks)
         inlinks = []
         i_s = cropobject.findall('Inlinks')
@@ -823,33 +915,43 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
             if o_s_text is not None:
                 outlinks = map(int, o_s_text.split(' '))
 
+        #################################
+        # Create the object.
         obj = CropObject(objid=objid,
-                         clsid=clsid,
                          clsname=clsname,
-                         x=x,
-                         y=y,
+                         top=top,
+                         left=left,
                          width=width,
                          height=height,
                          inlinks=inlinks,
                          outlinks=outlinks)
 
+        #################################
+        # Add mask.
         mask = None
         m = cropobject.findall('Mask')
         if len(m) > 0:
             mask = obj.decode_mask(cropobject.findall('Mask')[0].text,
                                    shape=(obj.height, obj.width))
         obj.set_mask(mask)
-        logging.info('Created CropObject with ID {0}'.format(obj.objid))
+        logging.debug('Created CropObject with ID {0}'.format(obj.objid))
+
+        #################################
+        # Enforce integer bounds.
+        # (This is somewhat redundant now, because of masks:
+        #  the CropObject already calls to_integer_bounds() when
+        #  it is created.)
         if integer_bounds is True:
             obj.to_integer_bounds()
+
         cropobject_list.append(obj)
 
-    logging.info('CropObjectList loaded.')
+    logging.debug('CropObjectList loaded.')
 
     validate_cropobjects_graph_structure(cropobject_list)
 
     if with_refs:
-        logging.info('Parsing CropObjectList refs.')
+        logging.debug('Parsing CropObjectList refs.')
         # This is pretty bad at this point. We should change it to a regular tag...
         with open(filename) as hdl:
             lines = [l.strip() for l in hdl]
@@ -894,7 +996,32 @@ def validate_cropobjects_graph_structure(cropobjects):
                                  ' object {1}'.format(c, o))
 
 
-def export_cropobject_list(cropobjects, mlclasslist_file=None, image_file=None, ref_root=None):
+def export_cropobject_graph(cropobjects, validate=True):
+    """Collects the inlink/outlink CropObject graph
+    and returns it as a list of ``(from, to)`` edges.
+
+    :param cropobjects: A list of CropObject objects.
+
+    :param validate: If set, will raise a ValueError
+        if the graph defined by the CropObjects is
+        invalid.
+
+    :returns: A list of ``(from, to)`` objid pairs
+        that represent edges in the CropObject graph.
+    """
+    if validate:
+        validate_cropobjects_graph_structure(cropobjects)
+
+    edges = []
+    for c in cropobjects:
+        for o in c.outlinks:
+            edges.append((c.objid, o))
+    return edges
+
+
+def export_cropobject_list(cropobjects,
+                           mlclasslist_file=None, image_file=None, ref_root=None):
+    """Writes the CropObject data as a XML string."""
     # This is the data string, the rest is formalities
     cropobj_string = '\n'.join([str(c) for c in cropobjects])
 
@@ -946,8 +1073,8 @@ def position_cropobject_list_by_muscimage(cropobject_list, muscimage):
             new_x = c.x - muscimage.bounding_box[0]
             new_y = c.y - muscimage.bounding_box[1]
             c_out = CropObject(objid=c.objid,
-                               clsid=c.clsid, clsname=c.clsname,
-                               x=new_x, y=new_y,
+                               clsname=c.clsname,
+                               top=new_x, left=new_y,
                                width=c.width, height=c.height)
             output.append(c_out)
     return output
@@ -996,7 +1123,7 @@ def render_annotations(img, cropoboject_list, mlclass_list=None, alpha=1.0,
 
     mlclass_dict = None
     if mlclass_list is not None:
-        mlclass_dict = {m.clsid: m for m in mlclass_list}
+        mlclass_dict = {m.clsname: m for m in mlclass_list}
 
     if grayscale:
         reimg = numpy.zeros((img.shape[0], img.shape[1], 3), dtype=img.dtype)
@@ -1013,7 +1140,7 @@ def render_annotations(img, cropoboject_list, mlclass_list=None, alpha=1.0,
                       ' {0}, {1}, {2}, {3}'.format(obj.x, obj.y, obj.height,
                                                    obj.width))
         if mlclass_dict is not None:
-            rgb = mlclass_dict[obj.clsid].color
+            rgb = mlclass_dict[obj.clsname].color
         else:
             rgb = (0.8, 0.8, 0.8)
 
@@ -1083,13 +1210,65 @@ def cropobjects_merge_mask(cropobjects):
     h = b - t
     w = r - l
     output_mask = numpy.zeros((h, w), dtype=cropobjects[0].mask.dtype)
-    logging.warn('Output mask shape: {0}'.format(output_mask.shape))
+    #logging.warn('Output mask shape: {0}'.format(output_mask.shape))
     for c in cropobjects:
-        logging.debug('C. shape: {0}'.format(c.bounding_box))
-        logging.debug('TLBR: {0}'.format((t, l, b, r)))
+        #logging.debug('C. shape: {0}'.format(c.bounding_box))
+        #logging.debug('TLBR: {0}'.format((t, l, b, r)))
         ct, cl, cb, cr = c.top - t, c.left - l, h - (b - c.bottom), w - (r - c.right)
-        logging.debug('Mask shape: {0}, curr. shape: {1}'.format(c.mask.shape, (cb - ct, cr - cl)))
+        #logging.debug('Mask shape: {0}, curr. shape: {1}'.format(c.mask.shape, (cb - ct, cr - cl)))
         output_mask[ct:cb, cl:cr] += c.mask
 
     output_mask[output_mask > 0] = 1
     return output_mask
+
+
+def cropobjects_merge_links(cropobjects):
+    """Collect all inlinks and outlinks of the given set of CropObjects
+    to CropObjects outside of this set. The rationale for this is that
+    these given ``cropobjects`` will be merged into one, so relationships
+    within the set would become loops and disappear.
+
+    (Note that this is not sufficient to update the relationships upon
+    a merge, because the affected CropObjects *outside* the given set
+    will need to have their inlinks/outlinks redirected to the new object.)
+
+    :returns: A tuple of lists: ``(inlinks, outlinks)``
+    """
+    _internal_objids = frozenset([c.objid for c in cropobjects])
+    outlinks = []
+    inlinks = []
+    for c in cropobjects:
+        # No duplicates
+        outlinks.extend([o for o in c.outlinks
+                         if (o not in _internal_objids) and (o not in outlinks)])
+        inlinks.extend([i for i in c.inlinks
+                        if (i not in _internal_objids) and (i not in inlinks)])
+    return inlinks, outlinks
+
+
+def merge_cropobject_lists(*cropobject_lists):
+    """Combines the CropObject lists into one.
+
+    This just means shifting the `objid`s (and thus inlinks
+    and outlinks). It is assumed the lists pertain to the same
+    image. Uses deepcopy to avoid exposing the original lists
+    to modification through the merged list.
+
+    """
+    lengths = [len(c) for c in cropobject_lists]
+    shift_by = [0] + [sum(lengths[:i]) for i in xrange(1, len(lengths))]
+
+    new_lists = []
+    for clist, s in itertools.izip(cropobject_lists, shift_by):
+        new_list = []
+        for c in clist:
+            new_c = copy.deepcopy(c)
+            new_c.objid = c.objid + s
+            new_c.inlinks = [i + s for i in c.inlinks]
+            new_c.outlinks = [o + s for o in c.outlinks]
+            new_list.append(new_c)
+        new_lists.append(new_list)
+
+    output = list(itertools.chain(*new_lists))
+
+    return output

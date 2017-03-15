@@ -52,6 +52,7 @@ re-downloads and installs Anaconda2.
 
 Make sure you remember whether you are using the "plain" Anaconda2, or
 whether you are using Anaconda3 with a Python 2 environment.
+Change to the right environment now.
 
 Install Kivy
 ------------
@@ -73,6 +74,18 @@ If you're not in the command line already, open it and send the command::
   conda install git
 
 This one takes some 3-5 minutes.
+
+Install the muscima package
+---------------------------
+
+MUSCIMarker uses this package for dealing with the annotation files.
+Get it like this::
+
+  git clone https://github.com/hajicj/muscima
+  cd muscima
+  python setup.py develop
+
+That's all the prerequisites, and now you can install MUSCIMarker itself.
 
 Install MUSCIMarker
 -------------------

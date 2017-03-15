@@ -6,11 +6,12 @@ import logging
 
 # import cv2
 # import matplotlib.pyplot as plt
+import itertools
 from kivy.app import App
 from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty
 from kivy.uix.widget import Widget
 
-import muscimarker_io
+from muscima.io import export_cropobject_list
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from utils import compute_connected_components
 from tracker import Tracker
@@ -212,6 +213,23 @@ class ObjectGraph(Widget):
         self._inlinks = dict()
         self._outlinks = dict()
 
+    def get_neighborhood(self, objid, inclusive=True):
+        """Returns a list of ``objid``s of the undirected neighbors
+        of the given object. Useful e.g. for only removing
+
+        :param objid: Object ID of the "center" of the neighborhood
+
+        :param inclusive: Should the output include the "center" object?
+        """
+        neighbors = []
+        if inclusive:
+            neighbors.append(objid)
+        if objid in self._inlinks:
+            neighbors.extend(self._inlinks[objid])
+        if objid in self._outlinks:
+            neighbors.extend(self._outlinks[objid])
+        return list(set(neighbors))     # Removing duplicates
+
 
 ##############################################################################
 
@@ -271,8 +289,7 @@ class CropObjectAnnotatorModel(Widget):
 
     @Tracker(track_names=['cropobject'],
              transformations={'cropobject': [lambda c: ('objid', c.objid),
-                                             lambda c: ('clsid', c.clsid),
-                                             lambda c: ('mlclass_name', c.clsname),
+                                             lambda c: ('clsname', c.clsname),
                                              lambda c: ('tool_used', App.get_running_app().currently_selected_tool_name)]
                               },
              fn_name='model.add_cropobject',
@@ -292,9 +309,15 @@ class CropObjectAnnotatorModel(Widget):
             edges.append((i, cropobject.objid))
         for o in cropobject.outlinks:
             edges.append((cropobject.objid, o))
+        #logging.info('Model: Adding cropobject {0}: Will add edges: {1}'
+        #             ''.format(cropobject.objid, edges))
         self.graph.add_edges(edges)
 
         self.cropobjects[cropobject.objid] = cropobject
+
+        # Sync graph: the object might add inlinks/outlinks
+        # to other objects.
+        self.sync_graph_to_cropobjects()
 
     def _is_cropobject_valid(self, cropobject):
         t, l, b, r = cropobject.bounding_box
@@ -310,7 +333,10 @@ class CropObjectAnnotatorModel(Widget):
              tracker_name='model')
     def remove_cropobject(self, key):
         # Could graph sync be solved by binding?
+        neighborhood = [self.cropobjects[k]
+             for k in self.graph.get_neighborhood(key, inclusive=True)]
         self.graph.remove_obj_from_graph(key)
+        self.sync_graph_to_cropobjects(neighborhood)
         del self.cropobjects[key]
 
     @Tracker(track_names=['cropobjects'],
@@ -318,8 +344,10 @@ class CropObjectAnnotatorModel(Widget):
                                               lambda cs: ('objids', [c.objid for c in cs])]},
              fn_name='model.import_cropobjects',
              tracker_name='model')
-    def import_cropobjects(self, cropobjects):
+    def import_cropobjects(self, cropobjects, clear=True):
         logging.info('Model: Importing {0} cropobjects.'.format(len(cropobjects)))
+        if clear:
+            self.clear_cropobjects()
         # Batch processing is more efficient, since rendering the CropObjectList
         # is tied to any change of self.cropobjects
         self.cropobjects = {c.objid: c for c in cropobjects}
@@ -330,7 +358,7 @@ class CropObjectAnnotatorModel(Widget):
              tracker_name='model')
     def export_cropobjects_string(self, **kwargs):
         self.sync_graph_to_cropobjects()
-        return muscimarker_io.export_cropobject_list(self.cropobjects.values(), **kwargs)
+        return export_cropobject_list(self.cropobjects.values(), **kwargs)
 
     @Tracker(track_names=['output'],
              fn_name='model.export_cropobjects',
@@ -367,7 +395,7 @@ class CropObjectAnnotatorModel(Widget):
 
     ##########################################################################
     # Synchronizing with the graph.
-    def sync_graph_to_cropobjects(self):
+    def sync_graph_to_cropobjects(self, cropobjects=None):
         """Ensures that the attachments are accurately reflected
         among the CropObjects. The attachments are build separately
         in the app, so they need to be written to the CropObjects
@@ -377,11 +405,17 @@ class CropObjectAnnotatorModel(Widget):
 
             Clears all outlinks and inlinks from the CropObjects and replaces
             them with the graph's structure!
+
+        :param cropobjects: A list of CropObjects which should be synced.
+            If left to ``None``, will sync everything.
         """
         logging.info('Model: Syncing {0} attachments to CropObjects.'
                      ''.format(len(self.graph.edges)))
 
-        for c in self.cropobjects.values():
+        if cropobjects is None:
+            cropobjects = self.cropobjects.values()
+
+        for c in cropobjects:
             if c.objid in self.graph._inlinks:
                 c.inlinks = list(self.graph._inlinks[c.objid])
             else:
@@ -392,7 +426,7 @@ class CropObjectAnnotatorModel(Widget):
             else:
                 c.outlinks = []
 
-    def sync_cropobjects_to_graph(self):
+    def sync_cropobjects_to_graph(self, cropobjects=None):
         """Ensures that the attachment structure in CropObjects
         is accurately reflected in the attachments data structure
         of the model. (Typically, you want to call this on importing
@@ -403,11 +437,19 @@ class CropObjectAnnotatorModel(Widget):
 
             Clears the current graph and replaces it with the edges inferred
             from CropObjects!
+
+        :param cropobjects: A list of CropObjects which should be synced.
+            If left to ``None``, will sync everything.
         """
-        self.graph.clear()
+        if cropobjects is None:
+            cropobjects = self.cropobjects.values()
+            self.graph.clear()
+        else:
+            for c in cropobjects:
+                self.graph.remove_obj_from_graph(c.objid)
 
         edges = []
-        for c in self.cropobjects.values():
+        for c in cropobjects:
             for o in c.outlinks:
                 edges.append((c.objid, o))
             self.graph.add_vertex(c.objid)
@@ -422,6 +464,36 @@ class CropObjectAnnotatorModel(Widget):
         (Fires all lazy synchronization routines between model components.)"""
         self.sync_graph_to_cropobjects()
 
+    def ensure_remove_edge(self, from_objid, to_objid):
+        """Make sure that the given edge is not in the model.
+        If it was there, it gets removed; otherwise, no action is taken.
+        As opposed to this operation on the graph, on the model, the
+        CropObjects in question have their inlink/outlink arrays
+        updated as well.
+        """
+        self.graph.ensure_remove_edge(from_objid, to_objid)
+        self.sync_graph_to_cropobjects(cropobjects=[self.cropobjects[from_objid],
+                                                    self.cropobjects[to_objid]])
+
+    def ensure_remove_edges(self, edges):
+        _affected_cropobjects = []
+        for from_objid, to_objid in edges:
+            self.graph.ensure_remove_edge(from_objid, to_objid)
+            _affected_cropobjects.append(self.cropobjects[from_objid])
+            _affected_cropobjects.append(self.cropobjects[to_objid])
+        self.sync_graph_to_cropobjects(cropobjects=_affected_cropobjects)
+
+    def ensure_add_edge(self, edge):
+        self.graph.ensure_add_edge(edge)
+        self.sync_graph_to_cropobjects(cropobjects=[self.cropobjects[edge[0]],
+                                                    self.cropobjects[edge[1]]])
+
+    def ensure_add_edges(self, edges, label='Attachment'):
+        self.graph.ensure_add_edges(edges=edges, label=label)
+        _affected_objids = set(itertools.chain(*edges))
+        _affected_cropobjects = [self.cropobjects[i] for i in _affected_objids]
+        self.sync_graph_to_cropobjects(cropobjects=_affected_cropobjects)
+
     ##########################################################################
     # Integrity
     def validate_cropobjects(self):
@@ -432,18 +504,18 @@ class CropObjectAnnotatorModel(Widget):
             raise ValueError('Cannot validate cropobjects without image')
         shape = self.image.shape
 
-        invalid_clsid_objs = []
+        invalid_clsname_objs = []
         oversized_objs = []
         for c in self.cropobjects.values():
-            clsid = c.clsid
-            if clsid not in self.mlclasses:
-                invalid_clsid_objs.append(c)
+            clsname = c.clsname
+            if clsname not in self.mlclasses_by_name:
+                invalid_clsname_objs.append(c)
             if c.top < 0 or c.left < 0:
                 oversized_objs.append(c)
             if c.bottom > shape[0] or c.right > shape[1]:
                 oversized_objs.append(c)
 
-        if len(invalid_clsid_objs) > 0:
+        if len(invalid_clsname_objs) > 0:
             return False
         if len(oversized_objs) > 0:
             return False

@@ -1,64 +1,52 @@
 #!/usr/bin/env python
-"""This is a script that..."""
+"""This is a simple script that merges a number of CropObject list
+files into one."""
 from __future__ import print_function, unicode_literals
 import argparse
-import json
+import codecs
 import logging
-import os
 import time
 
-from kivy.app import App
-from kivy.uix.label import Label
-
-from MUSCIMarkerApp import MUSCIMarkerApp
-
-import kivy
-kivy.require('1.9.1')
+from muscima.cropobject import merge_cropobject_lists
+from muscima.io import  parse_cropobject_list, export_cropobject_list
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
-
-
-##############################################################################
 
 
 def build_argument_parser():
     parser = argparse.ArgumentParser(description=__doc__, add_help=True,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    parser.add_argument('-i', '--inputs', nargs='+', required=True,
+                        help='Input CropObject lists. Will be appended'
+                             ' in the order in which they are given.')
+    parser.add_argument('-o', '--output', required=True,
+                        help='Output file for the merged CropObject list.')
+
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Turn on INFO messages.')
     parser.add_argument('--debug', action='store_true',
                         help='Turn on DEBUG messages.')
-    #
-    # parser.add_argument('--hello', action='store_true',
-    #                     help='If set, runs a Hello World mini-app instead.')
-
-    parser.add_argument('-w', '--writer', type=int, default=1,
-                        help='Which writer?')
-    parser.add_argument('-n', '--number', type=int, default=1,
-                        help='Which image?')
-    parser.add_argument('-r', '--root',
-                        help='CVC-MUSCIMA root dir')
 
     return parser
-
-class MiniApp(App):
-    def build(self):
-        return Label(text='hello world')
 
 
 def main(args):
     logging.info('Starting main...')
     _start_time = time.clock()
 
-    # Your code goes here
-    app = MUSCIMarkerApp()
-    #app = MiniApp()   ### DEBUGGING RECORDER MODULE
-    app.run()
+    logging.warning('Merging CropObject lists is now very dangerous,'
+                    ' becaues of the uid situation.')
+
+    inputs = [parse_cropobject_list(f) for f in args.inputs]
+    merged = merge_cropobject_lists(*inputs)
+    with codecs.open(args.output, 'w', 'utf-8') as hdl:
+        hdl.write(export_cropobject_list(merged))
+        hdl.write('\n')
 
     _end_time = time.clock()
-    logging.info('MUSCIMan done in {0:.3f} s'.format(_end_time - _start_time))
+    logging.info('merge_cropobject_lists.py done in {0:.3f} s'.format(_end_time - _start_time))
 
 
 if __name__ == '__main__':

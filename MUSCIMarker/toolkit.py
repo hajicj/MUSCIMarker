@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals
 
 import collections
+import copy
 import logging
 
 import numpy
@@ -94,7 +95,7 @@ class MUSCIMarkerTool(Widget):
         # return True
         pass
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         # logging.info('ToolKeyboard: Up {0}'.format((key, scancode)))
         # return True
         pass
@@ -710,7 +711,7 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
         logging.info('MaskEraser: got bounding box: {0}'.format(bbox))
 
         for cropobject_view in self.app_ref.cropobject_list_renderer.view.selected_views:
-            c = cropobject_view._model_counterpart
+            c = copy.deepcopy(cropobject_view._model_counterpart)
             # Guards:
             if c.mask is None:
                 logging.info('MaskErarser: cropobject {0} has no mask.'
@@ -732,7 +733,7 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
             logging.info('MaskEraser: got mask intersection {0}'
                          ''.format((m_t, m_l, m_b, m_r)))
 
-            logging.info('MaskErarser: cropobject nnz previous = {0}'
+            logging.info('MaskEraser: cropobject nnz previous = {0}'
                          ''.format(c.mask.sum()))
 
             # We need to invert the current mask, as we want to mask *out*
@@ -749,12 +750,12 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
 
             # Now add the CropObject back to redraw. Note that this way,
             # the object's objid stays the same, which is essential for
-            # maintaining inlinks and outlinks!
+            # maintaining intact inlinks and outlinks!
             self._model.add_cropobject(c)
 
             try:
                 new_view = self.app_ref.cropobject_list_renderer.view.get_cropobject_view(c.objid)
-                new_view.select()
+                new_view.ensure_selected()
             except KeyError:
                 logging.info('MaskEraser: View for modified CropObject {0} has'
                              ' not been rendered yet, cannot select it.'
@@ -779,7 +780,7 @@ class MaskAdditionTool(LassoBoundingBoxSelectTool):
         c_lasso.crop_to_mask()
 
         for cropobject_view in self.app_ref.cropobject_list_renderer.view.selected_views:
-            c = cropobject_view._model_counterpart
+            c = copy.deepcopy(cropobject_view._model_counterpart)
             c.join(c_lasso)
 
             # Redraw:

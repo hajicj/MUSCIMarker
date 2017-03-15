@@ -26,7 +26,7 @@ from kivy.uix.spinner import Spinner
 from kivy.uix.togglebutton import ToggleButton
 
 import tracker as tr
-from utils import InspectionPopup
+from utils import InspectionPopup, keypress_to_dispatch_key
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -206,17 +206,36 @@ class CropObjectView(SelectableView, ToggleButton):
         #                  ''.format(self,
         #                            (key, scancode, codepoint, modifier)))
 
+        if not self.is_selected:
+            return False
+
         # Get the dispatch key
         # ------------
-        dispatch_key = self.keypress_to_dispatch_key(key, scancode, codepoint, modifier)
+        dispatch_key = keypress_to_dispatch_key(key, scancode, codepoint, modifier)
 
         #logging.info('CropObjectView: Handling key {0}, self.is_selected={1},'
         #             ' self.cropobject={2}'
         #             ''.format(dispatch_key, self.is_selected, str(self.cropobject.objid)))
 
-        # At most one CropObject may be selected.
-        if not self.is_selected:
-            return False
+        is_handled = self.handle_dispatch_key(dispatch_key)
+        if is_handled:
+            self.dispatch('on_key_captured')
+        return False
+
+
+    def handle_dispatch_key(self, dispatch_key):
+        """Does the "heavy lifting" in keyboard controls: responds to a dispatch key.
+
+        Decoupling this into a separate method facillitates giving commands to
+        the ListView programmatically, not just through user input,
+        and this way makes automation easier.
+
+        :param dispatch_key: A string of the form e.g. ``109+alt,shift``: the ``key``
+            number, ``+``, and comma-separated modifiers.
+
+        :returns: True if the dispatch key got handled, False if there is
+            no response defined for the given dispatch key.
+        """
 
         # Deletion
         if dispatch_key == '8':  # Delete
@@ -326,24 +345,24 @@ class CropObjectView(SelectableView, ToggleButton):
         # from propagating further.
         # Current policy: if any CropObjectView captures a key signal, it will propagate
         # past the CropObjectListView.
-        self.dispatch('on_key_captured')
-        return False
+        return True
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         return False
 
     def on_key_captured(self, *largs):
         """Default handler for on_key_captured event."""
         pass
 
-    @staticmethod
-    def keypress_to_dispatch_key(key, scancode, codepoint, modifiers):
-        """Converts the key_down event data into a single string for more convenient
-        keyboard shortcut dispatch."""
-        if modifiers:
-            return '{0}+{1}'.format(key, ','.join(sorted(modifiers)))
-        else:
-            return '{0}'.format(key)
+    # TODO: Remove this (replaced from utils)
+    # @staticmethod
+    # def keypress_to_dispatch_key(key, scancode, codepoint, modifiers):
+    #     """Converts the key_down event data into a single string for more convenient
+    #     keyboard shortcut dispatch."""
+    #     if modifiers:
+    #         return '{0}+{1}'.format(key, ','.join(sorted(modifiers)))
+    #     else:
+    #         return '{0}'.format(key)
 
     ##########################################################################
     # Accessing the model & the cropobject in the model, so that the user
@@ -364,7 +383,7 @@ class CropObjectView(SelectableView, ToggleButton):
     # Class selection
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.toggle_class_selection',
                 tracker_name='editing')
     def toggle_class_selection(self):
@@ -379,7 +398,7 @@ class CropObjectView(SelectableView, ToggleButton):
         self.mlclass_selection_spinner = Spinner(
             id='mlclass_cropobject_selection_spinner_{0}'.format(self.cropobject.objid),
             pos=self.pos,
-            text='{0}'.format(self._model.mlclasses[self.cropobject.clsid].name),
+            text='{0}'.format(self.cropobject.clsname),
             font_size=15,
             values=sorted(self._model.mlclasses_by_name.keys(),
                           key=lambda k: self._model.mlclasses_by_name[k].clsid),
@@ -396,30 +415,27 @@ class CropObjectView(SelectableView, ToggleButton):
 
     @tr.Tracker(track_names=['self', 'text'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.do_class_selection',
                 tracker_name='editing')
-    def do_class_selection(self, spinner_widget, text):
+    def do_class_selection(self, spinner_widget, clsname):
         logging.info('CropObjectView\t{0}: do_class_selection() fired.'
                      ''.format(self.cropobject.objid))
-        clsid = self._model.mlclasses_by_name[text].clsid
 
-        if clsid != self.cropobject.clsid:
-            self.set_mlclass(clsid=clsid, clsname=text)
+        if clsname != self.cropobject.clsname:
+            self.set_mlclass(clsname=clsname)
         self.destroy_mlclass_selection_spinner()
 
-    def set_mlclass(self, clsid, clsname):
+    def set_mlclass(self, clsname):
         # This should be wrapped in some cropobject's set_class method.
-        self._model_counterpart.clsid = clsid
         self._model_counterpart.clsname = clsname
-        self.cropobject.clsid = clsid
         self.cropobject.clsname = clsname
         # We should also check that the new class name is consistent
         # with the edges...
         self.update_info_label()
 
         # Update color
-        rgb = tuple([float(x) for x in self._model.mlclasses[clsid].color])
+        rgb = tuple([float(x) for x in self._model.mlclasses_by_name[clsname].color])
         self.update_color(rgb)
 
     def destroy_mlclass_selection_spinner(self, *args, **kwargs):
@@ -438,6 +454,7 @@ class CropObjectView(SelectableView, ToggleButton):
             self.create_info_label()
 
     def create_info_label(self):
+        logging.debug('CropObjectView.create_info_label() called.')
         info_label = Label(text=self.get_info_label_text())
         _info_palette = App.get_running_app()._get_tool_info_palette()
 
@@ -449,15 +466,16 @@ class CropObjectView(SelectableView, ToggleButton):
         self._info_label_shown = True
 
     def destroy_info_label(self, *args, **kwargs):
+        logging.debug('CropObjectView.destroy_info_label() called.')
         App.get_running_app()._get_tool_info_palette().remove_widget(self.info_label)
         self._info_label_shown = False
+        self.info_label = None
 
     def get_debug_info_label_text(self):
         e_cropobject = self.cropobject
         output_lines = list()
         output_lines.append('objid:            {0}'.format(e_cropobject.objid))
         output_lines.append('cls:                {0}'.format(e_cropobject.clsname))
-        #output_lines.append('cls:                {0}'.format(self._model.mlclasses[e_cropobject.clsid].name))
         output_lines.append('M.x, M.y:      {0:.2f}, {1:.2f}'
                             ''.format(self._model_counterpart.x,
                                       self._model_counterpart.y))
@@ -499,7 +517,7 @@ class CropObjectView(SelectableView, ToggleButton):
         # Easy workaround: unselect self first. This does not fix the memory
         # leak, but at least the 'invisible' CropObjectView will not
         # capture any events.
-        self.deselect()
+        self.ensure_deselected()
         # Another workaround: schedule self-deletion for slightly later,
         # after the widget gets removed from the call stack.
 
@@ -520,7 +538,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     @tr.Tracker(track_names=['self', 'vertical', 'horizontal'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.move',
                 tracker_name='editing')
     def move(self, vertical=0, horizontal=0):
@@ -579,7 +597,7 @@ class CropObjectView(SelectableView, ToggleButton):
 
     @tr.Tracker(track_names=['self', 'vertical', 'horizontal'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.stretch',
                 tracker_name='editing')
     def stretch(self, vertical=0, horizontal=0):
@@ -634,7 +652,6 @@ class CropObjectView(SelectableView, ToggleButton):
     # Split
     @tr.Tracker(track_names=['self', 'ratio'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid),
                                           lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.split',
                 tracker_name='editing')
@@ -671,9 +688,9 @@ class CropObjectView(SelectableView, ToggleButton):
         coords_1 = {'top': t1, 'bottom': b1, 'left': l1, 'right': r1}
         coords_2 = {'top': t2, 'bottom': b2, 'left': l2, 'right': r2}
 
-        clsid = self.cropobject.clsid
-        App.get_running_app().add_cropobject_from_selection(coords_1, clsid=clsid)
-        App.get_running_app().add_cropobject_from_selection(coords_2, clsid=clsid)
+        clsname= self.cropobject.clsname
+        App.get_running_app().add_cropobject_from_selection(coords_1, clsname=clsname)
+        App.get_running_app().add_cropobject_from_selection(coords_2, clsname=clsname)
 
         self.remove_from_model()
 
@@ -681,7 +698,6 @@ class CropObjectView(SelectableView, ToggleButton):
     # Clone class
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid),
                                           lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.clone_class_to_app',
                 tracker_name='editing')
@@ -693,7 +709,6 @@ class CropObjectView(SelectableView, ToggleButton):
     # Hide relationships
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid),
                                           lambda s: ('clsname', s._model_counterpart.clsname),
                                           lambda s: ('inlinks', s._model_counterpart.inlinks),
                                           lambda s: ('outlinks', s._model_counterpart.outlinks)]},
@@ -706,7 +721,6 @@ class CropObjectView(SelectableView, ToggleButton):
 
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid),
                                           lambda s: ('clsname', s._model_counterpart.clsname),
                                           lambda s: ('inlinks', s._model_counterpart.inlinks),
                                           lambda s: ('outlinks', s._model_counterpart.outlinks)]},
@@ -741,7 +755,6 @@ class CropObjectView(SelectableView, ToggleButton):
     # Inspect mask
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid),
                                           lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.clone_class_to_app',
                 tracker_name='editing')
@@ -779,7 +792,7 @@ class CropObjectView(SelectableView, ToggleButton):
     # Copied over from ListItemButton
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.select',
                 tracker_name='editing')
     def select(self, *args):
@@ -795,16 +808,19 @@ class CropObjectView(SelectableView, ToggleButton):
 
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
-                                          lambda s: ('clsid', s._model_counterpart.clsid)]},
+                                          lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.deselect',
                 tracker_name='editing')
     def deselect(self, *args):
         """Only handles self.is_selected, not the 'on_release'
         dispatch that the ListAdapter uses to maintain selection!
-        Use do_deselect()."""
+        Use ensure_deselected() instead."""
         # logging.debug('CropObjectView\t{0}: called deselection'
         #               ''.format(self.cropobject.objid))
+        logging.debug('CropObjectView.deselect: info label shown? {0}'
+                      ''.format(self._info_label_shown))
         if self._info_label_shown:
+            logging.debug('CropObjectView.deselect: destroying info label.')
             self.destroy_info_label()
         if self._mlclass_selection_spinner_shown:
             self.destroy_mlclass_selection_spinner()
@@ -815,11 +831,23 @@ class CropObjectView(SelectableView, ToggleButton):
             self.parent.deselect_from_child(self, *args)
         super(CropObjectView, self).deselect(*args)
 
-    def do_deselect(self):
-        """Proper deselection that will be reflected in a ListAdapter
+    # def do_deselect(self):
+    #     """Proper deselection that will be reflected in a ListAdapter
+    #     containing this view."""
+    #     if self.is_selected:
+    #         self.dispatch('do_release')
+
+    def ensure_selected(self):
+        """Proper selection that will be reflected in a ListAdapter
+        containing this view."""
+        if not self.is_selected:
+            self.dispatch('on_release')
+
+    def ensure_deselected(self):
+        """Proper unselection that will be reflected in a ListAdapter
         containing this view."""
         if self.is_selected:
-            self.dispatch('do_release')
+            self.dispatch('on_release')
 
     def ensure_selected(self):
         """Proper selection that will be reflected in a ListAdapter

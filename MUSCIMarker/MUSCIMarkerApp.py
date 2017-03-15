@@ -181,7 +181,7 @@ Each tracked event generates one JSON dictionary. All events have:
 The arguments with which the tracked function was called can also be
 captured. The tracker also allows for some simple transformations for
 the tracked arguments: for instance, cropobject creation tracking
-logs just the `objid` and `clsid` attributes instead of the entire CropObject.
+logs just the `objid` and `clsname` attributes instead of the entire CropObject.
 
 Tracking implementation
 -----------------------
@@ -195,6 +195,7 @@ which is responsible for writing the event data into the tracking file.
 from __future__ import print_function, unicode_literals
 import argparse
 import codecs
+import copy
 import logging
 import os
 import pprint
@@ -227,7 +228,11 @@ from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
-import muscimarker_io
+from muscima.io import parse_cropobject_list, parse_cropobject_class_list
+from muscima.cropobject import CropObject
+#import muscimarker_io
+
+from objid_selection import ObjidSelectionDialog
 from mlclass_selection import MLClassSelectionDialog
 from syntax.dependency_grammar import DependencyGrammar
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser
@@ -235,7 +240,7 @@ from edge_view import ObjectGraphRenderer
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
 from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key, \
-    MessageDialog, OnBindFileSaver
+    MessageDialog, OnBindFileSaver, compute_connected_components, filename2docname
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
 import tracker as tr
@@ -481,6 +486,9 @@ class MUSCIMarkerApp(App):
     cropobject_list_saver = ObjectProperty(OnBindFileSaver(overwrite=True))
     cropobject_list_export_path = StringProperty()
 
+    cropobject_current_docname = StringProperty(CropObject.UID_DEFAULT_DOCUMENT_NAMESPACE)
+    cropobject_current_dataset_namespace = StringProperty(CropObject.UID_DEFAULT_DATASET_NAMESPACE)
+
     ##########################################################################
     # View of the annotated CropObjects and relationships, and exposing
     # them to the rest of the app.
@@ -596,7 +604,9 @@ class MUSCIMarkerApp(App):
                      ''.format(saver_output_path))
         self.cropobject_list_saver.last_output_path = saver_output_path
         self.cropobject_list_saver.bind(filename=lambda *args, **kwargs: self.annot_model.export_cropobjects(
-            self.cropobject_list_saver.filename))
+            self.cropobject_list_saver.filename,
+            docname=filename2docname(self.cropobject_list_saver.filename),
+            dataset_name=self.cropobject_current_dataset_namespace))
 
         logging.info('Build: started loading grammar from config')
         _grammar_abspath = os.path.abspath(conf.get('default_input_files',
@@ -705,6 +715,12 @@ class MUSCIMarkerApp(App):
                 'tracking_root_dir': self._get_default_tracking_root_dir(),
             })
         config.setdefaults('interface', {'center_on_resize': True})
+        config.setdefaults('automation',
+            {
+                'sparse_cropobject_threshold': 0.1,
+                'sparse_exclusive_cropobject_threshold': 0.2
+            })
+
         Config.set('kivy', 'exit_on_escape', '0')
 
     def build_settings(self, settings):
@@ -936,6 +952,23 @@ class MUSCIMarkerApp(App):
 
         logging.info('App: processing on_key_down(), dispatch_key: {0}'
                      ''.format(dispatch_key))
+        is_handled = self.handle_dispatch_key(dispatch_key)
+        return is_handled
+
+    def handle_dispatch_key(self, dispatch_key):
+        """Does the "heavy lifting" in keyboard controls of the App:
+        responds to a dispatch key.
+
+        Decoupling this into a separate method facillitates giving commands to
+        the ListView programmatically, not just through user input,
+        and this way makes automation easier.
+
+        :param dispatch_key: A string of the form e.g. ``109+alt,shift``: the ``key``
+            number, ``+``, and comma-separated modifiers.
+
+        :returns: True if the dispatch key got handled, False if there is
+            no response defined for the given dispatch key.
+        """
         if dispatch_key == '27':  # Escape
             self.currently_selected_tool_name = '_default'
 
@@ -948,7 +981,11 @@ class MUSCIMarkerApp(App):
             logging.info('Doing current MLCLass selection dialog, forced')
             self.open_mlclass_selection_dialog()
 
-        elif dispatch_key == '115+shift':  # "shift+S" -- select all of current clsname
+        elif dispatch_key == '111':   # o -- objid selection
+            logging.info('Doing objid-based selection dialog.')
+            self.open_objid_selection_dialog()
+
+        elif dispatch_key == '115+shift':  # "shift+s" -- select all of current clsname
             logging.info('Selecting all CropObjects of the current clsname.')
             view = self.cropobject_list_renderer.view
             view.select_class(self.currently_selected_mlclass_name)
@@ -956,21 +993,31 @@ class MUSCIMarkerApp(App):
         elif dispatch_key == '118':  # "v" -- validate
             self.find_cropobjects_with_errors()
 
+        # alt+shift for automation commands
+        elif dispatch_key == '98+alt,shift':   # "alt+shift+b" -- barlines automation
+            self.auto_add_measure_separators()
+        elif dispatch_key == '116+alt,shift':  # "alt+shift+t" -- suspiciously "sparse" cropobjects
+            self.find_objects_with_unannotated_pixels(exclusive=False)
+        elif dispatch_key == '114+alt,shift':  # "alt+shift+r" -- exclusively "sparse" cropobjects, exclusive
+            self.find_objects_with_unannotated_pixels(exclusive=True)
+        elif dispatch_key == '100+alt,shift':  # "alt+shift+d" -- disconnected cropobjects
+            self.find_objects_with_disconnected_masks(leaves_only=False)
+        elif dispatch_key == '115+alt,shift':  # "alt+shift+s" -- disconnected cropobjects that have no outlinks,
+            self.find_objects_with_disconnected_masks(leaves_only=True)
 
-        logging.info('App: Checking keyboard dispatch, {0}'
-                     ''.format(self.keyboard_dispatch.keys()))
-        if dispatch_key in self.keyboard_dispatch:
+        # logging.info('App: Checking keyboard dispatch, {0}'
+        #              ''.format(self.keyboard_dispatch.keys()))
+        elif dispatch_key in self.keyboard_dispatch:
             action = self.keyboard_dispatch[dispatch_key]
             logging.info('App: \t Found dispatch key! Action: {0}'
                          ''.format(action))
             action()
-
         else:
             return False
 
         return True   # Stop bubbling
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         logging.info('App: Keyboard: Up {0}'.format((key, scancode)))
 
     ##########################################################################
@@ -978,7 +1025,8 @@ class MUSCIMarkerApp(App):
 
     def import_mlclass_list(self, instance, pos):
         try:
-            mlclass_list = muscimarker_io.parse_mlclass_list(pos)
+            #mlclass_list = muscimarker_io.parse_mlclass_list(pos)
+            mlclass_list = parse_cropobject_class_list(pos)
         except:
             logging.info('App: Loading MLClassList from file \'{0}\' failed.'
                          ''.format(pos))
@@ -1014,32 +1062,58 @@ class MUSCIMarkerApp(App):
 
 
         try:
-            cropobject_list, mfile, ifile = muscimarker_io.parse_cropobject_list(pos,
-                                                                                 with_refs=True,
-                                                                                 tolerate_ref_absence=True,
-                                                                                 fill_mlclass_names=True,
-                                                                                 mlclass_dict=self.annot_model.mlclasses)
+            cropobject_list = parse_cropobject_list(pos,
+                                                    #with_refs=True,
+                                                    #tolerate_ref_absence=True,
+                                                    #fill_mlclass_names=True,
+                                                    #mlclass_dict=self.annot_model.mlclasses
+                                                    )
 
-            # Handling MLClassList and Image conflicts. Currently just warns.
-            if mfile is not None:
-                if mfile != self.mlclass_list_loader.filename:
-                    logging.warn('Loaded CropObjectList for different MLClassList ({0}),'
-                                 ' colors are off and any annotation entered is invalid!'
-                                 ''.format(mfile))
-            if ifile is not None:
-                if ifile != self.image_loader.filename:
-                    logging.warn('Loaded CropObjectList for different image file ({0}),'
-                                 ' colors are off and any annotation entered is invalid!'
-                                 ''.format(ifile))
+            # # Handling MLClassList and Image conflicts. Currently just warns.
+            # if mfile is not None:
+            #     if mfile != self.mlclass_list_loader.filename:
+            #         logging.warn('Loaded CropObjectList for different MLClassList ({0}),'
+            #                      ' colors are off and any annotation entered is invalid!'
+            #                      ''.format(mfile))
+            # if ifile is not None:
+            #     if ifile != self.image_loader.filename:
+            #         logging.warn('Loaded CropObjectList for different image file ({0}),'
+            #                      ' colors are off and any annotation entered is invalid!'
+            #                      ''.format(ifile))
         except:
             logging.info('App: Loading CropObjectList from file \'{0}\' failed.'
                          ''.format(pos))
             raise
             #return
 
+        ###############
+        # docname behavior:
+        #  - If importing an existing CropObject list, take their docname.
+        #    Chances are, someone is editing a list after a pause, or QC is going
+        #    on; in both of these cases, the document name should not change.
+        #  - The only exception is when loading a file with the default docname.
+        #    In that case, because MUSCIMarker *must* have first loaded an image,
+        #    use the docname derived from the image file.
+        # Set docname for UIDs
+        docnames = list(set([c.doc for c in cropobject_list]))
+        if len(docnames) > 1:
+            raise ValueError('Mixing CropObjects from {0} different documents:'
+                             ' {1}!'.format(len(docnames), '\n'.join(docnames)))
+        if docnames[0] != CropObject.UID_DEFAULT_DOCUMENT_NAMESPACE:
+            self.cropobject_current_docname = docnames[0]
+
+        datasets = list(set([c.dataset for c in cropobject_list]))
+        if len(datasets) > 1:
+            raise ValueError('Mixing CropObjects from {0} different datasets:'
+                             ' {1}!'.format(len(datasets), '\n'.join(datasets)))
+        if datasets[0] != CropObject.UID_DEFAULT_DATASET_NAMESPACE:
+            self.cropobject_current_dataset_namespace = datasets[0]
+
+
         logging.info('App: Imported CropObjectList has {0} items.'
                      ''.format(len(cropobject_list)))
-        self.annot_model.import_cropobjects(cropobject_list)
+        self.cropobject_list_renderer.view.unselect_all()
+        self.annot_model.import_cropobjects(cropobject_list, clear=True)
 
         logging.info('App: Importing CropObjects took {0:.3f} seconds.'.format(time.clock() - _start_time))
 
@@ -1097,6 +1171,22 @@ class MUSCIMarkerApp(App):
         self.do_center_and_rescale_current_image()
         image_widget = self._get_editor_widget()
         image_widget.texture.mag_filter = 'nearest'
+
+        ###############
+        # docname behavior:
+        #  - If importing an image, the current annotation gets deleted.
+        #    The assumption is that for a new image, you will either:
+        #     - (a) import an existing CropObject list, in which case its docname
+        #       will supersede whatever we set here in accordance with the policy
+        #       of "getting back to work",
+        #     - (b) this is the first time you are  annotating this image, and so
+        #       we should choose a good docname for you.
+        # - Therefore, at this point, we just come up with what we think is the
+        #   right docname for an annotation of this image.
+        # - This "good enough" docname is the base filename of the image file,
+        #   minus the file type extension.
+        # Set docname for UIDs
+        self.cropobject_current_docname = os.path.splitext(os.path.basename(pos))[0]
 
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('grammar_file', x)]},
@@ -1355,7 +1445,7 @@ class MUSCIMarkerApp(App):
 
         return m_vertical, m_horizontal
 
-    def generate_cropobject_from_selection(self, selection, clsid=None, mask=None,
+    def generate_cropobject_from_selection(self, selection, clsname=None, mask=None,
                                            integer_bounds=True):
         """After a selection is made, create the new CropObject.
         (To add it to the model, use add_cropobject_from_selection() instead.)
@@ -1381,11 +1471,10 @@ class MUSCIMarkerApp(App):
         # (To add to the confusion, numpy indexes from top-left and uses X
         # for rows, Y for columns.)
         new_cropobject_objid = self.annot_model.get_next_cropobject_id()
-        new_cropobject_clsid = clsid
-        if clsid is None:
-            new_cropobject_clsid = self.annot_model.mlclasses_by_name[self.currently_selected_mlclass_name].clsid
+        new_cropobject_clsname = clsname
+        if clsname is None:
+            new_cropobject_clsname = self.currently_selected_mlclass_name
 
-        new_cropobject_clsname = self.annot_model.mlclasses[new_cropobject_clsid].name
 
         # (The scaling from model-world to editor should be refactored out:
         #  working on utils/ImageToModelScaler)
@@ -1413,28 +1502,30 @@ class MUSCIMarkerApp(App):
         logging.info('App.scaler: Scaler would generate numpy-world'
                      ' x={0}, y={1}, h={2}, w={3}'.format(mT, mL, mH, mW))
 
-        c = muscimarker_io.CropObject(objid=new_cropobject_objid,
-                                      clsid=new_cropobject_clsid,
-                                      clsname=new_cropobject_clsname,
-                                      # Hah -- here, having the Image as the parent widget
-                                      # of the bbox selection tool is kind of useful...
-                                      x=x_scaled_inverted,
-                                      y=y_scaled,
-                                      width=width_scaled,
-                                      height=height_scaled,
-                                      mask=mask)
+        uid = CropObject.build_uid(global_name=self.cropobject_current_dataset_namespace,
+                                   document_name=self.cropobject_current_docname,
+                                   numid=new_cropobject_objid)
+        c = CropObject(objid=new_cropobject_objid,
+                       clsname=new_cropobject_clsname,
+                       # Hah -- here, having the Image as the parent widget
+                       # of the bbox selection tool is kind of useful...
+                       top=x_scaled_inverted,
+                       left=y_scaled,
+                       width=width_scaled,
+                       height=height_scaled,
+                       mask=mask,
+                       uid=uid)
         if integer_bounds:
             c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
                      ''.format(selection, {'objid': c.objid,
-                                           'clsid': c.clsid,
                                            'clsname': c.clsname,
                                            'x': c.x, 'y': c.y,
                                            'width': c.width,
                                            'height': c.height}))
         return c
 
-    def generate_cropobject_from_model_selection(self, selection, clsid=None, mask=None,
+    def generate_cropobject_from_model_selection(self, selection, clsname=None, mask=None,
                                                  integer_bounds=True):
         """After a selection is made **in the model world**, create the new CropObject.
         (To add it to the model, use add_cropobject_from_model_selection() instead.)
@@ -1449,52 +1540,53 @@ class MUSCIMarkerApp(App):
         """
         logging.info('App: Generating cropobject from model selection {0}'.format(selection))
         new_cropobject_objid = self.annot_model.get_next_cropobject_id()
-        new_cropobject_clsid = clsid
-        if clsid is None:
-            new_cropobject_clsid = self.annot_model.mlclasses_by_name[self.currently_selected_mlclass_name].clsid
+        new_cropobject_clsname = clsname
+        if clsname is None:
+            new_cropobject_clsname = self.currently_selected_mlclass_name
 
-        new_cropobject_clsname = self.annot_model.mlclasses[new_cropobject_clsid].name
 
         mT, mL, mB, mR = selection['top'], selection['left'], \
                          selection['bottom'], selection['right']
         mH = mB - mT
         mW = mR - mL
 
-        c = muscimarker_io.CropObject(objid=new_cropobject_objid,
-                                      clsid=new_cropobject_clsid,
-                                      clsname=new_cropobject_clsname,
-                                      x=mT, y=mL, width=mW, height=mH,
-                                      mask=mask)
+        uid = CropObject.build_uid(global_name=self.cropobject_current_dataset_namespace,
+                                   document_name=self.cropobject_current_docname,
+                                   numid=new_cropobject_objid)
+        c = CropObject(objid=new_cropobject_objid,
+                       clsname=new_cropobject_clsname,
+                       top=mT, left=mL, width=mW, height=mH,
+                       mask=mask,
+                       uid=uid)
         if integer_bounds:
             c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
                      ''.format(selection, {'objid': c.objid,
-                                           'clsid': c.clsid,
                                            'clsname': c.clsname,
                                            'x': c.x, 'y': c.y,
                                            'width': c.width,
                                            'height': c.height}))
         return c
 
-    def add_cropobject_from_selection(self, selection, clsid=None, mask=None):
+    def add_cropobject_from_selection(self, selection, clsname=None, mask=None):
         logging.info('App: Will add cropobject from selection {0}'.format(selection))
         c = self.generate_cropobject_from_selection(selection,
-                                                    clsid=clsid,
+                                                    clsname=clsname,
                                                     mask=mask)
         logging.info('App: Adding cropobject from selection {0}'.format(selection))
         self.annot_model.add_cropobject(c)  # This should trigger rendering
         # self.current_n_cropobjects = len(self.annot_model.cropobjects)
 
-    def add_cropobject_from_model_selection(self, selection, clsid=None, mask=None):
+    def add_cropobject_from_model_selection(self, selection, clsname=None, mask=None):
         logging.info('App: Will add cropobject from model_selection {0}'.format(selection))
         c = self.generate_cropobject_from_model_selection(selection,
-                                                          clsid=clsid,
+                                                          clsname=clsname,
                                                           mask=mask)
         logging.info('App: Adding cropobject from model_selection {0}'.format(selection))
         self.annot_model.add_cropobject(c)  # This should trigger rendering
 
     def generate_model_bbox_from_selection(self, selection):
-        c = self.generate_cropobject_from_selection(selection, clsid=None)
+        c = self.generate_cropobject_from_selection(selection, clsname=None)
         t, l, b, r = c.bounding_box
         return t, l, b, r
 
@@ -1571,6 +1663,11 @@ class MUSCIMarkerApp(App):
         Clock.schedule_once(lambda *args, **kwargs: MLClassSelectionDialog().open())
         # dialog = MLClassSelectionDialog()
         # dialog.open()
+
+    @tr.Tracker(track_names=[],
+                tracker_name='commands')
+    def open_objid_selection_dialog(self):
+        Clock.schedule_once(lambda *args, **kwargs: ObjidSelectionDialog().open())
 
     ##########################################################################
     # Tool selection
@@ -1803,3 +1900,123 @@ class MUSCIMarkerApp(App):
         now = datetime.datetime.fromtimestamp(t)
         day_tag = '{:%Y-%m-%d}'.format(now)
         return os.path.join(root_dir, day_tag)
+
+    ##########################################################################
+    # Automation
+    def auto_add_measure_separators(self):
+        """Automatically wraps each *_barline that does not yet have
+        a parent in a ``measure_separator`` object."""
+        BARLINE_CLASSES = ['thin_barline', 'thick_barline', 'dotted_barline']
+        MEASURE_SEPARATOR_CLSNAME = 'measure_separator'
+
+        c_l_view = self.cropobject_list_renderer.view
+        _prev_selection = [c.objid for c in c_l_view.selected_views]
+        c_l_view.unselect_all()
+
+        _prev_clsname = self.currently_selected_mlclass_name
+        self.currently_selected_mlclass_name = MEASURE_SEPARATOR_CLSNAME
+
+
+        for c in self.annot_model.cropobjects.values():
+            if (c.clsname in BARLINE_CLASSES) and (len(c.inlinks) == 0):
+                # Add a measure separator from this one:
+                #  - create the new CropObject
+                #  - add the link from the measure_separator
+                # Basically, it's like passing shift+M on the barline
+                # with the measure_separator as current class.
+                c_view = c_l_view.get_cropobject_view(c.objid)
+                c_view.ensure_selected()
+                c_l_view.handle_dispatch_key('109+shift')
+                c_view.ensure_deselected()
+
+        # Restoring prev selection state and clsname
+        self.currently_selected_mlclass_name = _prev_clsname
+        for _objid in _prev_selection:
+            c_l_view.get_cropobject_view(_objid).ensure_selected()
+
+    def find_objects_with_unannotated_pixels(self, threshold=None, exclusive=False):
+        """Finds all objects that have more than ``threshold`` of foreground
+        pixels within their bounding box not marked as part of the object.
+
+        The purpose is to find inaccuracies where the box is relatively OK,
+        but the annotator did not mark the object accurately within the box.
+
+        :param exclusive: If True, will only count pixels that are not a part
+            of any other CropObject against the threshold. (This will make
+            the computation much slower.)
+        """
+        if threshold is None:
+            if exclusive:
+                threshold = float(self.config.get('automation', 'sparse_exclusive_cropobject_threshold'))
+            else:
+                threshold = float(self.config.get('automation', 'sparse_cropobject_threshold'))
+
+        c_l_view = self.cropobject_list_renderer.view
+        cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
+        if len(cropobjects) == 0:
+            cropobjects = self.annot_model.cropobjects.values()
+
+        image = self.annot_model.image
+
+        #### Precompute which pixels are part of no object.
+        # These are exactly the pixels which will count towards
+        # the exclusive threshold.
+        if exclusive:
+            # _bbox = [
+            #     min([c.top for c in cropobjects]),
+            #     min([c.left for c in cropobjects]),
+            #     max([c.bottom for c in cropobjects]),
+            #     max([c.right for c in cropobjects])
+            # ]
+            image = copy.deepcopy(image)
+            for c in cropobjects:
+                # Modifies the copied image in-place. This will be sufficient
+                # later in the threshold-counting cycle.
+                crop = image[c.top:c.bottom, c.left:c.right]
+                crop[c.mask != 0] = 0
+
+        _objids_over_threshold = []
+        for c in cropobjects:
+            # Find proportion of bad pixels
+            n_fg = image[c.top:c.bottom, c.left:c.right].sum() / 255.0
+            n_mask = float(c.mask.sum())
+            logging.info('App.automation: Object {0} has {1} masked pixels, {2} image fg pixels, proportion:'
+                         ' {3}'.format(c.objid, n_mask, n_fg, n_mask / n_fg))
+
+            if exclusive:
+                # FG pixels are only the "not a part of any object" pixels within
+                # the bounding box.
+                if (n_fg / (n_fg + n_mask)) > threshold:
+                    _objids_over_threshold.append(c.objid)
+            elif (1 - (n_mask / n_fg)) > threshold:
+                _objids_over_threshold.append(c.objid)
+
+        logging.info('App.automation: Total objects over threshold: {0}'.format(len(_objids_over_threshold)))
+
+        c_l_view.unselect_all()
+        c_l_view.ensure_selected_objids(_objids_over_threshold)
+
+    def find_objects_with_disconnected_masks(self, leaves_only=False):
+        """Find all objects with masks consisting of more than one
+        connected foreground component.
+
+        :param leaves_only: If set, will only highlight those objects
+            with disconnected masks that have no descendants in the
+            object graph.
+        """
+        c_l_view = self.cropobject_list_renderer.view
+        cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
+        if len(cropobjects) == 0:
+            cropobjects = self.annot_model.cropobjects.values()
+
+        _objids_disconnected = []
+        for c in cropobjects:
+            if leaves_only and len(c.outlinks) > 0:
+                    continue
+
+            cc, labels, _ = compute_connected_components(c.mask)
+            if cc > 1:
+                _objids_disconnected.append(c.objid)
+
+        c_l_view.unselect_all()
+        c_l_view.ensure_selected_objids(_objids_disconnected)

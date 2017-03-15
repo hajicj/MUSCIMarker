@@ -1,6 +1,7 @@
 ##############################################################################
 This is the dependency grammar for the default annotations symbols.
 
+
 ##############################################################################
 # Notes and grace notes
 # (no notehead-to-text attachment)
@@ -32,12 +33,14 @@ grace-notehead-full{1,} |
 | curved-line_(tie-or-slur){1,} slur{2,} tie{2,}
 | *_flag{1,}
 
+
 ##############################################################################
 # Rests
 
 whole_rest half_rest *th_rest | duration-dot
 *_rest | tuple
 *_rest | fermata
+
 
 ##############################################################################
 # Stem modifiers
@@ -47,14 +50,12 @@ stem | tremolo_mark single-note_tremolo multiple-note_tremolo
 
 | grace_strikethrough{1}
 
+
 ##############################################################################
 # Notations
 
-repeat | repeat-dot thin_barline thick_barline
-repeat{1,} |
-| repeat-dot{1,}
 
-trill | trill_"wobble" letter_t letter_r other-dot letter_T letter_R
+trill | trill_"wobble" letter_t letter_r other-dot letter_T letter_R letter_other
 trill | sharp flat natural double_sharp double_flat
 | trill{1,}
 trill{1,} |
@@ -63,14 +64,12 @@ tuple | tuple_bracket/line numeral_*
 tuple{1,}
 | tuple_bracket/line{1,}
 
-volta | numeral_* other-dot horizontal_spanner dotted_horizontal_spanner
+volta | other_numeric_sign horizontal_spanner dotted_horizontal_spanner
 transposition_text | horizontal_spanner dotted_horizontal_spanner
 
-thin_barline | fermata
-thick_barline | fermata
-dotted_barline | fermata
-
 *-clef | transposition_text
+
+| arpeggio_"wobble"{1,}
 
 
 ##############################################################################
@@ -82,6 +81,40 @@ key_signature{1,} |
 time_signature | whole-time_mark alla_breve other_time_signature numeral_*
 time_signature{1,} |
 | whole-time_mark{1,} alla_breve{1,} other_time_signature{1,}
+
+
+##############################################################################
+# Measure delimiters
+
+measure_separator | *_barline
+measure_separator{1,} |
+
+repeat | repeat-dot thin_barline thick_barline
+repeat{1,} |
+| repeat-dot{1,}
+
+staff_grouping | *_barline multi-staff_bracket multi-staff_brace
+staff_grouping | staff_grouping
+staff_grouping{1,}
+
+# Every barline is a measure_separator or staff grouping
+| *_barline{1,}
+
+# Non-duration fermatas are attached to a measure delimiter
+measure_separator | fermata
+
+
+##############################################################################
+# Staff rules
+
+staff | staff_line
+key_signature time_signature g-clef c-clef f-clef | staff
+measure_separator | staff
+staff_grouping | staff
+
+| staff_line{1,}
+
+
 
 ##############################################################################
 # Text rules
@@ -105,7 +138,7 @@ figured_bass_text | numeral_* sharp flat double_sharp double_flat natural
 other_text | letter_* numeral_* other-dot
 
 bar_number | numeral_*
-other_numeric_sign | numeral_*
+other_numeric_sign | numeral_* other-dot letter_other
 *_text | continuation/connection_dash
 
 # Figured bass is attached to noteheads

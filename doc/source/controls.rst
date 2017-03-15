@@ -432,8 +432,10 @@ the given selection is not supposed to react to the shortcut.
 **v**               Validate the current annnotation. Finds inconsistencies in how
                     relationships are being assigned to objects.
 **c**               Open symbol class selection dialog. (See below.)
+**o**               Open ID-based object selection dialog. (See below.)
 **alt+h**           Hide/Show all relationships.
 **1, 2, ...**       Select the n-th tool from the top.
+**alt+shift+b**     Barline to measure separator automation.
 =================   ================================================================
 
 
@@ -457,3 +459,84 @@ Press "tab" to have the dialog guess the next part of
 the symbol name (it's never wrong, but sometimes it might not be able to
 come up with any guess at all). Try pressing tab when trying to get letters!
 It should speed up the process considerably.
+
+If there are symbols where the name of one is a prefix of the other,
+such as ``repeat`` is a prefix of ``repeat-dot``, you need to get the whole
+word there (``repeat``) to select that MLClass. You can still use "tab"
+to get there.
+
+
+Objid selection dialog
+^^^^^^^^^^^^^^^^^^^^^^
+
+The ``objid``-based selection dialog enables quickly selecting CropObjects
+using their unique identifier. Type in the numbers, separated by whitespace
+(you can also add commas, semicolons, etc.). Upon confirmation, these objects
+will be selected (and *only* these objects - previous selections will be
+canceled).
+
+**Controlling**
+
+Type to enter text.
+
+*Example:* ``123, 125, 126, 128`` *or* ``123 125 126 128``
+
+Enter to confirm, Escape to cancel (or just press the buttons).
+
+As opposed to the MLClass selection dialog, pressing "tab" does nothing.
+
+
+Barlines to measure separator automation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pressing ``alt+shift+b`` will cause all barlines (``thin_barline``,
+``thick_barline``, ``dotted_barline``) that currently have no inlinks
+to get a ``measure_separator`` parent.
+
+
+Automated checks for objects with holes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes, there are mistakes in annotation that are hard to see
+from the bounding boxes: the annotator gets the bounding box correctly,
+but leaves out parts of the symbol itself from the mask. To discover
+these cases, there are two shortcuts:
+
+* ``alt+shift+t`` finds all objects where more than a given proportion
+  of foreground pixels in the object's bounding box is not a part of
+  its mask,
+* ``alt+shift+r`` finds all objects where more than a given proportion
+  of foreground pixels in the object's bounding box is not a part of
+  *any* object's mask.
+
+Both proportions, for the non-exclusive foreground and for the exclusive
+foreground counts, can be set in the Settings.
+
+Each check serves a slightly different purpose. The first check (the
+non-exclusive one) will show you symbols like flags, slurs, beams with
+a significant slope, etc. Sometimes, it is informative to see which objects
+are *not* highlighted and should be -- this helps to discover flags
+where the stem is erroneously marked as part of the flag. Slurs that
+clearly have other objects in their bounding box but don't light up
+even with low thresholds are indicative of someone not marking out
+the concave part of the slur and instead letting the Trimmed Lasso
+take a "shortcut".
+
+The second check is useful for straight-out mistakes where the annotators
+just did not mark a part of an object that clearly does not belong to any
+other object.
+
+
+Automated checks for disconnected objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To find all objects that consist of more than one contiguous "blob",
+use ``alt+shift+d``. To exclude from this search all object that have
+some other objects attached, such as key signatures or time signatures,
+use ``alt+shift+s``. This avoids "false alarms", also from texts, but
+on the other hand does not cover noteheads or stems with tremolos.
+The recommendation is to use both: first make sure there are no ``alt+shift+s``
+problems (except for those where the object is legitimately split
+into more parts, such as because of staff removal mistakes), then use
+``alt+shift+d`` to find the noteheads and other symbols that did not
+show up on ``alt+shift+s`` due to having outlinks.

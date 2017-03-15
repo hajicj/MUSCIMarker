@@ -20,8 +20,8 @@ experiments.
     designed to cover how to properly annotate the musical notation primitives
     supplied with the annotation packages: ``mff-muscima-mlclasses-annot.xml``.
 
-**Accurate annotation is absolutely critical to the success of our research.**
-Therefore, you are expected to understand these guidelines fully.
+Accurate annotation is absolutely critical to the success of our research.
+**Therefore, you are expected to understand these guidelines fully.**
 Mistakes may happen, of course, but if they happen at a frequency
 above some reasonable rate, you are going to see that reflected
 in your compensation.
@@ -32,10 +32,30 @@ by pictures of the problematic area) and generally communicating
 with us will never be discouraged. The e-mail address to direct
 questions to is ``hajicj@ufal.mff.cuni.cz``
 
+**There is an example annotation that comes up as the default image** when you
+start MUSCIMarker. Many situations are already in this example. Check it out!
+You can select a symbol and use the "i" keyboard shortcut to look at the annotation
+at the level of individual pixels, through the Inspection popup.
+
+(The instructions do *not* deal with how to properly receive data and submit
+your work. For that, see :ref:`organizing`.)
+
 .. note::
 
-    To learn how to properly receive data to annotate and submit
-    your work, see :ref:`organizing`.
+    *Note for researchers: these instructions have been used to annotate*
+    *MUSCIMA++ 1.0.x -- For other versions of the dataset, refer to the appropriate*
+    *version instructions.*
+
+    *We assume the reader is familiar with music notation terminology.*
+
+.. The changes will go away, to be replaced by a more coherent text.
+
+
+The instructions are organized loosely around the categories of symbols:
+notes themselves, notation, staff defaults (clefs, key signatures, etc.),
+layout-related symbols, text, and other stuff that may come up.
+
+
 
 Changes in 1.0.1
 ----------------
@@ -122,7 +142,8 @@ the specifics.
 when you annotate objects, in the background, the exact objects
 are recorded: each pixel within the colored rectangle that you see
 has a Belongs/Doesn't Belong label, based on how you traced the
-edges of the symbol.
+edges of the symbol. Use the **i** keyboard shortcut to view which
+pixels exactly are annotated as a part of a selected symbol.
 
 **Background does not matter.** In black-and-white images, only
 the white pixels are ever recorded as belonging to a symbol.
@@ -167,8 +188,36 @@ thinking about it and reviewing these guidelines, then send us an email
 to ``hajicj@ufal.mff.cuni.cz``!
 
 
-We now give the instructions for individual symbol classes. Make sure
-you understand these. If you don't, ask! (``hajicj@ufal.mff.cuni.cz``)
+
+.. note::
+
+    **Validation**
+
+    The MUSCIMarker tool includes functionality to check the current annotation
+    against errors. Press ``v`` to select all objects that the validation
+    algorithm suspects of having errors. However, validation is *not* perfect:
+    it is merely a helper, not a substitute for paying attention. For instance,
+    in the situation where two noteheads share a stem, validation cannot distinguish
+    whether it is a mistake (and the second notehead should be attached to its
+    own stem), or a chord (and the noteheads are legitimately bunched on the same
+    stem). If we could distinguish things like this perfectly, we wouldn't need
+    annotation...
+
+    Passing validation, therefore, is a *neccessary*, but *not sufficient*
+    condition of correctness. Sorry, you still need to really pay attention!
+
+    There are exceptions to passing validation with no suspicious objects.
+    Sometimes (rarely), there will be non-standard notation situations where
+    validation will complain even with correct annotation. This is a calculated
+    "cautionary" behavior: if something like that happens, you had better be
+    sure about it, because *usually* situations like this are a mistake.
+
+
+
+**We now give the instructions for individual symbol classes. Make sure**
+**you understand them all.** If there is something you don't understand,
+ask! (``hajicj@ufal.mff.cuni.cz``)
+
 
 
 .. _instructions_notes:
@@ -182,19 +231,459 @@ is marking the notation primitives: notehead, stem, flags/beams.
 Then, add the note primitive relationships. Select ``notehead``-class
 primitive (``notehead-full``, ``notehead-empty``, ``grace-notehead-full``,
 ``grace-nothead-empty``) and all other objects that are attached to the
-notehead: stem, flag/beams, dots, sharps/flats, slurs/ties,
-grace noteheads, articulations, tremolo marks, dynamics, etc.
-Do not forget tuple markings.
+notehead:
+
+* stem,
+* flag/beams,
+* dots (duration, staccato, possibly other),
+* ledger lines,
+* sharps, flats, naturals,
+* grace noteheads,
+* tuple markings
+* other notations: slurs/ties, articulations, tremolo marks, dynamics, etc.
+
+(This is not an exhaustive list.)
 
 .. caution:: Do not have more than one notehead selected when auto-adding
              relationships with **p**. It can very easily lead to spurious
              edges (see :ref:`tutorial_relationships` in the Tutorial).
 
 For slurs and dynamic hairpins (cresc./decr.), attach them to *all* the noteheads
-that they affect, not just the first and last one.
+that they affect.
 
 .. tip:: The fastest way of selecting a bunch of primitives is to use
-         the **Obj. Select** tool.
+         the **Obj. Select** tool. If you have Active Selection turned
+         on in the settings, it will "pre-emptively" light up the current
+         selection as you draw the lasso, making it easier to know whether
+         the right symbols are being selected.
+
+We will now walk through some examples, going from individual notes
+to more complex situations.
+
+
+Simple notes
+^^^^^^^^^^^^
+
+Isolated notes, one with a ``ledger_line``, one with a ``8th_flag``:
+
+.. image:: images/guidelines/isolated_notes.png
+
+A simple beamed group. Notice how the two noteheads share one beam,
+but only the 16th note links to the second beam.
+(The dot is a ``duration_dot``). :
+
+.. image:: images/guidelines/beamed_group_simple.png
+
+A more complex beamed group, with multiple types of notes. The 8th note
+only links to the outermost ``beam``; the 16th and 32nd notes link to
+the outermost and the second beam, and finally only the two 32nd notes
+in the middle link to the third, innermost beam. This illustrates
+the principles of only linking those primitives to a notehead that actually
+affect how we read the notehead.
+
+.. image:: images/guidelines/beamed_group_multilevel.png
+
+Rests are simple symbols - regardless whether quarter, 8th, 16th, etc.,
+or even multi-measure rests, like in the following example (note also
+that it is indeed possible to tell apart whole and half rests, even
+without staff lines):
+
+.. image:: images/guidelines/rest_gallery.png
+
+And don't forget that rests can have a ``duration_dot``:
+
+.. image:: images/guidelines/rest_dotted.png
+
+
+
+Chords
+^^^^^^
+
+In a chord, the noteheads do *not* interact. This implies that they share
+the stem, they share beams and flags, slurs, etc., but e.g. accidentals
+(flat, sharp, ...), ledger lines, ties or ornaments only have a relationship
+to the notehead which they directly affect. This should not be surprising --
+it's the same principle all over again.
+
+.. image:: images/guidelines/chord_simple.png
+
+
+Some chords in a beamed group:
+
+.. image:: images/guidelines/chord_beamed.png
+
+
+Chords can be tricky, especially with ledger lines. Make sure to only
+attach those ledger lines to a notehead that actually affect its
+pitch! Visually, this means all the notehead -- ledger line relationships
+lead one way: either down (if the notes are above the staff), or up
+(if the notes are below the staff). The stem is, of course, shared by
+all the noteheads in the chord.
+
+.. image:: images/guidelines/chord_with_ledger_lines.png
+
+
+Grace notes
+^^^^^^^^^^^
+
+Grace note (``grace-notehead-full``) with its "main" note (``notehead-empty``).
+They and their relationship is highlighted. The slur connecting the two notes
+is shared between the two notes. (However, their direct relationship would still
+be there, even if the slur wasn't.) Notice also the two flags on the isolated
+grace note: the outer is an ``8th_flag``, the inner is a ``16th_flag``.
+
+.. image:: images/guidelines/grace_note.png
+
+The "strikethrough" on a grace note is attached to its stem, not the notehead
+(the relationship is highlighted).
+Notice also the interaction between the grace note and the following chord.
+
+.. image:: images/guidelines/grace_strikethrough.png
+
+If there is a clear voicing relationship between a grace note (or a grace note
+chord) and a "main" note chord, the ``grace-notehead-*`` to ``notehead-*``
+relationships should respect voices (highlighted; the relationships to the slur
+on the bottom are omitted for clarity):
+
+.. image:: images/guidelines/grace_chord_voices.png
+
+
+Putting it all together
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Let's have a look at a complex notation situation which combines all these elements:
+
+.. image:: images/guidelines/notes_complex.png
+
+Make sure you understand the reasons for the following:
+
+* The short beam is only connected to the last notehead.
+* The natural signs are connected to only one note.
+* The arpeggio "wobble" is connected to all three notes of the chord.
+* The grace note is only connected to the bottom two notes.
+* The top note in the chord connects to the top stem, the bottom two notes
+  to the bottom stem.
+* It is not clear whether to connect the grace note to the top
+  note of the chord or not. (Same for the top note and the bottom slur:
+  both variants are possible.) This is a more polyphonic reading which
+  considers the topmost note as a part of a separate melodic voice.
+* The accent is connected to all three notes in the chord (it's a piano
+  score).
+
+
+.. _instructions_notations:
+
+
+Other notation
+--------------
+
+In the section dedicated to notes themselves, we have also illustrated
+some basic principles of how to attach objects to each other. We will
+now define some more notational situations around notes:
+
+* ties and slurs
+* crescendo and decrescendo "hairpins"
+* tuples
+* accents and articulation
+* fermatas
+* trills
+* tremolos
+* arpeggios and glissandi
+* ornaments
+* segno, coda
+* instrument_specific
+* transposition
+
+Ties and slurs
+^^^^^^^^^^^^^^
+
+Mark relationships to the symbol from all affected noteheads. With ties,
+this will generally be 2; with slurs, there may be a lot of notes:
+
+.. image:: images/guidelines/slur_normal.png
+
+In multi-voice scores, pay attention to voice leading: use your judgment
+to determine which voices the slur applies to. The previous example in fact
+illustrates this as well: notice the middle voice notes which are *not*
+marked as belonging under the slur:
+
+.. image:: images/guidelines/slur_multivoice.png
+
+If a tie/slur leads from one line to the next: annotate each "half" separately
+and attach the notes only to the given half.
+
+.. image:: images/guidelines/slur_half.png
+
+If there is just one note with a slur at the start or end of the line, like
+in the example above, validation will complain, but you can safely ignore that.
+(Just make sure that both ends are marked the same -- in fact, the example
+had to be corrected: one end was marked as a tie, the other as a slur.)
+
+Crescendo and decrescendo hairpins
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+Fermatas
+^^^^^^^^
+
+Fermatas are attached to a ``notehead``-class object, a rest,
+or a ``measure_separator``, if they are clearly related
+to a barline (or a double barline..., see ``measure_separator``
+guidelines below). In case a fermata is written above an empty space,
+or otherwise cannot be resolved, leave it unattached (even though validation
+will complain).
+
+
+
+Layout
+------
+
+In this section, we will discuss objects that are related to the
+overall layout and structure of the music:
+
+* barlines
+* repeat, repeat dots
+* measure separator
+* staff grouping symbols
+* system separator
+* horizontal spanners
+* volta
+* transposition spans
+* ossia
+
+Barlines
+^^^^^^^^
+
+There are three kinds of barlines: thin, thick, and dotted.
+(The ``dotted_barline`` class applies to any non-contiguous barline.)
+Note that barlines are "low-level" objects, notation primitives:
+one barline does not automatically equal a measure boundary (e.g.:
+double barlines, barlines in repeats, barlines denoting the grouping
+of staffs into systems). For example, this double barline is annotated
+as two ``thin_barline`` symbols:
+
+.. image:: images/guidelines/barlines_thin_double.png
+
+The difference between a ``thin_barline`` and ``thick_barline`` is
+basically just intent: if you think the writer just drew one line,
+mark it as a ``thin_barline``; if you think the writer made an attempt
+to make a barline thick, use ``thick_barline``. Here, we have a print-like
+combination of barlines in a repeat:
+
+.. image:: images/guidelines/barlines_repeat_thin_thick.png
+
+Sometimes, what would be *typeset* as a thick barline will be written out
+as a ``thin_barline``:
+
+.. image:: images/guidelines/barlines_repeat_thin_thin.png
+
+In multi-staff music, don't group per-staff or staff-group barlines
+together under one! This is handled by the ``measure_separator``
+object (see below). These are two separate ``thin_barline`` objects:
+
+.. image:: images/guidelines/barlines_simultaneous.png
+
+
+Repeats, repeat dots
+^^^^^^^^^^^^^^^^^^^^
+
+The ``repeat`` symbol is a high-level symbol that consists of barline
+and ``repeat-dot`` primitives:
+
+.. image:: images/guidelines/repeat.png
+
+Back-to-back repeats share barlines:
+
+.. image:: images/guidelines/repeat_back-to-back.png
+
+Repeats that span multiple staves form a single ``repeat`` object
+(with many ``repeat_dot`` "subordinate" primitives):
+
+.. image:: images/guidelines/repeat_multistaff.png
+
+Measure separators
+^^^^^^^^^^^^^^^^^^
+
+Barlines are not the end of dividing a piece into measures. There are
+double barlines, repeats, or back-to-back repeats, all of which break
+the assumption that 1 barline == separation between two bars.
+
+In order for our data to correctly indicate both barlines and separation
+into measures, we use the ``measure_separator`` overlay symbol. The rules
+are simple: any number of barlines that delimit one measure from another
+is grouped under one ``measure_separator``, be it a single barline,
+double, or barlines inside repeats.
+
+For example, a single barline is also a measure separator (the relationship
+from the top-level ``measure_separator`` object to the ``thin_barline``
+primitive is highlighted):
+
+.. image:: images/guidelines/measure_separator_simple.png
+
+A double barline is just one measure separator:
+
+.. image:: images/guidelines/measure_separator_double.png
+
+In a repeat, the barlines together form one ``measure_separator``.
+When the repeat is back-to-back, sharing the barlines, there is
+logically still just one ``measure_separator`` -- it indicates just
+the boundary of just two measures, nothing else. In other words,
+just like there is no interaction between notes in a chord, there is
+no interaction between repeats and measure separators. In the following
+example, the ``measure_separator`` object is highlighted:
+
+.. image:: images/guidelines/measure_separator_repeats.png
+
+It's hard to see, but it only has relationships to the two barlines.
+The ``repeat`` symbols, on the other hand, also have relationships
+to the ``repeat_dot`` primitives.
+
+In multi-staff pieces, the measure separator should span the whole system,
+again following the principle of one ``measure_separator`` symbol per measure
+boundary. The barline might be a long one or many short ones, it doesn't matter:
+
+.. image:: images/guidelines/measure_separator_multistaff.png
+
+.. warning::
+
+    Not every repeat hides a measure_separator inside! For instance,
+    here, the repeat comes before an *Auftakt*, a pickup 8th. If you
+    annotated a ``measure_separator`` here, the measure count would
+    be wrong!
+
+.. image:: images/guidelines/repeat_without_measure_separator.png
+
+
+The same warning applies to repeats at the start of a new system. The MUSCIMA++
+annotation policy is: only the previous end-of-line barline(s) form
+a ``measure_separator``, the start-of-line repeat sign does not necessarily
+"hide" one. This holds even if there is no barline at the end of a line: that's
+an ambiguous situation anyway; and we can then *use* the presence of a repeat
+at the start of the next line to decide that yes, indeed, there should
+be an "invisible" ``measure_separator`` there. But that is a post-processing
+step, not an annotation step that you should be concerned with.
+
+
+Staff grouping symbols
+^^^^^^^^^^^^^^^^^^^^^^
+
+There are notation primitives that indicate which staves are part
+of the same system, and which staves are a group within a system
+(e.g., right and left hand staves for a piano part). These are:
+
+* ``multi-staff_bracket`` (the "horned" one)
+* ``multi-staff_brace`` (the "curly" one, rarely spanning more than 2 staves)
+* ``thin_barline`` (a simple line)
+
+You will practically always find these symbols at the beginnings of systems.
+
+In this example, there are two brackets, one which spans all staves and one
+for the bottom four, and one brace:
+
+.. image:: images/guidelines/staff_grouping_primitives.png
+
+Then, the ``staff_grouping`` higher-level symbol indicates how these
+primitives work together to actually perform staff grouping. This symbol
+can be a parent of another ``staff_grouping``, to indicate sub-groups.
+The subgroup only contains the primitive that delimits the given subgroup
+(usually the curly ``multi-staff_brace``). The following example illustrates
+three relationships:
+
+* the top-level ``staff_grouping`` to the ``multi-staff_bracket`` which
+  indicates that the large ``multi-staff_bracket`` defines a grouping
+  (short red line on the bottom),
+* the bottom-level ``staff_grouping`` to its own ``multi-staff_bracket``,
+  which indicates that the smaller ``multi-staff_bracket`` also indicates
+  a staff grouping (short red line near the top),
+* the top-level ``staff_grouping`` to the bottom-level ``staff_grouping``,
+  which indicates that the second staff group is a subgroup of the first one.
+
+.. image:: images/guidelines/staff_grouping_recursive.png
+
+.. caution::
+
+    This is one of the situations where you will have to use the "a" keyboard
+    shortcut to attach symbols to each other. If you used "p" to create
+    relationships automatically, you would get an extra relationship from the
+    sub-group ``staff_grouping`` to the top-level ``staff_grouping``, as well
+    as the "downward"-pointing arrow in the staff groups hierarchy.
+
+
+Volta
+^^^^^
+
+The *volta* is a relatively complex construction. Like the key signature or time
+signature, it is a top-level symbol that consists of some others. The components
+of a *volta* are, canonically, a ``horizontal_spanner`` and an ``other_numeric_sign``.
+The numeric sign consists of a ``numeral_X`` (1, 2, 3, etc.), possibly an ``other-dot``
+after the numbers, or ``letter_other`` for commas, parentheses, etc.
+
+These are the components of a ``volta`` (spanner in green):
+
+.. image:: images/guidelines/volta_components.png
+
+And the ``volta`` goes on top of this all, with relationships to the spanner
+and the numeric sign highlighted (the spanner relationship is very short, as
+the bounding box of the ``volta`` is in this case identical to the bounding
+box of the ``horizontal_spanner`` component):
+
+.. image:: images/guidelines/volta_complete.png
+
+
+Transposition
+^^^^^^^^^^^^^
+
+The transposition mark is somewhat similar to a volta: it also consists of some
+numeral or text (usually "8va", or just "8") and a horizontal spanner (usually
+dotted, so a ``dotted_horizontal_spanner`` symbol). The text, which encompasses
+the numeral(s) and the letters (and the occasional dot), is called
+``transposition_text``. The difference is that while voltas encompass the horizontal
+spanner (if present), ``transposition_text`` does not.
+
+.. image:: images/guidelines/transposition_inline.png
+
+This is because the transposition text may often be attached to a clef
+(indicating an octave or two-octave transposition of the entire part), with no spanner.
+However, as the ``transposition_text`` has a *relationship* to its horizontal
+spanner, when present, this is just an aesthetic choice.
+
+.. image:: images/guidelines/transposition_clef.png
+
+
+
+
+
+Part defaults
+-------------
+
+This includes:
+
+* clefs
+* key signatures
+* time signatures
+
+
+
+Text
+----
+
+A large part of notation is also expressed through letters
+that combine into different kinds of text:
+
+* letters and numerals
+* dynamics
+* tempo
+* lyrics
+* figured bass
+* bar and page numbers, rehearsal marks
+* other
+
+
+Others
+------
+
+* unclassified
 
 ...
 
@@ -300,7 +789,7 @@ Other Notations
 ---------------
 
 **Key signatures** The sharps or flats are marked as ``sharp`` or ``flat``,
-just as if the symbols are next to notes. However, the symbols making
+just as if the symbols are next to notes. Then, the symbols making
 up the key signature should all be marked as a part of a ``key_signature``
 symbol.
 
@@ -311,8 +800,8 @@ as the given numerals; then, the numeral-based time signatures should be
 marked as a symbol of the ``time_signature`` class.
 The "whole" time signature (a "C" symbol), the
 *alla breve* (a "C" with a vertical line) and other time signature symbols
-have their own distinct categories; they should *not* be marked
-as ``time_signature`` on top of these.
+have their own distinct categories, but they should be marked
+as ``time_signature`` on top of these as well.
 
 .. image:: images/guidelines/time_signature.png
 

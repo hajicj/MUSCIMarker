@@ -21,8 +21,9 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
 from cropobject_view import CropObjectView
-from muscimarker_io import cropobjects_merge_bbox, cropobjects_merge_mask
+from muscima.cropobject import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
 import tracker as tr
+from utils import keypress_to_dispatch_key
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -206,12 +207,16 @@ class CropObjectListView(ListView):
                 return i
         return None
 
+    #########################################################################
+    # Handling mass selection/deselection
+
     def unselect_all(self):
         container = self.container
         for w in container.children[:]:
             # This binds to the adapter's handle_selection
-            if w.is_selected is True:
-                w.dispatch('on_release')
+            w.ensure_deselected()
+            #if w.is_selected is True:
+            #    w.dispatch('on_release')
             #w.deselect()
             #if hasattr(w, 'is_selected'):
             #    w.is_selected = False
@@ -225,6 +230,13 @@ class CropObjectListView(ListView):
             else:
                 if c.is_selected is True:
                     c.dispatch('on_release')
+
+    def ensure_selected_objids(self, objids):
+        """Mass selection of the given list of ``objids``.
+
+        Fails with KeyError if an invalid objid is given."""
+        for objid in objids:
+            self.get_cropobject_view(objid).ensure_selected()
 
     ##########################################################################
     # Keyboard event trapping
@@ -258,9 +270,27 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView: NOT propagating keypress')
             return True
 
+        dispatch_key = keypress_to_dispatch_key(key, scancode, codepoint, modifier)
+
+        is_handled = self.handle_dispatch_key(dispatch_key)
+        return is_handled
+
+    def handle_dispatch_key(self, dispatch_key):
+        """Does the "heavy lifting" in keyboard controls of the CropObjectListView:
+        responds to a dispatch key.
+
+        Decoupling this into a separate method facillitates giving commands to
+        the ListView programmatically, not just through user input,
+        and this way makes automation easier.
+
+        :param dispatch_key: A string of the form e.g. ``109+alt,shift``: the ``key``
+            number, ``+``, and comma-separated modifiers.
+
+        :returns: True if the dispatch key got handled, False if there is
+            no response defined for the given dispatch key.
+        """
+
         # Keyboard shortcuts that affect the current selection:
-        dispatch_key = CropObjectView.keypress_to_dispatch_key(key, scancode,
-                                                               codepoint, modifier)
 
         # M for merge
         if dispatch_key == '109':
@@ -326,7 +356,7 @@ class CropObjectListView(ListView):
         #logging.info('CropObjectListView: NOT propagating keypress')
         return True
 
-    def on_key_up(self, window, key, scancode):
+    def on_key_up(self, window, key, scancode, *args, **kwargs):
         logging.info('CropObjectListView.on_key_up(): trap {0}'
                      ''.format(self._trap_key))
         if self.handle_key_trap(window, key, scancode):
@@ -343,7 +373,7 @@ class CropObjectListView(ListView):
             return
 
         a1, a2 = cropobjects[0].objid, cropobjects[1].objid
-        self._model.graph.ensure_add_edge((a1, a2))
+        self._model.ensure_add_edge((a1, a2))
 
     def process_detach(self):
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
@@ -418,18 +448,18 @@ class CropObjectListView(ListView):
         model_cropobjects = [c._model_counterpart for c in self.adapter.selection]
         t, l, b, r = cropobjects_merge_bbox(model_cropobjects)
         mask = cropobjects_merge_mask(model_cropobjects)
+        inlinks, outlinks = cropobjects_merge_links(model_cropobjects)
 
         # Remove the merged CropObjects
+        # logging.info('CropObjectListView.merge(): inlinks {0}, outlinks {1}'
+        #              ''.format(inlinks, outlinks))
         logging.info('CropObjectListView.merge(): Removing/deselecting selection {0}'
-                     ''.format(self.adapter.selection))
+                     ''.format([c.objid for c in self.adapter.selection]))
         if destructive:
             for s in self.adapter.selection:
                 s.remove_from_model()
         elif deselect:
             self.unselect_all()
-            #for w in self.container.children[:]:
-            #    # Force the proper deselection that dispatches on_release
-            #    w.do_deselect()
 
         model_cropobjects = None  # Release refs
 
@@ -439,6 +469,9 @@ class CropObjectListView(ListView):
                                                                             'bottom': b,
                                                                             'right': r},
                                                                            mask=mask)
+        c.inlinks = inlinks
+        c.outlinks = outlinks
+
         self._model.add_cropobject(c)
         # Problem with retaining selection: this triggers repopulation
         self.render_new_to_back = False
@@ -447,7 +480,7 @@ class CropObjectListView(ListView):
 
     def apply_mlclass_to_selection(self, clsid, clsname):
         for s in self.adapter.selection:
-            s.set_mlclass(clsid=clsid, clsname=clsname)
+            s.set_mlclass(clsname=clsname)
 
     @tr.Tracker(track_names=['self'],
                 transformations={'self': [
@@ -485,7 +518,8 @@ class CropObjectListView(ListView):
         logging.info('CropObjectListView.parse_selection(): {0} edges to add'
                      ''.format(len(edges)))
 
-        self._model.graph.ensure_add_edges(edges)
+        #self._model.graph.ensure_add_edges(edges)
+        self._model.ensure_add_edges(edges)
 
     def get_cropobject_view(self, objid):
         """Retrieves the CropObjectView based on the objid. Useful e.g.
@@ -498,6 +532,7 @@ class CropObjectListView(ListView):
 
         raise KeyError('CropObjectView with objid {0} not found among rendered'
                        ' CropObjects.'.format(objid))
+
 
 ##############################################################################
 
@@ -741,17 +776,18 @@ class CropObjectRenderer(FloatLayout):
         """On MLClassList change, the color dictionary needs to be updated."""
         logging.info('Render: Recomputing mlclasses color dict...')
         for clsid in pos:
-            self.mlclasses_colors[clsid] = pos[clsid].color
+            clsname = pos[clsid].name
+            self.mlclasses_colors[clsname] = pos[clsid].color
 
     def selectable_cropobject_converter(self, row_index, rec):
         """Interfacing the CropObjectView and the intermediate data structure.
         Note that as it currently stands, this intermediate structure is
         also a CropObject, although the position params X and Y have been
         switched around."""
-        if max(self.mlclasses_colors[rec.clsid]) > 1.0:
-            rgb = tuple([float(x) / 255.0 for x in self.mlclasses_colors[rec.clsid]])
+        if max(self.mlclasses_colors[rec.clsname]) > 1.0:
+            rgb = tuple([float(x) / 255.0 for x in self.mlclasses_colors[rec.clsname]])
         else:
-            rgb = tuple([float(x) for x in self.mlclasses_colors[rec.clsid]])
+            rgb = tuple([float(x) for x in self.mlclasses_colors[rec.clsname]])
         output = {
             #'text': str(rec.objid),
             #'size_hint': (None, None),
