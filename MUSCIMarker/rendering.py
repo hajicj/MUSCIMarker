@@ -21,7 +21,7 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
 from cropobject_view import CropObjectView
-from muscimarker_io import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
+from muscima.cropobject import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
 import tracker as tr
 from utils import keypress_to_dispatch_key
 

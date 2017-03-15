@@ -7,7 +7,8 @@ import codecs
 import logging
 import time
 
-from muscimarker_io import parse_cropobject_list, export_cropobject_list, merge_cropobject_lists
+from muscima.cropobject import merge_cropobject_lists
+from muscima.io import  parse_cropobject_list, export_cropobject_list
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -34,6 +35,9 @@ def build_argument_parser():
 def main(args):
     logging.info('Starting main...')
     _start_time = time.clock()
+
+    logging.warning('Merging CropObject lists is now very dangerous,'
+                    ' becaues of the uid situation.')
 
     inputs = [parse_cropobject_list(f) for f in args.inputs]
     merged = merge_cropobject_lists(*inputs)

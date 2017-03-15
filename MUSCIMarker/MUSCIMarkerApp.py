@@ -228,7 +228,10 @@ from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
-import muscimarker_io
+from muscima.io import parse_cropobject_list, parse_cropobject_class_list
+from muscima.cropobject import CropObject
+#import muscimarker_io
+
 from objid_selection import ObjidSelectionDialog
 from mlclass_selection import MLClassSelectionDialog
 from syntax.dependency_grammar import DependencyGrammar
@@ -237,7 +240,7 @@ from edge_view import ObjectGraphRenderer
 from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
 from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key, \
-    MessageDialog, OnBindFileSaver, compute_connected_components
+    MessageDialog, OnBindFileSaver, compute_connected_components, filename2docname
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
 import tracker as tr
@@ -483,6 +486,9 @@ class MUSCIMarkerApp(App):
     cropobject_list_saver = ObjectProperty(OnBindFileSaver(overwrite=True))
     cropobject_list_export_path = StringProperty()
 
+    cropobject_current_docname = StringProperty(CropObject.UID_DEFAULT_DOCUMENT_NAMESPACE)
+    cropobject_current_dataset_namespace = StringProperty(CropObject.UID_DEFAULT_DATASET_NAMESPACE)
+
     ##########################################################################
     # View of the annotated CropObjects and relationships, and exposing
     # them to the rest of the app.
@@ -598,7 +604,9 @@ class MUSCIMarkerApp(App):
                      ''.format(saver_output_path))
         self.cropobject_list_saver.last_output_path = saver_output_path
         self.cropobject_list_saver.bind(filename=lambda *args, **kwargs: self.annot_model.export_cropobjects(
-            self.cropobject_list_saver.filename))
+            self.cropobject_list_saver.filename,
+            docname=filename2docname(self.cropobject_list_saver.filename),
+            dataset_name=self.cropobject_current_dataset_namespace))
 
         logging.info('Build: started loading grammar from config')
         _grammar_abspath = os.path.abspath(conf.get('default_input_files',
@@ -1017,7 +1025,8 @@ class MUSCIMarkerApp(App):
 
     def import_mlclass_list(self, instance, pos):
         try:
-            mlclass_list = muscimarker_io.parse_mlclass_list(pos)
+            #mlclass_list = muscimarker_io.parse_mlclass_list(pos)
+            mlclass_list = parse_cropobject_class_list(pos)
         except:
             logging.info('App: Loading MLClassList from file \'{0}\' failed.'
                          ''.format(pos))
@@ -1053,28 +1062,53 @@ class MUSCIMarkerApp(App):
 
 
         try:
-            cropobject_list, mfile, ifile = muscimarker_io.parse_cropobject_list(pos,
-                                                                                 with_refs=True,
-                                                                                 tolerate_ref_absence=True,
-                                                                                 fill_mlclass_names=True,
-                                                                                 mlclass_dict=self.annot_model.mlclasses)
+            cropobject_list = parse_cropobject_list(pos,
+                                                    #with_refs=True,
+                                                    #tolerate_ref_absence=True,
+                                                    #fill_mlclass_names=True,
+                                                    #mlclass_dict=self.annot_model.mlclasses
+                                                    )
 
-            # Handling MLClassList and Image conflicts. Currently just warns.
-            if mfile is not None:
-                if mfile != self.mlclass_list_loader.filename:
-                    logging.warn('Loaded CropObjectList for different MLClassList ({0}),'
-                                 ' colors are off and any annotation entered is invalid!'
-                                 ''.format(mfile))
-            if ifile is not None:
-                if ifile != self.image_loader.filename:
-                    logging.warn('Loaded CropObjectList for different image file ({0}),'
-                                 ' colors are off and any annotation entered is invalid!'
-                                 ''.format(ifile))
+            # # Handling MLClassList and Image conflicts. Currently just warns.
+            # if mfile is not None:
+            #     if mfile != self.mlclass_list_loader.filename:
+            #         logging.warn('Loaded CropObjectList for different MLClassList ({0}),'
+            #                      ' colors are off and any annotation entered is invalid!'
+            #                      ''.format(mfile))
+            # if ifile is not None:
+            #     if ifile != self.image_loader.filename:
+            #         logging.warn('Loaded CropObjectList for different image file ({0}),'
+            #                      ' colors are off and any annotation entered is invalid!'
+            #                      ''.format(ifile))
         except:
             logging.info('App: Loading CropObjectList from file \'{0}\' failed.'
                          ''.format(pos))
             raise
             #return
+
+        ###############
+        # docname behavior:
+        #  - If importing an existing CropObject list, take their docname.
+        #    Chances are, someone is editing a list after a pause, or QC is going
+        #    on; in both of these cases, the document name should not change.
+        #  - The only exception is when loading a file with the default docname.
+        #    In that case, because MUSCIMarker *must* have first loaded an image,
+        #    use the docname derived from the image file.
+        # Set docname for UIDs
+        docnames = list(set([c.doc for c in cropobject_list]))
+        if len(docnames) > 1:
+            raise ValueError('Mixing CropObjects from {0} different documents:'
+                             ' {1}!'.format(len(docnames), '\n'.join(docnames)))
+        if docnames[0] != CropObject.UID_DEFAULT_DOCUMENT_NAMESPACE:
+            self.cropobject_current_docname = docnames[0]
+
+        datasets = list(set([c.dataset for c in cropobject_list]))
+        if len(datasets) > 1:
+            raise ValueError('Mixing CropObjects from {0} different datasets:'
+                             ' {1}!'.format(len(datasets), '\n'.join(datasets)))
+        if datasets[0] != CropObject.UID_DEFAULT_DATASET_NAMESPACE:
+            self.cropobject_current_dataset_namespace = datasets[0]
+
 
         logging.info('App: Imported CropObjectList has {0} items.'
                      ''.format(len(cropobject_list)))
@@ -1137,6 +1171,22 @@ class MUSCIMarkerApp(App):
         self.do_center_and_rescale_current_image()
         image_widget = self._get_editor_widget()
         image_widget.texture.mag_filter = 'nearest'
+
+        ###############
+        # docname behavior:
+        #  - If importing an image, the current annotation gets deleted.
+        #    The assumption is that for a new image, you will either:
+        #     - (a) import an existing CropObject list, in which case its docname
+        #       will supersede whatever we set here in accordance with the policy
+        #       of "getting back to work",
+        #     - (b) this is the first time you are  annotating this image, and so
+        #       we should choose a good docname for you.
+        # - Therefore, at this point, we just come up with what we think is the
+        #   right docname for an annotation of this image.
+        # - This "good enough" docname is the base filename of the image file,
+        #   minus the file type extension.
+        # Set docname for UIDs
+        self.cropobject_current_docname = os.path.splitext(os.path.basename(pos))[0]
 
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('grammar_file', x)]},
@@ -1452,15 +1502,19 @@ class MUSCIMarkerApp(App):
         logging.info('App.scaler: Scaler would generate numpy-world'
                      ' x={0}, y={1}, h={2}, w={3}'.format(mT, mL, mH, mW))
 
-        c = muscimarker_io.CropObject(objid=new_cropobject_objid,
-                                      clsname=new_cropobject_clsname,
-                                      # Hah -- here, having the Image as the parent widget
-                                      # of the bbox selection tool is kind of useful...
-                                      top=x_scaled_inverted,
-                                      left=y_scaled,
-                                      width=width_scaled,
-                                      height=height_scaled,
-                                      mask=mask)
+        uid = CropObject.build_uid(global_name=self.cropobject_current_dataset_namespace,
+                                   document_name=self.cropobject_current_docname,
+                                   numid=new_cropobject_objid)
+        c = CropObject(objid=new_cropobject_objid,
+                       clsname=new_cropobject_clsname,
+                       # Hah -- here, having the Image as the parent widget
+                       # of the bbox selection tool is kind of useful...
+                       top=x_scaled_inverted,
+                       left=y_scaled,
+                       width=width_scaled,
+                       height=height_scaled,
+                       mask=mask,
+                       uid=uid)
         if integer_bounds:
             c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'
@@ -1496,10 +1550,14 @@ class MUSCIMarkerApp(App):
         mH = mB - mT
         mW = mR - mL
 
-        c = muscimarker_io.CropObject(objid=new_cropobject_objid,
-                                      clsname=new_cropobject_clsname,
-                                      top=mT, left=mL, width=mW, height=mH,
-                                      mask=mask)
+        uid = CropObject.build_uid(global_name=self.cropobject_current_dataset_namespace,
+                                   document_name=self.cropobject_current_docname,
+                                   numid=new_cropobject_objid)
+        c = CropObject(objid=new_cropobject_objid,
+                       clsname=new_cropobject_clsname,
+                       top=mT, left=mL, width=mW, height=mH,
+                       mask=mask,
+                       uid=uid)
         if integer_bounds:
             c.to_integer_bounds()
         logging.info('App: Generated cropobject from selection {0} -- properties: {1}'

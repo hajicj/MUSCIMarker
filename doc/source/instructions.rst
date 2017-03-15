@@ -422,7 +422,7 @@ had to be corrected: one end was marked as a tie, the other as a slur.)
 Crescendo and decrescendo hairpins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The same rules apply to
+
 
 Fermatas
 ^^^^^^^^

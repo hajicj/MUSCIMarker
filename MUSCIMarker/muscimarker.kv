@@ -1,7 +1,7 @@
 #:kivy 1.9.1
 #:import os os
-#:import mm muscimarker_io
 #:import Factory kivy.factory.Factory
+#######:import mm muscimarker_io
 
 #############################################################################
 # Action bar style
@@ -453,7 +453,8 @@
 
     Label:
         size_hint: 1.0, 0.1
-        text: 'Last imp.: {0}'.format(os.path.basename(app.cropobject_list_loader.filename))
+        # text: 'Last imp.: {0}'.format(os.path.basename(app.cropobject_list_loader.filename))
+        text: 'Doc: {0}'.format(app.cropobject_current_docname)
         color: 0.7, 0.7, 0.7, 1
 
     Label:

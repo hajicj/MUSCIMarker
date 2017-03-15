@@ -19,7 +19,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 from kivy.uix.textinput import TextInput
 
-import muscimarker_io as mmio
+from muscima.cropobject import CropObject
 # import mhr.muscima as mm
 
 from kivy.input.recorder import Recorder
@@ -335,7 +335,7 @@ def bbox_to_integer_bounds(ftop, fleft, fbottom, fright, to_integer=True):
 
     :returns: top, left, bottom, right (4-tuple).
     """
-    t, l, b, r = mmio.CropObject.bbox_to_integer_bounds(ftop, fleft, fbottom, fright)
+    t, l, b, r = CropObject.bbox_to_integer_bounds(ftop, fleft, fbottom, fright)
     if not to_integer:
         t, l, b, r = float(t), float(l), float(b), float(r)
 
@@ -489,6 +489,11 @@ def image_mask_overlaps_model_edge(mask, edge_start, edge_end, margin=2):
     logging.warn('Middle: {0}:{1}, {2}:{3}'.format(t_mid, b_mid, l_mid, r_mid))
     return s > 0
 
+
+##############################################################################
+
+def filename2docname(filename):
+    return os.path.splitext(os.path.basename(filename))[0]
 
 ##############################################################################
 

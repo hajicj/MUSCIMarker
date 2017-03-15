@@ -1,6 +1,11 @@
 """This module implements tools for loading the MUSCIMA++ dataset
 symbolic layer: CropObject and MLClass lists.
 
+.. warning::
+
+    This file is being deprecated, and superseded by the ``muscima``
+    module for manipulating the dataset files.
+
 Only the function `position_cropobject_list_by_muscimage()`
 requires a `MUSCImage` instance as an argument.
 """
