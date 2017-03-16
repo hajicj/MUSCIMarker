@@ -153,7 +153,7 @@ such as between a stem and a beam, the intersection pixels just belong
 to both symbols. Belonging to one symbol does not exclude a pixel
 from belonging to another symbol. Intersections happen all the time.
 
-.. image:: images/guidelines/intersections.png
+.. image:: images/guidelines/principles_intersections.png
 
 **Not all non-background pixels are part of a symbol.** There may be
 non-background pixels that are a result of the writer's mistake,
@@ -164,7 +164,7 @@ It's perfectly fine to leave these extra pixels out of the symbols
 you are marking. In fact, including such extra pixels would be
 a mistake.
 
-.. image:: images/guidelines/spurious_pixels.png
+.. image:: images/guidelines/principles_spurious_pixels.png
 
 **Layered annotation.** Sometimes (e.g. text, key signatures),
 you will be asked to annotated the same thing with more markings.
@@ -175,7 +175,7 @@ several layers at which it needs to be annotated: we need to know,
 at the same time, that the symbols for key signatures are sharps,
 and that these praticular sharps are part of a key signature.
 
-.. image:: images/guidelines/layered_annotation.png
+.. image:: images/guidelines/principles_layered_annotation.png
 
 **Use your judgement.** By definition, we cannot really enumerate
 all the rules for annotating, as you will always encounter a new
@@ -381,18 +381,25 @@ In the section dedicated to notes themselves, we have also illustrated
 some basic principles of how to attach objects to each other. We will
 now define some more notational situations around notes:
 
+* accents and articulation
+* arpeggios and glissandi
+* caesurae, breath marks
+* tremolos
+* segno, coda
 * ties and slurs
 * crescendo and decrescendo "hairpins"
 * tuples
-* accents and articulation
 * fermatas
-* trills
-* tremolos
-* arpeggios and glissandi
 * ornaments
-* segno, coda
-* instrument_specific
+* trills
 * transposition
+* instrument_specific
+
+Accents, articulations, caesurae and breath marks,
+tremolos, arpeggios & glissandi should be clear:
+mark the symbol and connect it to the noteheads which are affected
+by the marking. Caesura/breath mark,
+segno and coda signs do not connect to anything.
 
 Ties and slurs
 ^^^^^^^^^^^^^^
@@ -422,7 +429,10 @@ had to be corrected: one end was marked as a tie, the other as a slur.)
 Crescendo and decrescendo hairpins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
+The same rules apply to hairpins denoting crescendo and decrescendo
+that apply to slurs: connect all affected noteheads. Use your
+judgement to determine how these markings apply to noteheads at their
+left and right edges.
 
 Fermatas
 ^^^^^^^^
@@ -430,10 +440,97 @@ Fermatas
 Fermatas are attached to a ``notehead``-class object, a rest,
 or a ``measure_separator``, if they are clearly related
 to a barline (or a double barline..., see ``measure_separator``
-guidelines below). In case a fermata is written above an empty space,
+guidelines below). Here is a fermata attached (arguably) to a rest:
+
+.. image:: images/guidelines/fermata_rest.png
+
+And to a ``measure_separator`` that consists of the two barlines
+(which also happen to be part of a repeat):
+
+.. image:: images/guidelines/fermata_measure_separator.png
+
+In case a fermata is written above an empty space,
 or otherwise cannot be resolved, leave it unattached (even though validation
 will complain).
 
+Ornaments
+^^^^^^^^^
+
+All ornament markings that have a graphical representation independent on the notes
+they are attached to (mordents, turns, etc.)
+are annotated using the ``ornament(s)`` class. We currently do not distinguish
+between these symbols. These are some (poorly written) ornaments - a mordent, and
+a short trill:
+
+.. image:: images/guidelines/ornaments.png
+
+Trills
+^^^^^^
+
+Long trills are more complex, and they consist of several components.
+There is always the "tr" marking (or just "t." in some early music),
+the wobbly line to the right, and potentially some accidentals to be applied
+to the trill's upper or lower note. In some cases, the "tr" text will be
+surrounded by brackets. Finally, notes affected by the trill connect to
+the overlay ``trill`` symbol.
+
+The "t" and "r" are letters: ``letter_t`` and ``letter_r``. They are joined
+under the ``trill`` overlay symbol, which has relationships leading to the
+letter symbols, and the corresponding ``notehead`` attaches to the ``trill``.
+(components participating in the basic trill highlighted):
+
+.. image:: images/guidelines/trill_basic.png
+
+If an accidental is present, attach it to the ``trill`` object as well:
+
+.. image:: images/guidelines/trill_accidental.png
+
+If the wobbly line is present, mark it using ``trill_"wobble"`` and add
+a relationship from the ``trill`` to the ``trill_"wobble"``:
+
+.. image:: images/guidelines/trill_wobble.png
+
+Note that all the affected noteheads also link to the ``trill``:
+
+.. image:: images/guidelines/trill_multiple_notes.png
+
+Brackets, if present, are annotated as ``letter_other`` and also connected
+to the ``trill`` symbol:
+
+.. image:: images/guidelines/trill_brackets.png
+
+
+Transpositions
+^^^^^^^^^^^^^^
+
+Transpositions are similar to voltas. They consist of a horizontal
+spanner, numerals (8, or 1 and 5), potentially letters ("va" or "me"),
+and a horizontal spanner (sometimes dotted, sometimes not). The overlay
+symbol for transposition, analogous to the ``volta`` symbol, is ``transposition_text``.
+
+However, as opposed to the ``volta``, it directly connects to the
+letters and numbers, instead of an intermediate ``other_numeric_sign``,
+and its mask does *not* include the spanner. This is because
+``transposition_text`` is also sometimes connected to clefs,
+where it has no spanner (and is valid for the entire staff).
+
+.. image:: images/guidelines/transposition_clef.png
+
+
+Instrument-specific
+^^^^^^^^^^^^^^^^^^^
+
+Aside from the general music notation universal to nearly all instruments,
+there are some symbols that denote techniques specific to certain instrument
+classes (such as the flageolet for strings and winds/brass, but not - or rarely -
+piano; up-bow and down-bow markings for strings, pedal markings for the piano,
+unorthodox fingerings for woodwinds).
+
+We do not currently distinguish between
+those, as it would bring huge complexity and furthermore would place undue burden
+on annotators not familiar with these markings. (After all, not even composers
+know them all!)
+All these symbols are annotated simply as ``instrument_specific``.
 
 
 Layout
@@ -651,17 +748,42 @@ spanner, when present, this is just an aesthetic choice.
 .. image:: images/guidelines/transposition_clef.png
 
 
+Ossia
+^^^^^
 
+If you come across an *ossia* section, annotate it like normal notation,
+then mark the entire area as ``ossia`` (take care to include all the foreground).
+You do not have to add any relationships to or from the ``ossia`` symbol.
 
 
 Part defaults
 -------------
 
-This includes:
+These symbols are instructions that affect the interpretation of the
+ entire staff, something akin to a "preamble". They includes:
 
 * clefs
 * key signatures
 * time signatures
+
+Clefs are simple objects: ``g-clef``, ``c-clef``, or ``f-clef`` according
+to their shape.
+
+Key signatures are two-level: mark the accidentals normally
+as ``sharp``, ``flat``, or ``natural`` (these happen when "inline" key signatures
+cancel the effects of previous key signatures), and then overlay all of them
+with the ``key_signature`` supersymbol (and add relationships from the ``key_signature``
+symbol to the individual accidentals.
+
+Time signatures are analogous: mark their components (``numeral_X``, or possibly
+``whole-time_mark``, ``alla_breve``, or for weird cases use ``other_time_signature``),
+and overlay these components with the ``time_signature`` supersymbol.
+
+Here is a fully annotated region of part defaults, with the relationships
+highlighted (the ``time_signature`` only consists of one primitive,
+a ``whole-time_mark``):
+
+.. image:: images/guidelines/part_defaults.png
 
 
 
@@ -679,11 +801,32 @@ that combine into different kinds of text:
 * bar and page numbers, rehearsal marks
 * other
 
+Letters and numerals are primitives, the other symbols group them together.
+All texts that do not fall under one of the more specific categories
+are ``other_text`` (or ``other_numeric_sign``, if they only consist
+of numerals and ``other-dot`` or ``letter_other``).
+
+.. caution::
+
+    The classification of texts is rather ad-hoc, and will probably change
+    in future versions.
+
+Note that ``dynamics_text`` only applies to markings like "f", "pp", "sfz"
+and not to written-out "forte", "piano". This is because these dynamics-specific
+texts are usually graphically distinct from other text on the page, with
+distinct ligatures.
+
+Tempo and dynamics change texts ("rit.", "decr.", "cresc.", "reteneu"...)
+are considered ``other_text``. Expressive texts are also ``other_text``.
+
+
 
 Others
 ------
 
 * unclassified
+
+
 
 ...
 
