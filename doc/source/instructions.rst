@@ -168,8 +168,8 @@ a mistake.
 
 **Layered annotation.** Sometimes (e.g. text, key signatures),
 you will be asked to annotated the same thing with more markings.
-For instance, a correct annotation of the  key signature for A major
-has three ``sharp`` annotations and a ``key_signature`` annotation
+For instance, a correct annotation of the key signature for D major
+has two ``sharp`` annotations and a ``key_signature`` annotation
 that covers all these symbols. This is because musical notation has
 several layers at which it needs to be annotated: we need to know,
 at the same time, that the symbols for key signatures are sharps,
