@@ -649,7 +649,7 @@ boundary. The barline might be a long one or many short ones, it doesn't matter:
     annotated a ``measure_separator`` here, the measure count would
     be wrong!
 
-.. image:: images/guidelines/repeat_without_measure_separator.png
+    .. image:: images/guidelines/repeat_without_measure_separator.png
 
 
 The same warning applies to repeats at the start of a new system. The MUSCIMA++
