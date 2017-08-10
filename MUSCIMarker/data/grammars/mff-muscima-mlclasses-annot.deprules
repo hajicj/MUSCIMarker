@@ -107,13 +107,13 @@ measure_separator | fermata
 ##############################################################################
 # Staff rules
 
-staff | staff_line
+staff | staff_line staff_space
 key_signature time_signature g-clef c-clef f-clef | staff
 measure_separator | staff
 staff_grouping | staff
 
 | staff_line{1,}
-
+| staff_space{1,}
 
 
 ##############################################################################

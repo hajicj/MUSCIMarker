@@ -759,6 +759,106 @@ you are certain it is *something*, use the ``unclassified`` label.
 
 
 
+Staffs
+------
+
+.. caution::
+
+    This section is new, written on 7. 8. 2017.
+    It is NOT IMPLEMENTED, and the relationships
+    should NOT be added manually -- only through automated
+    scripts in the ``muscima`` package.
+
+The last group of symbols are the stafflines and the staff. The
+symbols are straightforward, and each ``staff`` has a relationship
+leading to each ``staffline`` of which it consists. In early music,
+for instance, there may be very different numbers of stafflines.
+In modern music, unpitched percussion is often written
+on an single-staffline staff.
+
+The interesting part is how other symbols are attached to a staff
+and/or stafflines. Stafflines are primarily used to encode pitches,
+although the relationship of noteheads to the staff itself also participates
+in encoding the logical structure of voices. The pitch of notes
+is derived from their relationship of the corresponding
+notehead to the stafflines of the staff to which it is attached;
+however, to arrive at the final pitch, one has to find the pitch
+associated with each staffline; this is done by referencing
+the valid *clef*, *key signature*, and *accidentals*.
+
+Notehead to staff
+^^^^^^^^^^^^^^^^^
+
+If a notehead is *on* a staffline, it has a relationship leading
+to that staffline (we are retainig noteheads as roots for now).
+
+If a notehead is *between* stafflines, it should attach the staffspace,
+but because only nonempty symbols are annotated, it has to instead
+be attached to the two stafflines delineating that staffspace.
+
+If a notehead is in one of the staffspaces just outside the staffline
+(e.g., g'' or d' when the standard G-clef is used), it is only attached
+to that one staffline.
+
+.. caution::
+
+    This creates ambiguity that will need further
+    resolution - either by introducing symbol properties,
+    or staffspace "invisible symbols" -- special automatically
+    generated symbols that represent the empty space between
+    and around the stafflines.
+
+
+.. note::
+
+    How to define staffspace? Its mask could be the area
+    delimited by the adjoining stafflines, and for the adjacent
+    staffspace, one could use the average staffspace height of
+    the staff at the given column. This of course leads to the
+    inelegant problem with having to remember that this symbol
+    is invisible... although it actually *is there*.
+
+
+Clef to staffline
+^^^^^^^^^^^^^^^^^
+
+Clefs are attached to the staffline which they mark.
+
+While it is tempting to tie clefs to just the staff, this can create
+problems -- especially with the C-clef. Clefs work by denoting
+a certain staffline as a certain pitch: for instance, the G-clef says
+"the staffline where this clef starts should be called G", even though
+the G- and F-clefs, the most frequent clefs today, are overwhelmingly used
+in their standard positions, on the 2nd line from the bottom
+and top, respectively. Fortunately, clefs are not positioned on staffspace,
+so the trouble we had with noteheads is absent.
+
+
+Key signature to stafflines
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The accidentals in a key signature are tied to the staffline
+or staffspace they modify. (With the same caveats about staffspaces
+as noteheads.)
+
+Again, as with clefs, the logic is that accidentals are relevant
+for the given staffline only, even though by now it is quite standardized
+to derive the function of the accidentals simply by counting how many there
+are in the key signature. However, in early music, it is quite often
+the case that one finds accidentals an octave apart, e.g. one flat
+for ``B`` and another for ``b``.
+
+Technically, we could attach *all* accidentals to their stafflines
+instead of to their notehead, but we decided not to do that, at least
+until the staffspace situation is resolved.
+
+Staff grouping to staff
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Staff grouping has outlinks to the staffs it groups together.
+Although staff groupings can be recursive, each grouping has outlinks
+to all the staffs it groups, regardless of sub-groups.
+
 
 Changes in 0.9
 --------------
