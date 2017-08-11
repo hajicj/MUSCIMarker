@@ -765,7 +765,7 @@ Staffs
 .. caution::
 
     This section is new, written on 7. 8. 2017.
-    It is NOT IMPLEMENTED, and the relationships
+    It is NOT REALLY IMPLEMENTED, and the relationships
     should NOT be added manually -- only through automated
     scripts in the ``muscima`` package.
 
@@ -818,6 +818,15 @@ to that one staffline.
     inelegant problem with having to remember that this symbol
     is invisible... although it actually *is there*.
 
+
+.. note::
+
+    Single-staffline staves do *NOT* have outer staffspace.
+
+.. note::
+
+    Outer staffspace is currently NOT included into the staff mask.
+    And it will probably stay that way.
 
 Clef to staffline
 ^^^^^^^^^^^^^^^^^

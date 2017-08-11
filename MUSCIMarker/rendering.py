@@ -21,6 +21,7 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
 from cropobject_view import CropObjectView
+import muscima
 from muscima.cropobject import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
 import tracker as tr
 from utils import keypress_to_dispatch_key
@@ -91,6 +92,12 @@ class CropObjectListView(ListView):
     render_new_to_back = BooleanProperty(False)
     '''If True, will send new CropObjectsViews to the back of the container
     instead of on top when populating.'''
+
+    render_staff_to_back = BooleanProperty(True)
+    '''If True, will send new CropObjectViews whose class is a staff object
+    (staff_line, staff_space, or staff) to the back of the container instead
+    of on top when populating. This means that staff objects will not
+    obscure other objects on click.'''
 
     @property
     def _model(self):
@@ -165,6 +172,9 @@ class CropObjectListView(ListView):
 
             # Do new objects go into the back, or into the front?
             if self.render_new_to_back:
+                ins_index = len(container.children)
+            elif self.render_staff_to_back \
+                 and (c.clsname in muscima.STAFF_CROPOBJECT_CLASSES):
                 ins_index = len(container.children)
             else:
                 ins_index = 0

@@ -6,6 +6,9 @@ import logging
 import pprint
 
 import math
+
+import muscima
+
 from kivy.adapters.dictadapter import DictAdapter
 from kivy.app import App
 from kivy.clock import  Clock
@@ -41,6 +44,8 @@ class EdgeView(SelectableView, ToggleButton):
 
     _start_node_size = 2.0
 
+    STAFF_CROPOBJECT_CLASSES = ['staff_line', 'staff_space', 'staff']
+
     def __init__(self,
                  cropobject_from, cropobject_to, edge_label=None,
                  rgb=(1, 0, 0), **kwargs):
@@ -55,25 +60,24 @@ class EdgeView(SelectableView, ToggleButton):
         self.start_objid = cropobject_from.objid
         self.end_objid = cropobject_to.objid
         self.label = edge_label
-        self.rgb = rgb
 
-        # Another shitty, shitty x/y switch. Why can't people use
-        # (top, left, bottom, right) names???
-        self.vert_start = cropobject_from.x + (cropobject_from.height / 2)
-        self.horz_start = cropobject_from.y + (cropobject_from.width / 2)
+        ##### Generating endpoint positions.
 
-        self.vert_end = cropobject_to.x + (cropobject_to.height / 2)
-        self.horz_end = cropobject_to.y + (cropobject_to.width / 2)
-
-        if self._start_and_end_invisibly_close():
-            self._adjust_for_invisible_end()
+        self._generate_start_and_end_points(cropobject_from, cropobject_to)
 
         self._line_width = 1
         self._selected_line_width = 2
 
         ##### Handling the button stuff -- temporary...
-        alpha = 0.3
         self.text = ''   # We don't want any text showing up
+
+        ###### Generating the colors
+        # This might be endpoint classes-specific, or more generally
+        # edge class-specific. Right now we are just making it up
+        # on the spot through generate_edge_view_color()
+        rgb, alpha = self._generate_edge_view_color(cropobject_from, cropobject_to)
+
+        self.rgb = rgb
 
         r, g, b = rgb
         self.selected_color = r, g, b, min([1.0, alpha * 1.8])
@@ -145,6 +149,51 @@ class EdgeView(SelectableView, ToggleButton):
     def _adjust_for_invisible_end(self):
         self.horz_end += self._start_node_size * 1.1
         self.vert_end -= self._start_node_size * 0.45
+
+    def _generate_start_and_end_points(self, cropobject_from, cropobject_to):
+        # Another shitty, shitty x/y switch. Why can't people use
+        # (top, left, bottom, right) names???
+        self.vert_start = cropobject_from.x + (cropobject_from.height / 2)
+        self.horz_start = cropobject_from.y + (cropobject_from.width / 2)
+
+        self.vert_end = cropobject_to.x + (cropobject_to.height / 2)
+
+        # Edges that lead from non-staff to staff objects
+        # only point a bit to the right.
+        if cropobject_to.clsname in muscima.STAFF_CROPOBJECT_CLASSES:
+            if cropobject_from.clsname in muscima.STAFF_CROPOBJECT_CLASSES:
+                self.horz_end = cropobject_to.y + (cropobject_to.width / 2)
+            else:
+                self.horz_end = cropobject_from.y + 20
+        else:
+            self.horz_end = cropobject_to.y + (cropobject_to.width / 2)
+
+        if self._start_and_end_invisibly_close():
+            self._adjust_for_invisible_end()
+
+    def _generate_edge_view_color(self, cropobject_from, cropobject_to):
+        """Generates the edge view color based on the from/to CropObjects.
+
+        Designed as a temporary solution to differentiating staff-related
+        edges.
+
+        Current operations
+        ------------------
+
+        * Non-staff attachment edges are red
+        * Staff attachment edges are dark purple
+        """
+        DEFAULT_RGB = (1, 0, 0)
+        DEFAULT_ALPHA = 0.3
+
+        rgb, alpha = DEFAULT_RGB, DEFAULT_ALPHA
+
+        if (cropobject_from.clsname in self.STAFF_CROPOBJECT_CLASSES) \
+            or (cropobject_to.clsname in self.STAFF_CROPOBJECT_CLASSES):
+                rgb = (0.8, 0, 0.8)
+                alpha = 0.3
+
+        return rgb, alpha
 
     def create_bindings(self):
         logging.debug('EdgeView\t{0}: Creating bindings'.format(self.edge))
