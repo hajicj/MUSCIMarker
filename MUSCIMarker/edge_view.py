@@ -337,9 +337,12 @@ class EdgeView(SelectableView, ToggleButton):
         with self.canvas:
             Color(*self.rgb)
             Line(points=points, width=self._line_width)
-            # Draw a little square node at the starting point
+
+            # Draw a little square node at the starting point.
+            # This one is always red.
             _sns = self._start_node_size
             _delta_start = _sns / 2.0
+            Color(1, 0, 0)
             Rectangle(pos=(self.horz_start - _delta_start,
                            self.vert_start - _delta_start),
                       size=(_sns, _sns))
