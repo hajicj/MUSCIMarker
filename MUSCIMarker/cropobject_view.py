@@ -499,6 +499,14 @@ class CropObjectView(SelectableView, ToggleButton):
     def get_info_label_text(self):
         c = self._model_counterpart
         text = '({0})  {1}'.format(c.objid, c.clsname)
+        if c.data is not None:
+            pitch_text = None
+            if 'normalized_pitch_step' in c.data:
+                pitch_text = '{0}'.format(c.data['normalized_pitch_step'])
+            if 'pitch_octave' in c.data:
+                pitch_text += '{0}'.format(c.data['pitch_octave'])
+            if pitch_text is not None:
+                text += ' | {0}'.format(pitch_text)
         return text
 
     def update_info_label(self, *args):

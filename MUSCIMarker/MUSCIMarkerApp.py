@@ -735,6 +735,9 @@ class MUSCIMarkerApp(App):
     def open_settings(self, *largs):
         super(MUSCIMarkerApp, self).open_settings(*largs)
 
+    def open_help(self, *largs):
+        pass
+
     ##########################################################################
     # Functions for recovering work from crashes, inadvertent shutdowns, etc.
     # Don't call these directly!
