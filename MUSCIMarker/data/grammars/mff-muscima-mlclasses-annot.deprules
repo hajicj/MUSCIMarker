@@ -27,7 +27,8 @@ grace-notehead-full{1,} |
 
 | grace-notehead-*{1,}
 | beam{1,} stem{1,}
-| duration-dot{1,} other-dot{1,} tenuto{1,} accent{1,} strong_accent{1,}
+| duration-dot{1,} staccato-dot{1,} other-dot{1,}
+| tenuto{1,} accent{1,} strong_accent{1,}
 | sharp{1,} flat{1,} natural{1,} double_sharp{1,} double_flat{1,}
 | ledger_line{1,}
 | curved-line_(tie-or-slur){1,} slur{2,} tie{2,}
@@ -107,13 +108,15 @@ measure_separator | fermata
 ##############################################################################
 # Staff rules
 
-staff | staff_line
+staff | staff_line staff_space
 key_signature time_signature g-clef c-clef f-clef | staff
 measure_separator | staff
 staff_grouping | staff
 
-| staff_line{1,}
+notehead-* grace-notehead-* | staff_line staff_space staff
 
+| staff_line{1,}
+| staff_space{1,}
 
 
 ##############################################################################

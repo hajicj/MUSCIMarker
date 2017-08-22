@@ -202,13 +202,13 @@
 		<CropObjectClass>
 			<Id>33</Id>
 			<Name>staff_line</Name>
-			<GroupName>layout/staff_line</GroupName>
+			<GroupName>staff/staff_line</GroupName>
 			<Color>#191126</Color>
 			</CropObjectClass>
 		<CropObjectClass>
 			<Id>34</Id>
 			<Name>staff</Name>
-			<GroupName>layout/staff</GroupName>
+			<GroupName>staff/staff</GroupName>
 			<Color>#211126</Color>
 			</CropObjectClass>
 		<CropObjectClass>
@@ -949,6 +949,11 @@
 			<GroupName>notations/breath_mark</GroupName>
 			<Color>#66FFE0</Color>
 			</CropObjectClass>
-
+		<CropObjectClass>
+			<Id>158</Id>
+			<Name>staff_space</Name>
+			<GroupName>staff/staff_space</GroupName>
+			<Color>#191126</Color>
+			</CropObjectClass>
 	</CropObjectClasses>
 </CropObjectClassList>

@@ -20,7 +20,7 @@ objid_selection_dialog_kv = '''
 <ObjidSelectionDialog@Popup>
     size_hint: None, None
     size: app.root.size[0] * 0.5, app.root.size[1] * 0.2
-    pos_hint: {'center_x': 0.5, 'centery_y': 0.5}
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 
     title: 'Select CropObjects by typing their objids (whitespace-separated).'
 

@@ -707,6 +707,10 @@ MUSCIMarkerLayout:
             #    text: 'Commands:'
 
             ActionButton:
+                text: 'HELP'
+                on_release: app.open_help()
+
+            ActionButton:
                 text: 'CENTER'
                 on_release: app.do_center_and_rescale_current_image_user()
 

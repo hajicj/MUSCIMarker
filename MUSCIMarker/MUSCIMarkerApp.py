@@ -232,6 +232,7 @@ from muscima.io import parse_cropobject_list, parse_cropobject_class_list
 from muscima.cropobject import CropObject
 #import muscimarker_io
 
+from help import Help
 from objid_selection import ObjidSelectionDialog
 from mlclass_selection import MLClassSelectionDialog
 from syntax.dependency_grammar import DependencyGrammar
@@ -1820,6 +1821,14 @@ class MUSCIMarkerApp(App):
         self.clean_tmp_dir()
 
         self.stop()
+
+    ##########################################################################
+    # Help
+    @tr.Tracker(track_names=[],
+                tracker_name='app',
+                comment='Help requested.')
+    def open_help(self):
+        Help().open()
 
     ##########################################################################
     # Temporary files
