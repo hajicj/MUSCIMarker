@@ -500,6 +500,8 @@ class CropObjectView(SelectableView, ToggleButton):
         c = self._model_counterpart
         text = '({0})  {1}'.format(c.objid, c.clsname)
         if c.data is not None:
+            logging.warn('Creating info label for object {0}:'
+                         ' data {1}'.format(c.uid, c.data))
             pitch_text = None
             if 'normalized_pitch_step' in c.data:
                 pitch_text = '{0}'.format(c.data['normalized_pitch_step'])
@@ -507,6 +509,11 @@ class CropObjectView(SelectableView, ToggleButton):
                 pitch_text += '{0}'.format(c.data['pitch_octave'])
             if pitch_text is not None:
                 text += ' | {0}'.format(pitch_text)
+            duration_text = None
+            if 'duration_beats' in c.data:
+                duration_text = '{0:.2f}'.format(c.data['duration_beats'])
+            if duration_text is not None:
+                text += ' | {0}'.format(duration_text)
         return text
 
     def update_info_label(self, *args):
