@@ -18,7 +18,7 @@ import time
 import itertools
 import numpy
 
-from muscimar.io import parse_cropobject_list
+from muscima.io import parse_cropobject_list
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -211,8 +211,8 @@ def rpf_given_alignment(alignment, r, p,
 
         total_r += r[i, j]
         total_p += p[i, j]
-    total_r /= len(alignment)
-    total_p /= len(alignment)
+    total_r /= r.shape[0]   # No. of truth objects
+    total_p /= r.shape[1]   # No. of predicted objects
     if (total_r == 0) or (total_p == 0):
         total_f = 0.0
     else:
