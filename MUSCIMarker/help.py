@@ -78,10 +78,12 @@ MUSCIMARKER_AVAILABLE_KEYBOARD_SHORTCUTS = [
         'a': 'Add relationship from first to second selected object. [Not recommended.]',
         'd': 'Remove relationship from first to second selected object. [Not recommended.]',
         'p': 'Automatically add all possible relationships among selected objects.',
+        'n': 'Automatically add precedence relationships within a single-voice selection.',
         'Alt+h': 'Hide/Show the selected objects\' relationships.',
     }),
     ('Without selection', {
         'c': 'Open object class selection dialog.',
+        'o': 'Open dialog for selecting objects by their objids.',
         'Alt+h': 'Hide/Show all relationships.',
     }),
     ('Validation', {
