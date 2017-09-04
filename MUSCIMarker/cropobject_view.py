@@ -502,12 +502,14 @@ class CropObjectView(SelectableView, ToggleButton):
         if c.data is not None:
             logging.warn('Creating info label for object {0}:'
                          ' data {1}'.format(c.uid, c.data))
-            pitch_text = None
-            if 'normalized_pitch_step' in c.data:
+            pitch_text = ''
+            if 'pitch_step' in c.data:
+                pitch_text = '{0}'.format(c.data['pitch_step'])
+            elif 'normalized_pitch_step' in c.data:
                 pitch_text = '{0}'.format(c.data['normalized_pitch_step'])
             if 'pitch_octave' in c.data:
                 pitch_text += '{0}'.format(c.data['pitch_octave'])
-            if pitch_text is not None:
+            if pitch_text:
                 text += ' | {0}'.format(pitch_text)
             duration_text = None
             if 'duration_beats' in c.data:

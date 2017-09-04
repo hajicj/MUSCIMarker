@@ -1,6 +1,7 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
 
+import collections
 import copy
 import logging
 
@@ -22,6 +23,7 @@ from kivy.uix.widget import Widget
 
 from cropobject_view import CropObjectView
 import muscima
+from muscima.inference_engine_constants import InferenceEngineConstants
 from muscima.cropobject import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
 import tracker as tr
 from utils import keypress_to_dispatch_key
@@ -358,6 +360,11 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView: handling parse')
             self.parse_current_selection(unselect_at_end=True)
 
+        # N for precedence edge inference
+        if dispatch_key == '110':
+            logging.info('CropObjectListView: handling precedence parse')
+            self.infer_precedence_for_current_selection(unselect_at_end=True)
+
         else:
             logging.info('CropObjectListView: propagating keypress')
             return False
@@ -529,7 +536,73 @@ class CropObjectListView(ListView):
                      ''.format(len(edges)))
 
         #self._model.graph.ensure_add_edges(edges)
-        self._model.ensure_add_edges(edges)
+        self._model.ensure_add_edges(edges, label='Attachment')
+
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [
+                    lambda v: ('objids', [c.objid for c in v.selected_views]),
+                    lambda v: ('mlclass_names', [c._model_counterpart.clsname
+                                                 for c in v.selected_views])
+                ]
+                },
+                fn_name='CropObjectListView.infer_precedence_for_current_selection',
+                tracker_name='model')
+    def infer_precedence_for_current_selection(self, unselect_at_end=True):
+        """Adds edges among the current selection according to the model's
+        grammar and parser."""
+        cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        self._infer_precedence(cropobjects)
+
+        if unselect_at_end:
+            self.unselect_all()
+
+    def _infer_precedence(self, cropobjects):
+
+        _relevant_clsnames = set(list(InferenceEngineConstants.NOTEHEAD_CLSNAMES)
+                                 + list(InferenceEngineConstants.REST_CLSNAMES))
+        prec_cropobjects = [c for c in cropobjects
+                            if c.clsname in _relevant_clsnames]
+
+        if len(prec_cropobjects) <= 1:
+            logging.info('EdgeListView._infer_precedence: less than 2'
+                         ' timed CropObjects selected, no precedence'
+                         ' edges to infer.')
+            return
+
+        # Group into equivalence if noteheads share stems
+        _stems_to_noteheads_map = collections.defaultdict(list)
+        for c in prec_cropobjects:
+            for o in c.outlinks:
+                c_o = self._model.cropobjects[o]
+                if c_o.clsname == 'stem':
+                    _stems_to_noteheads_map[c_o.objid].append(c.objid)
+
+        _prec_equiv_objids = []
+        _stemmed_noteheads_objids = []
+        for _stem_objid, _stem_notehead_objids in _stems_to_noteheads_map.items():
+            _stemmed_noteheads_objids = _stemmed_noteheads_objids \
+                                        + _stem_notehead_objids
+            _prec_equiv_objids.append(_stem_notehead_objids)
+        for c in prec_cropobjects:
+            if c.objid not in _stemmed_noteheads_objids:
+                _prec_equiv_objids.append([c.objid])
+
+        equiv_objs = [[self._model.cropobjects[objid] for objid in equiv_objids]
+                      for equiv_objids in _prec_equiv_objids]
+
+        # Order the equivalence classes left to right
+        sorted_equiv_objs = sorted(equiv_objs,
+                                   key=lambda eo: min([o.left for o in eo]))
+
+        edges = []
+        for i in xrange(len(sorted_equiv_objs) - 1):
+            fr_objs = sorted_equiv_objs[i]
+            to_objs = sorted_equiv_objs[i+1]
+            for f in fr_objs:
+                for t in to_objs:
+                    edges.append((f.objid, t.objid))
+
+        self._model.ensure_add_edges(edges, label='Precedence')
 
     def get_cropobject_view(self, objid):
         """Retrieves the CropObjectView based on the objid. Useful e.g.
