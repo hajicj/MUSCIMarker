@@ -75,7 +75,9 @@ class EdgeView(SelectableView, ToggleButton):
         # This might be endpoint classes-specific, or more generally
         # edge class-specific. Right now we are just making it up
         # on the spot through generate_edge_view_color()
-        rgb, alpha = self._generate_edge_view_color(cropobject_from, cropobject_to)
+        rgb, alpha = self._generate_edge_view_color(cropobject_from,
+                                                    cropobject_to,
+                                                    edge_label)
 
         self.rgb = rgb
 
@@ -171,8 +173,11 @@ class EdgeView(SelectableView, ToggleButton):
         if self._start_and_end_invisibly_close():
             self._adjust_for_invisible_end()
 
-    def _generate_edge_view_color(self, cropobject_from, cropobject_to):
-        """Generates the edge view color based on the from/to CropObjects.
+    def _generate_edge_view_color(self,
+                                  cropobject_from, cropobject_to,
+                                  edge_label=None):
+        """Generates the edge view color based on the from/to CropObjects
+        and the edge label.
 
         Designed as a temporary solution to differentiating staff-related
         edges.
@@ -192,6 +197,10 @@ class EdgeView(SelectableView, ToggleButton):
             or (cropobject_to.clsname in self.STAFF_CROPOBJECT_CLASSES):
                 rgb = (0.8, 0, 0.8)
                 alpha = 0.3
+
+        elif edge_label == 'Precedence':
+            rgb = (0.4, 1.0, 0.0)
+            alpha = 0.3
 
         return rgb, alpha
 

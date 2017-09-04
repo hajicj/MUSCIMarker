@@ -215,7 +215,7 @@ class ObjectGraph(Widget):
 
     def get_neighborhood(self, objid, inclusive=True):
         """Returns a list of ``objid``s of the undirected neighbors
-        of the given object. Useful e.g. for only removing
+        of the given object. Useful e.g. for only removing [...?]
 
         :param objid: Object ID of the "center" of the neighborhood
 
@@ -229,6 +229,50 @@ class ObjectGraph(Widget):
         if objid in self._outlinks:
             neighbors.extend(self._outlinks[objid])
         return list(set(neighbors))     # Removing duplicates
+
+    def inlinks_of(self, objid, label=None):
+        """Returns the inlinks for the given objid such that the
+        edges are labeled with the given label. If the label
+        is ``None``, then all inlinks are returned regardless of
+        their labels.
+
+        :returns: List of ``objid``s of inlinks with given label.
+            Empty list if no such inlinks exist in graph.
+        """
+        if objid not in self._inlinks:
+            return []
+
+        if label is None:
+            return list(self._inlinks[objid])
+
+        output = []
+        for i in list(self._inlinks[objid]):
+            if self.edges[(i, objid)] == label:
+                output.append(i)
+
+        return output
+
+    def outlinks_of(self, objid, label=None):
+        """Returns the outlinks for the given objid such that the
+        edges are labeled with the given label. If the label
+        is ``None``, then all outlinks are returned regardless of
+        their labels.
+
+        :returns: List of ``objid``s of outlinks with given label.
+            Empty list if no such inlinks exist in graph.
+        """
+        if objid not in self._outlinks:
+            return []
+
+        if label is None:
+            return list(self._outlinks[objid])
+
+        output = []
+        for o in list(self._outlinks[objid]):
+            if self.edges[(objid, o)] == label:
+                output.append(o)
+
+        return output
 
 
 ##############################################################################
@@ -401,6 +445,16 @@ class CropObjectAnnotatorModel(Widget):
         in the app, so they need to be written to the CropObjects
         explicitly.
 
+        Edge label handling
+        -------------------
+
+        Edges labeled as ``Attachment`` in the graph get synced to
+        the CropObject's inlinks and outlinks.
+
+        Edges labeled as ``Precedence`` in the graph get synced
+        to the CropObject's data, under the keys ``precedence_inlinks``
+        and ``precedence_outlinks``, as lists of ints.
+
         .. warning::
 
             Clears all outlinks and inlinks from the CropObjects and replaces
@@ -416,15 +470,30 @@ class CropObjectAnnotatorModel(Widget):
             cropobjects = self.cropobjects.values()
 
         for c in cropobjects:
-            if c.objid in self.graph._inlinks:
-                c.inlinks = list(self.graph._inlinks[c.objid])
-            else:
-                c.inlinks = []
 
-            if c.objid in self.graph._outlinks:
-                c.outlinks = list(self.graph._outlinks[c.objid])
+            # Inlinks
+            attachment_inlinks = self.graph.inlinks_of(c.objid, label='Attachment')
+            c.inlinks = attachment_inlinks
+
+            precedence_inlinks = self.graph.inlinks_of(c.objid, label='Precedence')
+            if len(precedence_inlinks) > 0:
+                c.data['precedence_inlinks'] = precedence_inlinks
             else:
-                c.outlinks = []
+                if 'precedence_inlinks' in c.data:
+                    del c.data['precedence_inlinks']
+
+            # Outlinks
+            attachment_outlinks = self.graph.outlinks_of(c.objid,
+                                                         label='Attachment')
+            c.outlinks = attachment_outlinks
+
+            precedence_outlinks = self.graph.outlinks_of(c.objid,
+                                                         label='Precedence')
+            if len(precedence_outlinks) > 0:
+                c.data['precedence_outlinks'] = precedence_outlinks
+            else:
+                if 'precedence_outlinks' in c.data:
+                    del c.data['precedence_outlinks']
 
     def sync_cropobjects_to_graph(self, cropobjects=None):
         """Ensures that the attachment structure in CropObjects
@@ -448,16 +517,22 @@ class CropObjectAnnotatorModel(Widget):
             for c in cropobjects:
                 self.graph.remove_obj_from_graph(c.objid)
 
-        edges = []
+        attachment_edges = []
+        precedence_edges = []
+
         for c in cropobjects:
-            for o in c.outlinks:
-                edges.append((c.objid, o))
             self.graph.add_vertex(c.objid)
+            # It is sufficient to collect outlinks -- the corresponding
+            # inlink would just duplicate the edge.
+            for o in c.outlinks:
+                attachment_edges.append((c.objid, o))
+            if 'precedence_outlinks' in c.data:
+                for o in c.data['precedence_outlinks']:
+                    precedence_edges.append((c.objid, o))
 
         # Add all edges at once.
-        self.graph.add_edges(edges)
-        #for e in edges:
-        #    self.graph.add_edge(e)
+        self.graph.add_edges(attachment_edges, label='Attachment')
+        self.graph.add_edges(precedence_edges, label='Precedence')
 
     def ensure_consistent(self):
         """Make sure that the model is in a consistent state.
@@ -483,8 +558,8 @@ class CropObjectAnnotatorModel(Widget):
             _affected_cropobjects.append(self.cropobjects[to_objid])
         self.sync_graph_to_cropobjects(cropobjects=_affected_cropobjects)
 
-    def ensure_add_edge(self, edge):
-        self.graph.ensure_add_edge(edge)
+    def ensure_add_edge(self, edge, label='Attachment'):
+        self.graph.ensure_add_edge(edge, label=label)
         self.sync_graph_to_cropobjects(cropobjects=[self.cropobjects[edge[0]],
                                                     self.cropobjects[edge[1]]])
 
