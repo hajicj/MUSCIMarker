@@ -544,8 +544,17 @@ class ObjectGraphRenderer(FloatLayout):
         self.pos = pos
         logging.info('ObjectGraphRenderer: setting pos to {0}'.format(self.pos))
 
-    def mask_all(self):
-        new_mask = {e: False for e in self.graph.edges}
+    def mask_all(self, label=None):
+        if label is None:
+            new_mask = {e: False for e in self.graph.edges}
+        else:
+            new_mask = {}
+            for e, l in self.graph.edges.items():
+                if l == label:
+                    new_mask[e] = False
+                else:
+                    new_mask[e] = self.views_mask[e]
+
         self.views_mask = new_mask
         self.update_edge_adapter_data(instance=None,
                                       edges=self.graph.edges)
@@ -560,8 +569,17 @@ class ObjectGraphRenderer(FloatLayout):
         self.update_edge_adapter_data(instance=None,
                                       edges=self.graph.edges)
 
-    def unmask_all(self):
-        new_mask = {e: True for e, e_label in self.graph.edges.iteritems()}
+    def unmask_all(self, label=None):
+        if label is None:
+            new_mask = {e: True for e in self.graph.edges}
+        else:
+            new_mask = {}
+            for e, l in self.graph.edges.items():
+                if l == label:
+                    new_mask[e] = True
+                else:
+                    new_mask[e] = self.views_mask[e]
+
         self.views_mask = new_mask
         self.update_edge_adapter_data(instance=None,
                                       edges=self.graph.edges)

@@ -504,14 +504,30 @@
     Button:
         id: graph_mask_button
         size_hint: 1.0, 0.1
-        text: 'Hide Relationships'
-        on_release: app.graph_renderer.mask_all()
+        text: 'Hide Attachments'
+        on_release: app.graph_renderer.mask_all(label='Attachment')
 
     Button:
         id: graph_unmask_button
         size_hint: 1.0, 0.1
-        text: 'Show Relationships'
-        on_release: app.graph_renderer.unmask_all()
+        text: 'Show Attachments'
+        on_release: app.graph_renderer.unmask_all(label='Attachment')
+
+    Label:
+        size_hint: 1.0, 0.1
+        text: ''
+
+    Button:
+        id: prec_graph_mask_button
+        size_hint: 1.0, 0.1
+        text: 'Hide Precedence'
+        on_release: app.graph_renderer.mask_all(label='Precedence')
+
+    Button:
+        id: prec_graph_unmask_button
+        size_hint: 1.0, 0.1
+        text: 'Show Precedence'
+        on_release: app.graph_renderer.unmask_all(label='Precedence')
 
 
     Label:
