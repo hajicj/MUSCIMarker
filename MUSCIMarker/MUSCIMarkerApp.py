@@ -1143,7 +1143,8 @@ class MUSCIMarkerApp(App):
             img = scipy.misc.imread(pos, mode='L')
             #img = cv2.imread(pos)
             #img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            logging.warn('App: Image dtype: {0}, min: {1}, max: {2}'.format(img.dtype, img.min(), img.max()))
+            logging.info('App: Image dtype: {0}, min: {1}, max: {2}, shape: {3}'
+                         ''.format(img.dtype, img.min(), img.max(), img.shape))
             # img = bb.load_grayscale(pos)
         except:
             logging.info('App: Loading image from file \'{0}\' failed.'

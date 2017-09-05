@@ -596,7 +596,7 @@ of the same system, and which staves are a group within a system
 
 * ``multi-staff_bracket`` (the "horned" one)
 * ``multi-staff_brace`` (the "curly" one, rarely spanning more than 2 staves)
-* ``thin_barline`` (a simple line)
+* ``thin_barline`` (a simple line) or, rarely, ``thick_barline``
 
 You will practically always find these symbols at the beginnings of systems.
 
