@@ -2,19 +2,26 @@
 from __future__ import print_function, unicode_literals
 
 import codecs
+import itertools
 import logging
+import os
+import uuid
 
 # import cv2
 # import matplotlib.pyplot as plt
-import itertools
+
+from scipy.misc import imsave
+
 from kivy.app import App
-from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty
+from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListProperty, StringProperty
 from kivy.uix.widget import Widget
 
 from muscima.io import export_cropobject_list
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from utils import compute_connected_components
 from tracker import Tracker
+
+
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -310,6 +317,8 @@ class CropObjectAnnotatorModel(Widget):
     parser = ObjectProperty(None, allownone=True)
     grammar = ObjectProperty(None, allownone=True)
 
+    _current_tmp_image_filename = StringProperty(None, allownone=True)
+
     def __init__(self, image=None, cropobjects=None, mlclasses=None, **kwargs):
         super(CropObjectAnnotatorModel, self).__init__(**kwargs)
 
@@ -330,6 +339,24 @@ class CropObjectAnnotatorModel(Widget):
         self.image = image
         if compute_cc:
             self._compute_cc_cache()
+
+        self._update_temp_image()
+
+    def _update_temp_image(self):
+        new_temp_fname = self._generate_model_image_tmp_filename()
+        if self._current_tmp_image_filename is not None:
+            if os.path.isfile(self._current_tmp_image_filename):
+                os.unlink(self._current_tmp_image_filename)
+
+        imsave(new_temp_fname, self.image)
+        self._current_tmp_image_filename = new_temp_fname
+
+    def _generate_model_image_tmp_filename(self):
+        tmpdir = App.get_running_app().tmp_dir
+        random_string = str(uuid.uuid4())[:8]
+        tmp_fname = os.path.join(tmpdir, 'current_model_image__{0}.png'
+                                         ''.format(random_string))
+        return tmp_fname
 
     @Tracker(track_names=['cropobject'],
              transformations={'cropobject': [lambda c: ('objid', c.objid),

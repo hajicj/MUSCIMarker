@@ -1154,8 +1154,13 @@ class MUSCIMarkerApp(App):
         self.annot_model.clear_cropobjects()
         self.annot_model.load_image(img)
 
-        # Only change the displayed image after annotation.
-        self.currently_edited_image_filename = pos
+        # Only change the displayed image after loading into model.
+        image_fname = pos
+        time.sleep(3)
+        if os.path.isfile(self.annot_model._current_tmp_image_filename):
+            logging.info('Found new temp file: {0}')
+            image_fname = self.annot_model._current_tmp_image_filename
+        self.currently_edited_image_filename = image_fname
 
         # compute scale
         self.current_image_height = img.shape[0]
