@@ -114,6 +114,7 @@ measure_separator | staff
 staff_grouping | staff
 
 notehead-* grace-notehead-* | staff_line staff_space staff
+*_rest | staff
 
 | staff_line{1,}
 | staff_space{1,}

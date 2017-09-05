@@ -558,7 +558,7 @@ class CropObjectListView(ListView):
 
     def _infer_precedence(self, cropobjects):
 
-        _relevant_clsnames = set(list(InferenceEngineConstants.NOTEHEAD_CLSNAMES)
+        _relevant_clsnames = set(list(InferenceEngineConstants.NONGRACE_NOTEHEAD_CLSNAMES)
                                  + list(InferenceEngineConstants.REST_CLSNAMES))
         prec_cropobjects = [c for c in cropobjects
                             if c.clsname in _relevant_clsnames]

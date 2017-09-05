@@ -598,7 +598,8 @@ class CropObjectAnnotatorModel(Widget):
 
     def find_grammar_errors(self):
         vertices = {v: self.cropobjects[v].clsname for v in self.graph.vertices}
-        edges = self.graph.edges.keys()
+        edges = [e for e in self.graph.edges.keys()
+                 if self.graph.edges[e] == 'Attachment']
         v, i, o, r_v, r_i, r_o = self.grammar.find_invalid_in_graph(vertices, edges,
                                                                     provide_reasons=True)
         return v, i, o, r_v, r_i, r_o
