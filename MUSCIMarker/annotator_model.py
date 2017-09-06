@@ -21,6 +21,7 @@ from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from utils import compute_connected_components
 from tracker import Tracker
 
+from image_processing import ImageProcessing
 
 
 __version__ = "0.0.1"
@@ -319,6 +320,8 @@ class CropObjectAnnotatorModel(Widget):
 
     _current_tmp_image_filename = StringProperty(None, allownone=True)
 
+    _image_processor = ImageProcessing()
+
     def __init__(self, image=None, cropobjects=None, mlclasses=None, **kwargs):
         super(CropObjectAnnotatorModel, self).__init__(**kwargs)
 
@@ -336,7 +339,12 @@ class CropObjectAnnotatorModel(Widget):
 
     def load_image(self, image, compute_cc=False):
         self._invalidate_cc_cache()
-        self.image = image
+
+        # Apply preprocessing
+        processed_image = self._image_processor.process(image)
+
+        self.image = processed_image
+
         if compute_cc:
             self._compute_cc_cache()
 
@@ -350,6 +358,9 @@ class CropObjectAnnotatorModel(Widget):
 
         imsave(new_temp_fname, self.image)
         self._current_tmp_image_filename = new_temp_fname
+
+    def preprocess_image(self, image):
+        return image
 
     def _generate_model_image_tmp_filename(self):
         tmpdir = App.get_running_app().tmp_dir
