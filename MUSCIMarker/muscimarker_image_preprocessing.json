@@ -1,0 +1,26 @@
+[
+  { "type": "title",
+    "title": "Grayscale image enhancements"
+  },
+
+  { "type": "bool",
+    "title": "Do image preprocessing?",
+    "desc": "Should grayscale images be enhanced by MUSCIMarker at all?",
+    "section": "image_preprocessing",
+    "key": "do_image_preprocessing"
+  },
+
+  { "type": "bool",
+    "title": "Auto-Invert",
+    "desc": "If necessary, inverts the image so that the foreground is light and background is dark.",
+    "section": "image_preprocessing",
+    "key": "auto_invert"
+  },
+
+  { "type": "bool",
+    "title": "Stretch Intensity",
+    "desc": "Normalize the intensity range of the image to 0 - 255.",
+    "section": "image_preprocessing",
+    "key": "stretch_intensity"
+  }
+]

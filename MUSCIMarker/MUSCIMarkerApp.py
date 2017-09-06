@@ -231,7 +231,7 @@ from kivy.uix.widget import Widget
 from muscima.io import parse_cropobject_list, parse_cropobject_class_list
 from muscima.cropobject import CropObject
 #import muscimarker_io
-
+from image_processing import ImageProcessing
 from help import Help
 from objid_selection import ObjidSelectionDialog
 from mlclass_selection import MLClassSelectionDialog
@@ -721,6 +721,15 @@ class MUSCIMarkerApp(App):
                 'sparse_cropobject_threshold': 0.1,
                 'sparse_exclusive_cropobject_threshold': 0.2
             })
+        config.setdefaults('image_preprocessing',
+            {
+                'do_image_preprocessing': False,
+                'auto_invert': False,
+                'stretch_intensity': False,
+                # 'median_kernel_size': 10,
+                # 'do_background_thresholding': False,
+                # 'binarization_lightness_tolerance': 127,
+            })
 
         Config.set('kivy', 'exit_on_escape', '0')
 
@@ -729,6 +738,13 @@ class MUSCIMarkerApp(App):
             jsondata = hdl.read()
         settings.add_json_panel('MUSCIMarker',
                                 self.config, data=jsondata)
+
+        with open(os.path.join(os.path.dirname(__file__),
+                               'muscimarker_image_preprocessing.json')) as hdl:
+            jsondata = hdl.read()
+        settings.add_json_panel('Image Processing',
+                                self.config, data=jsondata)
+
 
     @tr.Tracker(track_names=[],
                 tracker_name='app',
@@ -1152,6 +1168,21 @@ class MUSCIMarkerApp(App):
             return
 
         self.annot_model.clear_cropobjects()
+
+        # Define image processing here, based on config
+        image_processor = ImageProcessing(
+            do_image_processing=self.config.getboolean('image_preprocessing',
+                                                       'do_image_preprocessing'),
+            auto_invert=self.config.getboolean('image_preprocessing',
+                                               'auto_invert'),
+            stretch_intensity=self.config.getboolean('image_preprocessing',
+                                                     'stretch_intensity'),
+        )
+        logging.info('App.import_image(): Image preprocessing with auto_invert={0},'
+                     ' stretch_intensity={1}'.format(image_processor.auto_invert,
+                                                     image_processor.stretch_intensity))
+        self.annot_model._image_processor = image_processor
+
         self.annot_model.load_image(img)
 
         # Only change the displayed image after loading into model.

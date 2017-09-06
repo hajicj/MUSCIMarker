@@ -11,6 +11,10 @@ __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
 
 
+def build_image_processing_params(config):
+    """Extracts the boolean values for configuring """
+
+
 class ImageProcessing(object):
     """This class holds the definitions of how the input image
     should be manipulated upon loading it into the model.
@@ -18,21 +22,36 @@ class ImageProcessing(object):
     Only processes grayscale images.
     """
     def __init__(self,
-                 auto_invert=True,
-                 stretch_intensity=True,
-                 otsu_background=False):
+                 do_image_processing=False,
+                 auto_invert=False,
+                 stretch_intensity=False):
+
+        logging.warn('ImageProcessing: Initializing with params'
+                     ' do_image_processing={0},'
+                     ' auto_invert={1},'
+                     ' stretch_intensity={2},'
+                     ''.format(do_image_processing, auto_invert, stretch_intensity))
+
+        self.do_image_processing = do_image_processing
 
         self.auto_invert = auto_invert
         self.stretch_intensity = stretch_intensity
-        self.otsu_background = otsu_background
+        self.otsu_background = False # otsu_background
 
     def process(self, image):
         """The wrapper method. Based on the ImageProcessing settings,
         applies the desired image transformations."""
+        if not self.do_image_processing:
+            logging.info('ImageProcessing: no processing requested.')
+            return image
+
         if _is_binary(image):
             return image
 
         if self.auto_invert:
+            logging.info('ImageProcessing: auto-invert set to {0}, type {1},'
+                         'auto-inverting'
+                         ''.format(self.auto_invert, type(self.auto_invert)))
             image = _auto_invert(image)
 
         if self.stretch_intensity:
