@@ -473,8 +473,19 @@ class CropObjectListView(ListView):
         logging.info('CropObjectListView.merge(): Removing/deselecting selection {0}'
                      ''.format([c.objid for c in self.adapter.selection]))
         if destructive:
-            for s in self.adapter.selection:
+            to_destroy = [s for s in self.adapter.selection]
+            for s in to_destroy:
+                logging.info('CropObjectListView.merge(): Destroying {0}'
+                             ''.format(s._model_counterpart.uid))
                 s.remove_from_model()
+            # for s in self.adapter.selection:
+            #     logging.info('CropObjectListView.merge(): removing {0}'
+            #                  ''.format(s._model_counterpart.uid))
+            #     logging.info('CropObjectListView.merge(): Before removal,'
+            #                  ' selection: {0}'.format(self.adapter.selection))
+            #     s.remove_from_model()
+            #     logging.info('CropObjectListView.merge(): After removal,'
+            #                  ' selection: {0}'.format(self.adapter.selection))
         elif deselect:
             self.unselect_all()
 
