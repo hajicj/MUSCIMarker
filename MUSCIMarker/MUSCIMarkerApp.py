@@ -617,8 +617,12 @@ class MUSCIMarkerApp(App):
                      ''.format(self.grammar_loader.filename))
 
         # self.cropobject_list_loader.bind(filename=self.cropobject_list_renderer.clear)
-        self.mlclass_list_loader.bind(filename=self.cropobject_list_renderer.clear)
-        self.image_loader.bind(filename=self.cropobject_list_renderer.clear)
+
+        # XXX:TODO
+        # ??? Why was this here? It should work based on whether stuff is cleared out
+        #     in the *MODEL*.
+        # self.mlclass_list_loader.bind(filename=self.cropobject_list_renderer.clear)
+        # self.image_loader.bind(filename=self.cropobject_list_renderer.clear)
 
         # Keyboard control
         # self._keyboard = Window.request_keyboard(self._keyboard_close, self.root)
@@ -1167,7 +1171,13 @@ class MUSCIMarkerApp(App):
                          ''.format(pos))
             return
 
-        self.annot_model.clear_cropobjects()
+        _do_clear_cropobjects = False
+        if (self.annot_model.image is None) \
+                or (img.shape != self.annot_model.image.shape):
+            _do_clear_cropobjects = True
+
+        if _do_clear_cropobjects:
+            self.annot_model.clear_cropobjects()
 
         # Define image processing here, based on config
         image_processor = ImageProcessing(
@@ -1209,6 +1219,9 @@ class MUSCIMarkerApp(App):
         self.do_center_and_rescale_current_image()
         image_widget = self._get_editor_widget()
         image_widget.texture.mag_filter = 'nearest'
+
+        if not _do_clear_cropobjects:
+            self.cropobject_list_renderer.redraw += 1
 
         ###############
         # docname behavior:
