@@ -342,7 +342,6 @@ class CropObjectAnnotatorModel(Widget):
 
         # Apply preprocessing
         processed_image = self._image_processor.process(image)
-
         self.image = processed_image
 
         if compute_cc:
@@ -358,9 +357,6 @@ class CropObjectAnnotatorModel(Widget):
 
         imsave(new_temp_fname, self.image)
         self._current_tmp_image_filename = new_temp_fname
-
-    def preprocess_image(self, image):
-        return image
 
     def _generate_model_image_tmp_filename(self):
         tmpdir = App.get_running_app().tmp_dir

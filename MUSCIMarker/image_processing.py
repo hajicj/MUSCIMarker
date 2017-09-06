@@ -5,7 +5,7 @@ from __future__ import print_function, unicode_literals, division
 import logging
 
 import numpy
-from skimage.filters import gaussian, threshold_otsu
+from skimage.filters import gaussian, threshold_otsu, rank
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -20,7 +20,7 @@ class ImageProcessing(object):
     def __init__(self,
                  auto_invert=True,
                  stretch_intensity=True,
-                 otsu_background=True):
+                 otsu_background=False):
 
         self.auto_invert = auto_invert
         self.stretch_intensity = stretch_intensity
@@ -104,7 +104,9 @@ def _binarize_and_apply_background(image):
     """Performs plain Otsu binarization to get threshold,
     but only sets the background to 0, retains all the foreground
     intensities."""
-    thr = threshold_otsu(image, nbins=256)
+    selem = numpy.ones((80, 80), dtype='uint8')
+    local_otsu = rank.otsu(image, selem)
+    # thr = threshold_otsu(image, nbins=256)
     output = image * 1
-    output[output < thr] = 0
+    output[output < local_otsu] = 0
     return output
