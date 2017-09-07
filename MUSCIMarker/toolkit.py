@@ -1461,7 +1461,7 @@ def get_tool_kwargs_dispatch(name):
         'lasso_select_tool': dict(),
         'gesture_select_tool': dict(),
         'region_binarize_tool': dict(),
-        'background_tool': dict(),
+        'background_lasso_tool': dict(),
     }
 
     if name in no_kwarg_tools:
