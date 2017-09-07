@@ -337,17 +337,22 @@ class CropObjectAnnotatorModel(Widget):
         self.graph = ObjectGraph()
         self.sync_cropobjects_to_graph()
 
-    def load_image(self, image, compute_cc=False):
+    def load_image(self, image, compute_cc=False, do_preprocessing=True,
+                   update_temp=True):
         self._invalidate_cc_cache()
 
         # Apply preprocessing
-        processed_image = self._image_processor.process(image)
+        if do_preprocessing:
+            processed_image = self._image_processor.process(image)
+        else:
+            processed_image = image
         self.image = processed_image
 
         if compute_cc:
             self._compute_cc_cache()
 
-        self._update_temp_image()
+        if update_temp:
+            self._update_temp_image()
 
     def _update_temp_image(self):
         new_temp_fname = self._generate_model_image_tmp_filename()

@@ -4,6 +4,7 @@ from __future__ import print_function, unicode_literals
 import collections
 import copy
 import logging
+import os
 
 import numpy
 import time
@@ -18,6 +19,7 @@ from kivy.core.window import Window
 from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty, ListProperty, NumericProperty
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
+from skimage.filters import threshold_otsu, threshold_sauvola
 
 from edge_view import EdgeView
 from editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, LineTracer
@@ -254,6 +256,7 @@ class AddSymbolTool(MUSCIMarkerTool):
                                                    'bottom': m_b,
                                                    'right': m_r}
         # self.current_selection_from_bbox_tracer(instance=instance, pos=pos)
+
 
 
 ###############################################################################
@@ -1271,6 +1274,8 @@ class CropObjectViewsParseTool(CropObjectViewsSelectTool):
                                                                         do_clear_tracer=do_clear_tracer)
         self.list_view.parse_current_selection()
 
+
+
 ###############################################################################
 
 
@@ -1293,6 +1298,138 @@ class NoteSelectTool(AddSymbolTool):
         self.current_cropobject_selection = current_postprocessed_bbox
 
 
+###############################################################################
+
+# Image processing tools
+
+class RegionBinarizeTool(MUSCIMarkerTool):
+    """Binarize the region in the bounding box using Otsu binarization."""
+    def create_editor_widgets(self):
+        editor_widgets = collections.OrderedDict()
+        editor_widgets['bbox_tracer'] = BoundingBoxTracer()
+        editor_widgets['bbox_tracer'].bind(
+            current_finished_bbox=self.binarize)
+        return editor_widgets
+
+    def binarize(self, instance, pos):
+        """Binarize the selected region and update the annotated image."""
+
+        # Get model bbox
+        ed_t, ed_l, ed_b, ed_r = pos['top'], pos['left'], \
+                                 pos['bottom'], pos['right']
+        m_t, m_l, m_b, m_r = self.editor_to_model_bbox(ed_t, ed_l, ed_b, ed_r)
+        m_t, m_l, m_b, m_r = bbox_to_integer_bounds(m_t, m_l, m_b, m_r)
+
+        _binarization_start = time.clock()
+
+        # Crop and binarize
+        image = self.app_ref.annot_model.image * 1
+        crop = image[m_t:m_b, m_l:m_r] * 1
+
+        if crop.sum() == 0:
+            logging.info('RegionBinarizeTool: selected single-color region,'
+                         ' cannot binarize anything.')
+            self.editor_widgets['bbox_tracer'].clear()
+            return
+
+        binarized_crop_threshold = threshold_otsu(crop)
+        crop[crop < binarized_crop_threshold] = 0
+        # crop[crop >= binarized_crop_threshold] = 255
+        output_crop = crop
+
+        # sauvola_thresholds = threshold_sauvola(crop)
+        # sauvola_mask = crop > sauvola_thresholds
+        # output_crop = sauvola_mask * crop
+
+        image[m_t:m_b, m_l:m_r] = output_crop
+
+        _update_start = time.clock()
+
+        # Update image
+        self.app_ref.update_image(image)
+
+        _binarization_end = time.clock()
+        logging.info('RegionBinarizeTool: binarization took {0:.3f} s,'
+                     ' image update took {1:.3f} s'
+                     ''.format(_update_start - _binarization_start,
+                               _binarization_end - _update_start))
+
+        # Clean up
+        self.editor_widgets['bbox_tracer'].clear()
+
+
+class BackgroundLassoTool(LassoBoundingBoxSelectTool):
+    """Set the selected area as image background."""
+    def on_current_cropobject_model_selection(self, instance, pos):
+        # Ask the app to build CropObject from the bbox.
+        logging.info('BackgroundLassoTool: fired on_current_cropobject_model_selection with pos={0}'
+                     ''.format(pos))
+
+        pos = self.current_cropobject_model_selection
+        m_t, m_l, m_b, m_r = pos['top'], pos['left'], \
+                             pos['bottom'], pos['right']
+        m_t, m_l, m_b, m_r = bbox_to_integer_bounds(m_t, m_l, m_b, m_r)
+
+        image = self.app_ref.annot_model.image * 1
+        crop = image[m_t:m_b, m_l:m_r] * 1
+
+        if crop.shape != (m_b - m_t, m_r - m_l):
+            raise ValueError('BackgroundLassoTool: crop bbox {0} does not correspond'
+                             ' to mask shape {1}!'.format(
+                (m_t, m_l, m_b, m_r), crop.shape
+            ))
+
+        crop[self.current_cropobject_mask == 1] = 0
+        output_crop = crop
+
+        image[m_t:m_b, m_l:m_r] = output_crop
+
+        self.app_ref.update_image(image)
+
+        # Automatically clears the bounding box (it gets rendered as the new symbol
+        # gets recorded).
+        self.editor_widgets['line_tracer'].clear()
+
+
+class BackgroundFillTool(LassoBoundingBoxSelectTool):
+    """This is used for getting rid of background that did not go away
+    in binarization more smartly than the plain backgrounding lasso.
+    It takes the lightest shade in the given area, and within a 200-px
+    bounding box (+100/-100), removes everything that is darker than
+    the """
+    def on_current_cropobject_model_selection(self, instance, pos):
+        # Ask the app to build CropObject from the bbox.
+        logging.info('BackgroundFillTool: fired on_current_cropobject_model_selection with pos={0}'
+                     ''.format(pos))
+
+        raise NotImplementedError()
+
+        pos = self.current_cropobject_model_selection
+        m_t, m_l, m_b, m_r = pos['top'], pos['left'], \
+                             pos['bottom'], pos['right']
+        m_t, m_l, m_b, m_r = bbox_to_integer_bounds(m_t, m_l, m_b, m_r)
+
+        image = self.app_ref.annot_model.image * 1
+        crop = image[m_t:m_b, m_l:m_r] * 1
+
+        if crop.shape != (m_b - m_t, m_r - m_l):
+            raise ValueError('BackgroundFillTool: crop bbox {0} does not correspond'
+                             ' to mask shape {1}!'.format(
+                (m_t, m_l, m_b, m_r), crop.shape
+            ))
+
+        crop[self.current_cropobject_mask == 1] = 0
+        output_crop = crop
+
+        image[m_t:m_b, m_l:m_r] = output_crop
+
+        self.app_ref.update_image(image)
+
+        # Automatically clears the bounding box (it gets rendered as the new symbol
+        # gets recorded).
+        self.editor_widgets['line_tracer'].clear()
+
+
 ##############################################################################
 # This is the toolkit's interface to the UI elements.
 
@@ -1309,6 +1446,8 @@ tool_dispatch = {
     'cropobject_views_parse_tool': CropObjectViewsParseTool,
     'mask_eraser_tool': MaskEraserTool,
     'mask_addition_tool': MaskAdditionTool,
+    'region_binarize_tool': RegionBinarizeTool,
+    'background_lasso_tool': BackgroundLassoTool,
 }
 
 
@@ -1321,6 +1460,8 @@ def get_tool_kwargs_dispatch(name):
         'connected_select_tool': dict(),
         'lasso_select_tool': dict(),
         'gesture_select_tool': dict(),
+        'region_binarize_tool': dict(),
+        'background_tool': dict(),
     }
 
     if name in no_kwarg_tools:
