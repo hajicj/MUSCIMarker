@@ -618,7 +618,7 @@ class MUSCIMarkerApp(App):
 
         # self.cropobject_list_loader.bind(filename=self.cropobject_list_renderer.clear)
 
-        # XXX:TODO
+        # XXX:
         # ??? Why was this here? It should work based on whether stuff is cleared out
         #     in the *MODEL*.
         # self.mlclass_list_loader.bind(filename=self.cropobject_list_renderer.clear)
@@ -1158,14 +1158,9 @@ class MUSCIMarkerApp(App):
             return
 
         try:
-            # img = bb.load_rgb(pos)
-            #logging.warn('App: skimage available imread plugins: {0}'.format(find_available_plugins()))
             img = scipy.misc.imread(pos, mode='L')
-            #img = cv2.imread(pos)
-            #img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             logging.info('App: Image dtype: {0}, min: {1}, max: {2}, shape: {3}'
                          ''.format(img.dtype, img.min(), img.max(), img.shape))
-            # img = bb.load_grayscale(pos)
         except:
             logging.info('App: Loading image from file \'{0}\' failed.'
                          ''.format(pos))
@@ -1199,7 +1194,6 @@ class MUSCIMarkerApp(App):
         image_fname = pos
         time.sleep(3)
         if os.path.isfile(self.annot_model._current_tmp_image_filename):
-            logging.info('Found new temp file: {0}')
             image_fname = self.annot_model._current_tmp_image_filename
         self.currently_edited_image_filename = image_fname
 
@@ -1238,6 +1232,31 @@ class MUSCIMarkerApp(App):
         #   minus the file type extension.
         # Set docname for UIDs
         self.cropobject_current_docname = os.path.splitext(os.path.basename(pos))[0]
+
+    def update_image(self, image):
+        """Nondestructively swaps out underlying image in the model and displays
+        it."""
+        if image.shape != self.annot_model.image.shape:
+            raise ValueError('Trying to swap original image with shape {0} for a new'
+                             ' image with a different shape {1}!'
+                             ''.format(self.annot_model.image.shape, image.shape))
+
+        self.annot_model.load_image(image, do_preprocessing=False)
+        # This function is used to update the image on the fly, so the preprocessing
+        # applied when the image is first imported does not have to be done.
+
+        time.sleep(3)
+        if os.path.isfile(self.annot_model._current_tmp_image_filename):
+            image_fname = self.annot_model._current_tmp_image_filename
+            self.currently_edited_image_filename = image_fname
+
+            image_widget = self._get_editor_widget()
+            image_widget.texture.mag_filter = 'nearest'
+
+        else:
+            logging.warn('Could not update image: new temp file {0} not created!'
+                         ''.format(self.annot_model._current_tmp_image_filename))
+
 
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('grammar_file', x)]},
