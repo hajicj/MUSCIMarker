@@ -739,6 +739,10 @@ MUSCIMarkerLayout:
                 on_release: app.open_help()
 
             ActionButton:
+                text: 'RELOAD IMG'
+                on_release: app.revert_image_to_source()
+
+            ActionButton:
                 text: 'CENTER'
                 on_release: app.do_center_and_rescale_current_image_user()
 

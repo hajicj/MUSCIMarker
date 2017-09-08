@@ -1160,7 +1160,7 @@ class MUSCIMarkerApp(App):
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('image_file', x)]},
                 tracker_name='commands')
-    def import_image(self, instance, pos):
+    def import_image(self, instance, pos, clear_cropobjects=True):
 
         logging.info('App: === Got image file: {0}'.format(pos))
 
@@ -1186,7 +1186,9 @@ class MUSCIMarkerApp(App):
             return
 
         _do_clear_cropobjects = False
-        if (self.annot_model.image is None) \
+        if clear_cropobjects:
+            _do_clear_cropobjects = True
+        elif (self.annot_model.image is None) \
                 or (img.shape != self.annot_model.image.shape):
             _do_clear_cropobjects = True
 
@@ -1207,7 +1209,9 @@ class MUSCIMarkerApp(App):
                                                      image_processor.stretch_intensity))
         self.annot_model._image_processor = image_processor
 
-        self.annot_model.load_image(img)
+        self.annot_model.load_image(img,
+                                    do_preprocessing=True,
+                                    update_temp=True)
 
         # Only change the displayed image after loading into model.
         image_fname = pos
@@ -1266,31 +1270,33 @@ class MUSCIMarkerApp(App):
         # This function is used to update the image on the fly, so the preprocessing
         # applied when the image is first imported does not have to be done.
 
+        self.update_image_texture_from_model()
+
+    def revert_image_to_source(self):
+        image_fname = self.annot_model._current_tmp_image_filename
+        image = scipy.misc.imread(image_fname, mode='L')
+        self.update_image(image)
+
+    def update_image_texture_from_model(self):
+        """Manually synchronize the model image to the editor window
+        texture."""
+        image = self.annot_model.image
+        self.do_sync_model_image(None, image)
+
+    def do_sync_model_image(self, instance, image):
+        """Synchronize model image to editor window on image change.
+
+        Note that directly editing the numpy array will *not* trigger this,
+        only re-assigning to it. This does happen in model.load_image(),
+        so calling model.load_image() will trigger the update.
+        """
         formatted_image = numpy.fliplr(numpy.swapaxes(
                 numpy.rot90(image),
             0, 1))
-
         image_data = formatted_image.tostring()
         texture = self._get_editor_widget().texture
-
-        # from kivy.graphics.texture import Texture
         texture.blit_buffer(formatted_image.flatten(),
                             colorfmt='luminance', bufferfmt='ubyte')
-        # texture.ask_update()
-
-        #
-        # time.sleep(3)
-        # if os.path.isfile(self.annot_model._current_tmp_image_filename):
-        #     image_fname = self.annot_model._current_tmp_image_filename
-        #     self.currently_edited_image_filename = image_fname
-        #
-        #     image_widget = self._get_editor_widget()
-        #     image_widget.texture.mag_filter = 'nearest'
-        #
-        # else:
-        #     logging.warn('Could not update image: new temp file {0} not created!'
-        #                  ''.format(self.annot_model._current_tmp_image_filename))
-
 
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('grammar_file', x)]},
