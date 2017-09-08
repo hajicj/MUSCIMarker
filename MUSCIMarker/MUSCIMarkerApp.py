@@ -788,6 +788,10 @@ class MUSCIMarkerApp(App):
             # so it fails on pickle -- we must get the data itself
             # by different means.
             'cropobjects': self.annot_model.cropobjects.values(),
+            # We also want to save the state of the image, as it may have been
+            # manually binarized and we do not want to lose that work.
+            'image_state': self.annot_model.image.tostring(),
+            'image_shape': self.annot_model.image.shape,
         }
         return state
 
@@ -805,6 +809,7 @@ class MUSCIMarkerApp(App):
         mlclass_list_filename = state['mlclass_list_filename']
         image_filename = state['image_filename']
         cropobject_list_filename = state['cropobject_list_filename']
+        image_state_string = state['image_state']
 
         fail = False
         if not os.path.isfile(mlclass_list_filename):
@@ -891,6 +896,18 @@ class MUSCIMarkerApp(App):
         self.annot_model.clear_cropobjects()
         # This should trigger a redraw.
         self.annot_model.import_cropobjects(cropobjects)
+
+        # Finally, load the saved state of the image.
+        try:
+            image_state = numpy.fromstring(image_state_string, dtype='uint8')
+            image_shape = state['image_shape']
+            image_data = numpy.reshape(image_state, image_shape)
+            self.update_image(image_data)
+        except:
+            logging.warn('App._build_from_app_state: Loading image state'
+                         ' failed, falling back on image file.')
+            image_fname = self.image_loader.filename
+            self.image_loader.filename = image_fname # Force update
 
         logging.info('App._build_from_state: Finished successfully.')
 
@@ -1243,7 +1260,8 @@ class MUSCIMarkerApp(App):
                              ' image with a different shape {1}!'
                              ''.format(self.annot_model.image.shape, image.shape))
 
-        self.annot_model.load_image(image, do_preprocessing=False,
+        self.annot_model.load_image(image,
+                                    do_preprocessing=False,
                                     update_temp=False)
         # This function is used to update the image on the fly, so the preprocessing
         # applied when the image is first imported does not have to be done.
