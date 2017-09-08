@@ -419,6 +419,12 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
         # This is the Kivy --> numpy transposition
         p_horizontal, p_vertical = zip(*point_set_as_tuples)
 
+        # Let's deal with points on the boundary or outside
+        p_horizontal = [max(0, min(x, self.app_ref.image_scaler.widget_width - 1))
+                      for x in p_horizontal]
+        p_vertical = [max(0, min(y, self.app_ref.image_scaler.widget_height - 1))
+                      for y in p_vertical]
+
         left = min(p_horizontal)
         right = max(p_horizontal)
 
@@ -532,7 +538,7 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
                 self.editor_widgets['line_tracer'].clear()
                 pass
             else:
-                logging.info('LassoBoundingBoxSelect: Gpt model_selection {0}'
+                logging.info('LassoBoundingBoxSelect: Got model_selection {0}'
                              ''.format(model_selection))
                 mask = self.cut_mask_to_model_selection(mask_uncut, model_selection)
                 logging.info('LassoBoundingBoxSelect: uncut mask shape {0},'
