@@ -212,6 +212,8 @@ import cPickle
 # Importing skimage.io causes strange behavior on loading. Maybe bad interaction with some libraries?
 # skimage by itself is fine.
 import datetime
+
+import numpy
 import scipy.misc   # This worked!
 
 from kivy._event import EventDispatcher
@@ -1241,21 +1243,35 @@ class MUSCIMarkerApp(App):
                              ' image with a different shape {1}!'
                              ''.format(self.annot_model.image.shape, image.shape))
 
-        self.annot_model.load_image(image, do_preprocessing=False)
+        self.annot_model.load_image(image, do_preprocessing=False,
+                                    update_temp=False)
         # This function is used to update the image on the fly, so the preprocessing
         # applied when the image is first imported does not have to be done.
 
-        time.sleep(3)
-        if os.path.isfile(self.annot_model._current_tmp_image_filename):
-            image_fname = self.annot_model._current_tmp_image_filename
-            self.currently_edited_image_filename = image_fname
+        formatted_image = numpy.fliplr(numpy.swapaxes(
+                numpy.rot90(image),
+            0, 1))
 
-            image_widget = self._get_editor_widget()
-            image_widget.texture.mag_filter = 'nearest'
+        image_data = formatted_image.tostring()
+        texture = self._get_editor_widget().texture
 
-        else:
-            logging.warn('Could not update image: new temp file {0} not created!'
-                         ''.format(self.annot_model._current_tmp_image_filename))
+        # from kivy.graphics.texture import Texture
+        texture.blit_buffer(formatted_image.flatten(),
+                            colorfmt='luminance', bufferfmt='ubyte')
+        # texture.ask_update()
+
+        #
+        # time.sleep(3)
+        # if os.path.isfile(self.annot_model._current_tmp_image_filename):
+        #     image_fname = self.annot_model._current_tmp_image_filename
+        #     self.currently_edited_image_filename = image_fname
+        #
+        #     image_widget = self._get_editor_widget()
+        #     image_widget.texture.mag_filter = 'nearest'
+        #
+        # else:
+        #     logging.warn('Could not update image: new temp file {0} not created!'
+        #                  ''.format(self.annot_model._current_tmp_image_filename))
 
 
     @tr.Tracker(track_names=['pos'],
