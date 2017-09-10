@@ -76,6 +76,7 @@ Contents:
    Annotation instructions <instructions>
    Organizing your work <organizing>
    MUSCIMarker complete interface <controls>
+   Grayscale images <grayscale>
 
 Indices and tables
 ==================
