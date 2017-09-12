@@ -1338,8 +1338,11 @@ class RegionBinarizeTool(MUSCIMarkerTool):
             self.editor_widgets['bbox_tracer'].clear()
             return
 
-        binarized_crop_threshold = threshold_otsu(crop)
-        crop[crop < binarized_crop_threshold] = 0
+        nnz_crop = crop.ravel()[numpy.flatnonzero(crop)]
+        nnz_crop_threshold = threshold_otsu(nnz_crop)
+
+        # binarized_crop_threshold = threshold_otsu(crop)
+        crop[crop < nnz_crop_threshold] = 0
         # crop[crop >= binarized_crop_threshold] = 255
         output_crop = crop
 
