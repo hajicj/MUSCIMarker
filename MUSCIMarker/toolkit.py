@@ -19,7 +19,7 @@ from kivy.core.window import Window
 from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty, ListProperty, NumericProperty
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
-from skimage.filters import threshold_otsu, threshold_sauvola
+from skimage.filters import threshold_otsu
 
 from edge_view import EdgeView
 from editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, LineTracer
