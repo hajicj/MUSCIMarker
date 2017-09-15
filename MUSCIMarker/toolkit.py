@@ -392,12 +392,15 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
     current_cropobject_mask = ObjectProperty(None)
 
     do_helper_line = BooleanProperty(False)
+    helper_line_min_length = NumericProperty(100)
 
-    def __init__(self, app, editor_widget, command_widget, do_helper_line=False,
+    def __init__(self, app, editor_widget, command_widget,
+                 do_helper_line=False, helper_line_min_length=100,
                  **kwargs):
         logging.info('Toolkit: Initializing Lasso tool with do_helper_line={0},'
                      'kwargs = {1}'.format(do_helper_line, kwargs))
         self.do_helper_line = do_helper_line
+        self.helper_line_min_length = helper_line_min_length
         super(LassoBoundingBoxSelectTool, self).__init__(app=app,
                                                          editor_widget=editor_widget,
                                                          command_widget=command_widget,
@@ -408,6 +411,7 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
         editor_widgets['line_tracer'].do_helper_line = self.do_helper_line
+        editor_widgets['line_tracer'].helper_line_threshold = self.helper_line_min_length
         editor_widgets['line_tracer'].bind(points=self.current_selection_and_mask_from_points)
         return editor_widgets
 
@@ -1482,7 +1486,9 @@ def get_tool_kwargs_dispatch(name):
     if name == 'trimmed_lasso_select_tool':
         _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
         do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
-        return {'do_helper_line': do_helper_line}
+        helper_line_min_length = int(conf.get('toolkit', 'trimmed_lasso_helper_line_length'))
+        return {'do_helper_line': do_helper_line,
+                'helper_line_min_length': helper_line_min_length}
 
     if name == 'mask_eraser_tool':
         _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')

@@ -68,6 +68,13 @@
     "key": "trimmed_lasso_helper_line"
   },
 
+  { "type": "numeric",
+    "title": "Min. helper line length",
+    "desc": "At what range should the helper line be displayed?.",
+    "section": "toolkit",
+    "key": "trimmed_lasso_helper_line_length"
+  },
+
   { "type": "bool",
     "title": "Active Obj./Rel. selection",
     "desc": "The Obj. and Rel. Select tools will try to highlight what has been selected so far.",

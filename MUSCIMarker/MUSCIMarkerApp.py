@@ -715,6 +715,7 @@ class MUSCIMarkerApp(App):
                 # If set, will automatically restrict all masks to nonzero
                 # pixels of the input image only.
                 'trimmed_lasso_helper_line': 1,
+                'trimmed_lasso_helper_line_length': 100,
                 'active_selection': 0,
             })
         config.setdefaults('tracking',

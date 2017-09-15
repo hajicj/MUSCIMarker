@@ -392,7 +392,7 @@ class LineTracer(FloatLayout):
     line_width = NumericProperty(1.0)
 
     do_helper_line = BooleanProperty(False)
-    _helper_line_threshold = NumericProperty(100.0)
+    helper_line_threshold = NumericProperty(100.0)
 
     @tr.Tracker(track_names=['touch'],
                 transformations={'touch': [
@@ -485,7 +485,7 @@ class LineTracer(FloatLayout):
     def _endpoints_beyond_threshold(self, points):
         dist_sq = self._endpoint_sq_distance(points)
         scale = 1.0# App.get_running_app()._get_editor_scatter_container_widget().scale
-        return dist_sq > ((self._helper_line_threshold / scale) ** 2)
+        return dist_sq > ((self.helper_line_threshold / scale) ** 2)
 
     def on_touch_up(self, touch):
         if touch.grab_current is not self:
