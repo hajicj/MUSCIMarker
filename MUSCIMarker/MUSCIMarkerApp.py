@@ -1140,15 +1140,17 @@ class MUSCIMarkerApp(App):
         if len(docnames) > 1:
             raise ValueError('Mixing CropObjects from {0} different documents:'
                              ' {1}!'.format(len(docnames), '\n'.join(docnames)))
-        if docnames[0] != CropObject.UID_DEFAULT_DOCUMENT_NAMESPACE:
-            self.cropobject_current_docname = docnames[0]
+        if len(docnames) > 0:
+            if docnames[0] != CropObject.UID_DEFAULT_DOCUMENT_NAMESPACE:
+                self.cropobject_current_docname = docnames[0]
 
         datasets = list(set([c.dataset for c in cropobject_list]))
         if len(datasets) > 1:
             raise ValueError('Mixing CropObjects from {0} different datasets:'
                              ' {1}!'.format(len(datasets), '\n'.join(datasets)))
-        if datasets[0] != CropObject.UID_DEFAULT_DATASET_NAMESPACE:
-            self.cropobject_current_dataset_namespace = datasets[0]
+        if len(datasets) > 0:
+            if datasets[0] != CropObject.UID_DEFAULT_DATASET_NAMESPACE:
+                self.cropobject_current_dataset_namespace = datasets[0]
 
 
         logging.info('App: Imported CropObjectList has {0} items.'
