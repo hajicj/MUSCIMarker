@@ -127,7 +127,7 @@ dynamics_text | letter_p letter_f letter_m letter_s letter_z letter_r other-dot
 dynamics_text | letter_F letter_M letter_P
 dynamics_text | letter_c letter_C letter_e letter_s letter_d letter_D
 
-tempo_text | letter_* numeral_* other-dot
+tempo_text | letter_* numeral_* other-dot notehead-full notehead-empty
 
 lyrics_text | letter_* other-dot
 

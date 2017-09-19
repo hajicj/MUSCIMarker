@@ -1045,6 +1045,8 @@ class MUSCIMarkerApp(App):
             self.find_objects_with_disconnected_masks(leaves_only=False)
         elif dispatch_key == '115+alt,shift':  # "alt+shift+s" -- disconnected cropobjects that have no outlinks,
             self.find_objects_with_disconnected_masks(leaves_only=True)
+        elif dispatch_key == '111+alt,shift':  # "alt+shift+d" -- disconnected cropobjects
+            self.find_objects_with_identical_bounding_box()
 
         # logging.info('App: Checking keyboard dispatch, {0}'
         #              ''.format(self.keyboard_dispatch.keys()))
@@ -2141,3 +2143,30 @@ class MUSCIMarkerApp(App):
 
         c_l_view.unselect_all()
         c_l_view.ensure_selected_objids(_objids_disconnected)
+
+    def find_objects_with_identical_bounding_box(self):
+        """Find all objects which share bounding box, but are not connected
+        with an Attachment relationship. This is helpful for discovering
+        duplicate annotations, which are otherwise visible only through
+        the combined alpha of their CropObjectViews.
+        """
+        c_l_view = self.cropobject_list_renderer.view
+        cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
+        if len(cropobjects) == 0:
+            cropobjects = self.annot_model.cropobjects.values()
+
+        _objids_duplicate = set()
+        sorted_cropobjects = sorted(cropobjects, key=lambda c: c.bounding_box)
+        current_cropobject = sorted_cropobjects[0]
+        for other_cropobject in sorted_cropobjects[1:]:
+            if other_cropobject.bounding_box == current_cropobject.bounding_box:
+                if (current_cropobject.objid not in other_cropobject.inlinks) \
+                    and (current_cropobject.objid not in other_cropobject.outlinks):
+                    _objids_duplicate.add(current_cropobject.objid)
+                    _objids_duplicate.add(other_cropobject.objid)
+            else:
+                # Move along the list
+                current_cropobject = other_cropobject
+
+        c_l_view.unselect_all()
+        c_l_view.ensure_selected_objids(_objids_duplicate)
