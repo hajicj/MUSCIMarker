@@ -17,6 +17,8 @@ from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListP
 from kivy.uix.widget import Widget
 
 from muscima.io import export_cropobject_list
+
+from object_detection import ObjectDetectionHandler
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from utils import compute_connected_components
 from tracker import Tracker
@@ -322,6 +324,11 @@ class CropObjectAnnotatorModel(Widget):
 
     _image_processor = ImageProcessing()
 
+    # Object detection
+    _object_detection_client = ObjectProperty(None, allownone=True)
+
+
+
     def __init__(self, image=None, cropobjects=None, mlclasses=None, **kwargs):
         super(CropObjectAnnotatorModel, self).__init__(**kwargs)
 
@@ -336,6 +343,9 @@ class CropObjectAnnotatorModel(Widget):
 
         self.graph = ObjectGraph()
         self.sync_cropobjects_to_graph()
+
+        self._object_detection_client = ObjectDetectionHandler(tmp_dir=App.get_running_app().tmp_dir)
+        self._object_detection_client.bind(result=self.process_detection_result)
 
     def load_image(self, image, compute_cc=False, do_preprocessing=True,
                    update_temp=True):
@@ -741,6 +751,52 @@ class CropObjectAnnotatorModel(Widget):
         #     logging.info('Plotting annotation, image shape: {0}'.format(annot_img.shape))
         #     plt.imshow(annot_img)
         #     plt.show()
-    very_small_cropobjects = []
 
+    ##########################################################################
+    # Connected components: a useful thing to keep track of
+    def call_object_detection(self, bounding_box=None):
+        """Call object detection through ``self._object_detection_client``.
+        """
+        if bounding_box is None:
+            bounding_box = (0, 0, self.image.shape[0], self.image.shape[1])
 
+        t, l, b, r = bounding_box
+        image_crop = self.image[t:b, l:r]
+
+        request = {'image': image_crop,
+                   'clsname': [App.get_running_app().currently_selected_mlclass_name]
+                   }
+
+    def process_detection_result(self, instance, pos):
+        """Incorporates the detection result into the model.
+
+        The detection result arrives as a list of CropObjects.
+        The model has to make sure their ``objid`` and potentially
+        ``doc`` attributes are valid. Docname is handled on export,
+        so it is not a problem here, but the objids of detection
+        results start at 0, so they must be corrected.
+
+        Then, the model needs to shift the CropObjects bottom and right
+        according to the bounding box of the detection input region.
+
+        After ensuring the CropObjects can be added to the model
+        without introducing conflicts,
+        """
+        result_cropobjects = pos
+
+        it, il, ib, ir = self._object_detection_client.input_bounding_box
+
+        _delta_objid = self.get_next_cropobject_id()
+        _next_objid = _delta_objid
+        processed_cropobjects = []
+        for c in result_cropobjects:
+            c.objid = _next_objid
+            c.translate(down=it, right=ib)
+            c.inlinks = [i + _delta_objid for i in c.inlinks]
+            c.outlinks = [o + _delta_objid for o in c.outlinks]
+
+            processed_cropobjects.append(c)
+            _next_objid += 1
+
+        for c in processed_cropobjects:
+            self.add_cropobject(c)
