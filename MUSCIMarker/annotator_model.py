@@ -766,6 +766,8 @@ class CropObjectAnnotatorModel(Widget):
         request = {'image': image_crop,
                    'clsname': [App.get_running_app().currently_selected_mlclass_name]
                    }
+        self._object_detection_client.input = request
+
 
     def process_detection_result(self, instance, pos):
         """Incorporates the detection result into the model.

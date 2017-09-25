@@ -97,13 +97,14 @@ class ObjectDetectionHandler(Widget):
             # Verify that result is valid (re-request on failure?)
 
         except:
+            raise
+        finally:
             # Cleanup files.
             logging.info('Cleaning up files.')
             if os.path.isfile(request_fname):
                 os.unlink(request_fname)
             if os.path.isfile(response_fname):
                 os.unlink(response_fname)
-            raise
 
         # Bind output representation to self.result to fire bindings
         #  - Subsequent processing means adding the CropObjects
