@@ -678,6 +678,8 @@ class MUSCIMarkerApp(App):
         # have widths
         #Clock.schedule_once(lambda *args, **kwargs: self.init_tool_selection_keyboard_dispatch)
 
+        self.annot_model.init_object_detection_handler()
+
     def build_config(self, config):
         config.setdefaults('kivy',
             {
@@ -737,6 +739,11 @@ class MUSCIMarkerApp(App):
                 # 'do_background_thresholding': False,
                 # 'binarization_lightness_tolerance': 127,
             })
+        config.setdefaults('symbol_detection_client',
+                           {
+                               'port': 33554,
+                               'hostname': '127.0.0.1',
+                           })
 
         Config.set('kivy', 'exit_on_escape', '0')
 
@@ -750,6 +757,12 @@ class MUSCIMarkerApp(App):
                                'muscimarker_image_preprocessing.json')) as hdl:
             jsondata = hdl.read()
         settings.add_json_panel('Image Processing',
+                                self.config, data=jsondata)
+
+        with open(os.path.join(os.path.dirname(__file__),
+                               'muscimarker_detection_client.json')) as hdl:
+            jsondata = hdl.read()
+        settings.add_json_panel('Symbol Detection Client',
                                 self.config, data=jsondata)
 
 

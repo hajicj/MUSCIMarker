@@ -40,6 +40,9 @@ class ObjectDetectionHandler(Widget):
     method should be bound to this property. The result is a list
     of CropObjects.'''
 
+    response_cropobjects = ObjectProperty(None, allownone=True)
+    '''Intermediate storage for the CropObject list received from the server.'''
+
     tmp_dir = StringProperty()
 
     def __init__(self, tmp_dir, port=33555, **kwargs):
@@ -59,6 +62,8 @@ class ObjectDetectionHandler(Widget):
 
     def call(self, request):
 
+        logging.info('ObjectDetectionHandler: Calling with input bounding box {0}'
+                     ''.format(self.input_bounding_box))
         # Format request for client
         #  (=pickle it, plus pickle-within-pickle for image array)
         f_request = self._format_request(request)
@@ -97,7 +102,9 @@ class ObjectDetectionHandler(Widget):
             # Verify that result is valid (re-request on failure?)
 
         except:
-            raise
+            logging.warn('ObjectDetectionHandler: Could not parse'
+                         ' response file {0}'.format(response_fname))
+            cropobjects = []
         finally:
             # Cleanup files.
             logging.info('Cleaning up files.')
@@ -110,8 +117,16 @@ class ObjectDetectionHandler(Widget):
         #  - Subsequent processing means adding the CropObjects
         #    into the current annotation, in this case.
         #  - This can also trigger auto-parse.
-        self.result = cropobjects
+        self.response_cropobjects = cropobjects
 
+    def on_response_cropobjects(self, instance, pos):
+        processed_cropobjects = self.postprocess_cropobjects(pos)
+        self.result = processed_cropobjects
+
+    def postprocess_cropobjects(self, cropobjects):
+        """Handler-specific CropObject postprocessing. Can be configurable
+        through MUSCIMarker settings."""
+        return cropobjects
 
     def reset(self):
         self.result = None
@@ -136,7 +151,11 @@ class ObjectDetectionHandler(Widget):
 
 class ObjectDetectionOMRAppClient(object):
     """Handles the client-side networking for object
-    detection. Not a widget!"""
+    detection. Very lightweight -- only builds the socket,
+    sends the request, receives the response and writes it
+    to the file specified by ObjectDetectionHandler.
+
+    Not a Kivy widget."""
     def __init__(self, host, port, request_file, response_file):
         self.host = host
         self.port = port
@@ -146,12 +165,14 @@ class ObjectDetectionOMRAppClient(object):
         self.BUFFER_SIZE = 1024
 
     def call(self):
-        logging.info('MUSCIMarker.ObjectDetectionOMRAppClient.run(): starting')
+        logging.info('ObjectDetectionOMRAppClient.run(): starting')
         _start_time = time.clock()
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        host = socket.gethostname()
+        host = '127.0.0.1' # socket.gethostname()
 
+        logging.info('ObjectDetectionOMRAppClient: connecting to host {0}, port {1}'
+                     ''.format(host, self.port))
         s.connect((host, self.port))
         logging.info('ObjectDetectionOMRAppClient.run(): connected to'
                      ' host {0}, port {1}'.format(host, self.port))
@@ -188,3 +209,6 @@ class ObjectDetectionOMRAppClient(object):
         _end_time = time.clock()
         logging.info('MUSCIMarker.ObjectDetectionOMRAppClient.run():'
                      ' done in {0:.3f} s'.format(_end_time - _start_time))
+
+
+##############################################################################

@@ -344,7 +344,19 @@ class CropObjectAnnotatorModel(Widget):
         self.graph = ObjectGraph()
         self.sync_cropobjects_to_graph()
 
-        self._object_detection_client = ObjectDetectionHandler(tmp_dir=App.get_running_app().tmp_dir)
+        # self._init_object_detection_handler()
+        # ...only run this once the app is running.
+
+    def init_object_detection_handler(self):
+        config = App.get_running_app().config
+
+        port = int(config.get('symbol_detection_client', 'port'))
+        hostname = config.get('symbol_detection_client', 'hostname')
+
+        self._object_detection_client = ObjectDetectionHandler(
+            tmp_dir=App.get_running_app().tmp_dir,
+            port=port,
+            hostname=hostname)
         self._object_detection_client.bind(result=self.process_detection_result)
 
     def load_image(self, image, compute_cc=False, do_preprocessing=True,
@@ -761,6 +773,13 @@ class CropObjectAnnotatorModel(Widget):
             bounding_box = (0, 0, self.image.shape[0], self.image.shape[1])
 
         t, l, b, r = bounding_box
+        if ((b - t) == 0) or ((r - l) == 0):
+            logging.info('Object detection: Attempted detection with empty'
+                         ' bounding box: {0}'.format(bounding_box))
+            return
+
+        self._object_detection_client.input_bounding_box = bounding_box
+
         image_crop = self.image[t:b, l:r]
 
         request = {'image': image_crop,
@@ -786,19 +805,29 @@ class CropObjectAnnotatorModel(Widget):
         """
         result_cropobjects = pos
 
-        it, il, ib, ir = self._object_detection_client.input_bounding_box
-
-        _delta_objid = self.get_next_cropobject_id()
-        _next_objid = _delta_objid
-        processed_cropobjects = []
-        for c in result_cropobjects:
-            c.objid = _next_objid
-            c.translate(down=it, right=ib)
-            c.inlinks = [i + _delta_objid for i in c.inlinks]
-            c.outlinks = [o + _delta_objid for o in c.outlinks]
-
-            processed_cropobjects.append(c)
-            _next_objid += 1
+        processed_cropobjects = self._detection_apply_objids(result_cropobjects)
+        processed_cropobjects = self._detection_apply_shift(processed_cropobjects)
 
         for c in processed_cropobjects:
             self.add_cropobject(c)
+
+    def _detection_apply_shift(self, cropobjects):
+        it, il, ib, ir = self._object_detection_client.input_bounding_box
+        output_cropobjects = [c.translate(down=it, right=il) for c in cropobjects]
+        return output_cropobjects
+
+    def _detection_apply_objids(self, cropobjects):
+        _delta_objid = self.get_next_cropobject_id()
+        _next_objid = _delta_objid
+
+        output_cropobjects = []
+        for c in cropobjects:
+            c.objid = _next_objid
+
+            c.inlinks = [i + _delta_objid for i in c.inlinks]
+            c.outlinks = [o + _delta_objid for o in c.outlinks]
+
+            output_cropobjects.append(c)
+            _next_objid += 1
+
+        return output_cropobjects

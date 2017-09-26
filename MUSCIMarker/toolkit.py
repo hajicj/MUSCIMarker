@@ -764,6 +764,8 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
             # Now add the CropObject back to redraw. Note that this way,
             # the object's objid stays the same, which is essential for
             # maintaining intact inlinks and outlinks!
+            logging.info('MaskEraser: New object data dict: {0}'
+                         ''.format(c.data))
             self._model.add_cropobject(c)
 
             try:
@@ -777,6 +779,7 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
 
         logging.info('MaskEraser: Forcing redraw.')
         self.app_ref.cropobject_list_renderer.redraw += 1
+        self.app_ref.graph_renderer.redraw += 1
 
         self.editor_widgets['line_tracer'].clear()
 
@@ -798,6 +801,9 @@ class MaskAdditionTool(LassoBoundingBoxSelectTool):
 
             # Redraw:
             cropobject_view.remove_from_model()
+
+            logging.info('MaskEraser: New object data dict: {0}'
+                         ''.format(c.data))
             self._model.add_cropobject(c)
 
             # Try reselecting the selected objects:
@@ -808,6 +814,10 @@ class MaskAdditionTool(LassoBoundingBoxSelectTool):
                 logging.info('MaskEraser: View for modified CropObject {0} has'
                              ' not been rendered yet, cannot select it.'
                              ''.format(c.objid))
+
+        logging.info('MaskAddition: Forcing redraw.')
+        self.app_ref.cropobject_list_renderer.redraw += 1
+        self.app_ref.graph_renderer.redraw += 1
 
         self.editor_widgets['line_tracer'].clear()
 
@@ -1409,7 +1419,7 @@ class BackgroundFillTool(LassoBoundingBoxSelectTool):
     in binarization more smartly than the plain backgrounding lasso.
     It takes the lightest shade in the given area, and within a 200-px
     bounding box (+100/-100), removes everything that is darker than
-    the """
+    the given pixel by at least 8 intensity points. [NOT IMPLEMENTED]"""
     def on_current_cropobject_model_selection(self, instance, pos):
         # Ask the app to build CropObject from the bbox.
         logging.info('BackgroundFillTool: fired on_current_cropobject_model_selection with pos={0}'
@@ -1444,6 +1454,35 @@ class BackgroundFillTool(LassoBoundingBoxSelectTool):
 
 
 ##############################################################################
+# Interface for detection! Highly experimental.
+
+class SymbolDetectionTool(MUSCIMarkerTool):
+    """Runs the detector for the currently selected CropObject class
+    on a selected region.
+
+    Requires having a detection server running on a configured host/port.
+    The detection server is currently not open-source.
+    """
+
+    def create_editor_widgets(self):
+        editor_widgets = collections.OrderedDict()
+        editor_widgets['bbox_tracer'] = BoundingBoxTracer()
+        editor_widgets['bbox_tracer'].bind(
+            current_finished_bbox=self.run_detection)
+        return editor_widgets
+
+    def run_detection(self, instance, pos):
+        # Get model bbox
+        ed_t, ed_l, ed_b, ed_r = pos['top'], pos['left'], \
+                                 pos['bottom'], pos['right']
+        m_t, m_l, m_b, m_r = self.editor_to_model_bbox(ed_t, ed_l, ed_b, ed_r)
+        m_t, m_l, m_b, m_r = bbox_to_integer_bounds(m_t, m_l, m_b, m_r)
+
+        self.app_ref.annot_model.call_object_detection(bounding_box=(m_t, m_l, m_b, m_r))
+
+        self.editor_widgets['bbox_tracer'].clear()
+
+##############################################################################
 # This is the toolkit's interface to the UI elements.
 
 tool_dispatch = {
@@ -1461,6 +1500,7 @@ tool_dispatch = {
     'mask_addition_tool': MaskAdditionTool,
     'region_binarize_tool': RegionBinarizeTool,
     'background_lasso_tool': BackgroundLassoTool,
+    'symbol_detection_tool': SymbolDetectionTool,
 }
 
 
@@ -1475,6 +1515,7 @@ def get_tool_kwargs_dispatch(name):
         'gesture_select_tool': dict(),
         'region_binarize_tool': dict(),
         'background_lasso_tool': dict(),
+        'symbol_detection_tool': dict(),
     }
 
     if name in no_kwarg_tools:

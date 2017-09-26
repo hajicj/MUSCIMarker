@@ -1,0 +1,20 @@
+[
+  { "type": "title",
+    "title": "Symbol detection client"
+  },
+
+
+  { "type": "numeric",
+    "title": "Port",
+    "desc": "The detection client will connect to this port of the host.",
+    "section": "symbol_detection_client",
+    "key": "port"
+  },
+
+  { "type": "string",
+    "title": "Host",
+    "desc": "The detection client will connect to this host.",
+    "section": "symbol_detection_client",
+    "key": "hostname"
+  }
+]
