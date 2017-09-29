@@ -539,8 +539,8 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView.parse_selection(): No parser found!')
             return
 
-        names = [c.clsname for c in cropobjects]
-        edges_idxs = parser.parse(names)
+        # names = [c.clsname for c in cropobjects]
+        edges_idxs = parser.parse(cropobjects)
         edges = [(cropobjects[i].objid, cropobjects[j].objid)
                  for i, j in edges_idxs]
         logging.info('CropObjectListView.parse_selection(): {0} edges to add'

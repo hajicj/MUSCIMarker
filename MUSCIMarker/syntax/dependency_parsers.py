@@ -3,6 +3,8 @@ from __future__ import print_function, unicode_literals
 
 import logging
 
+from muscima.cropobject import cropobject_distance
+
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
 
@@ -19,11 +21,12 @@ class SimpleDeterministicDependencyParser(object):
         logging.info('SimpleDeterministicDependencyParser: Initializing parser.')
         self.grammar = grammar
 
-    def parse(self, symbol_names):
+    def parse(self, cropobjects):
         """Adds all edges allowed by the grammar, given the list
         of symbols. The edges are (i, j) tuples of indices into the
         supplied list of symbol names.
         """
+        symbol_names = [c.clsname for c in cropobjects]
         return self.get_all_possible_edges(symbol_names)
 
     def get_all_possible_edges(self, symbol_names):
@@ -56,5 +59,64 @@ class PairwiseClassificationParser(object):
     """This parser applies a simple classifier that takes the bounding
     boxes of two CropObjects and their classes and returns whether there
     is an edge or not."""
-    def __init__(self):
+    def __init__(self, clf, cropobject_feature_extractor):
+        self.clf = clf
+        self.extractor = cropobject_feature_extractor
+
         raise NotImplementedError()
+
+
+    def is_edge(self, c_from, c_to):
+        features = self.extractor(c_from, c_to)
+        result = self.clf.predict(features)
+        return result
+
+
+##############################################################################
+# Feature extraction
+
+def get_features_relative_bbox_and_clsname(c_from, c_to):
+    """Extract a feature vector from the given pair of CropObjects.
+    Does *NOT* convert the class names to integers.
+
+    Features: bbox(c_to) - bbox(c_from), clsname(c_from), clsname(c_to)
+    Target: 1 if there is a link from u to v
+
+    Returns a tuple.
+    """
+    target = 0
+    if c_from.doc == c_to.doc:
+        if c_to.objid in c_from.outlinks:
+            target = 1
+    features = (c_to.top - c_from.top,
+                c_to.left - c_from.left,
+                c_to.bottom - c_from.bottom,
+                c_to.right - c_from.right,
+                c_from.clsname,
+                c_to.clsname,
+                target)
+    return features
+
+def get_features_distance_relative_bbox_and_clsname(c_from, c_to):
+    """Extract a feature vector from the given pair of CropObjects.
+    Does *NOT* convert the class names to integers.
+
+    Features: bbox(c_to) - bbox(c_from), clsname(c_from), clsname(c_to)
+    Target: 1 if there is a link from u to v
+
+    Returns a tuple.
+    """
+    target = 0
+    if c_from.doc == c_to.doc:
+        if c_to.objid in c_from.outlinks:
+            target = 1
+    distance = cropobject_distance(c_from, c_to)
+    features = (distance,
+                c_to.top - c_from.top,
+                c_to.left - c_from.left,
+                c_to.bottom - c_from.bottom,
+                c_to.right - c_from.right,
+                c_from.clsname,
+                c_to.clsname,
+                target)
+    return features
