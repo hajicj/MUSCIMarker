@@ -82,6 +82,13 @@
     "key": "active_selection"
   },
 
+  { "type": "bool",
+    "title": "Binarization: Retain foreground",
+    "desc": "If this is on, the Region Binarization tool will retain the shade of the foreground pixels.",
+    "section": "toolkit",
+    "key": "binarization_retain_foreground"
+  },
+
   { "type": "title",
     "title": "Automation"
   },

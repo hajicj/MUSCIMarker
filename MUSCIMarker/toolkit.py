@@ -1324,6 +1324,10 @@ class NoteSelectTool(AddSymbolTool):
 
 class RegionBinarizeTool(MUSCIMarkerTool):
     """Binarize the region in the bounding box using Otsu binarization."""
+    def __init__(self, retain_foreground, **kwargs):
+        super(RegionBinarizeTool, self).__init__(**kwargs)
+        self.retain_foreground = retain_foreground
+
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['bbox_tracer'] = BoundingBoxTracer()
@@ -1357,7 +1361,8 @@ class RegionBinarizeTool(MUSCIMarkerTool):
 
         # binarized_crop_threshold = threshold_otsu(crop)
         crop[crop < nnz_crop_threshold] = 0
-        # crop[crop >= binarized_crop_threshold] = 255
+        if not self.retain_foreground:
+            crop[crop >= nnz_crop_threshold] = 255
         output_crop = crop
 
         # sauvola_thresholds = threshold_sauvola(crop)
@@ -1513,7 +1518,7 @@ def get_tool_kwargs_dispatch(name):
         'connected_select_tool': dict(),
         'lasso_select_tool': dict(),
         'gesture_select_tool': dict(),
-        'region_binarize_tool': dict(),
+        # 'region_binarize_tool': dict(),
         'background_lasso_tool': dict(),
         'symbol_detection_tool': dict(),
     }
@@ -1523,6 +1528,11 @@ def get_tool_kwargs_dispatch(name):
 
     app = App.get_running_app()
     conf = app.config
+
+    if name == 'region_binarize_tool':
+        _retain_fg = conf.get('toolkit', 'binarization_retain_foreground')
+        retain_fg = _safe_parse_bool_from_conf(_retain_fg)
+        return {'retain_foreground': retain_fg}
 
     if name == 'trimmed_lasso_select_tool':
         _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')

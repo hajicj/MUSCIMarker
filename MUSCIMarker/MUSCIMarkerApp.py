@@ -219,6 +219,7 @@ import scipy.misc   # This worked!
 from kivy._event import EventDispatcher
 from kivy.app import App
 from kivy.config import Config
+from kivy.core.image import ImageData
 from kivy.properties import ObjectProperty, StringProperty, ListProperty, NumericProperty, DictProperty, AliasProperty
 from kivy.core.window import Window
 from kivy.clock import Clock
@@ -719,6 +720,7 @@ class MUSCIMarkerApp(App):
                 'trimmed_lasso_helper_line': 1,
                 'trimmed_lasso_helper_line_length': 100,
                 'active_selection': 0,
+                'binarization_retain_foreground': 1,
             })
         config.setdefaults('tracking',
             {
@@ -735,6 +737,7 @@ class MUSCIMarkerApp(App):
                 'do_image_preprocessing': False,
                 'auto_invert': False,
                 'stretch_intensity': False,
+                'warp_registration': False,
                 # 'median_kernel_size': 10,
                 # 'do_background_thresholding': False,
                 # 'binarization_lightness_tolerance': 127,
@@ -1221,6 +1224,8 @@ class MUSCIMarkerApp(App):
                                                'auto_invert'),
             stretch_intensity=self.config.getboolean('image_preprocessing',
                                                      'stretch_intensity'),
+            warp_registration=self.config.getboolean('image_preprocessing',
+                                                     'warp_registration'),
         )
         logging.info('App.import_image(): Image preprocessing with auto_invert={0},'
                      ' stretch_intensity={1}'.format(image_processor.auto_invert,
@@ -1274,17 +1279,23 @@ class MUSCIMarkerApp(App):
         # Set docname for UIDs
         self.cropobject_current_docname = os.path.splitext(os.path.basename(pos))[0]
 
-    def update_image(self, image):
+    def update_image(self, image,
+                     # allow_size_change_without_cropobjects=False,
+                     do_preprocessing=False,
+                     update_temp=False):
         """Nondestructively swaps out underlying image in the model and displays
         it."""
         if image.shape != self.annot_model.image.shape:
+            #if allow_size_change_without_cropobjects and (len(self.annot_model.cropobjects) == 0):
+            #    pass
+            #else:
             raise ValueError('Trying to swap original image with shape {0} for a new'
                              ' image with a different shape {1}!'
                              ''.format(self.annot_model.image.shape, image.shape))
 
         self.annot_model.load_image(image,
-                                    do_preprocessing=False,
-                                    update_temp=False)
+                                    do_preprocessing=do_preprocessing,
+                                    update_temp=update_temp)
         # This function is used to update the image on the fly, so the preprocessing
         # applied when the image is first imported does not have to be done.
 
@@ -1308,13 +1319,33 @@ class MUSCIMarkerApp(App):
         only re-assigning to it. This does happen in model.load_image(),
         so calling model.load_image() will trigger the update.
         """
-        formatted_image = numpy.fliplr(numpy.swapaxes(
-                numpy.rot90(image),
-            0, 1))
+        # Reformatting image to conform to how Kivy displays textures
+        # formatted_image = numpy.fliplr(
+        #     numpy.swapaxes(
+        #         numpy.rot90(image),
+        #     0, 1)
+        # )   ...not necessary??
+        formatted_image = image #numpy.fliplr(image)
         image_data = formatted_image.tostring()
-        texture = self._get_editor_widget().texture
-        texture.blit_buffer(formatted_image.flatten(),
-                            colorfmt='luminance', bufferfmt='ubyte')
+        editor_widget = self._get_editor_widget()
+        texture = editor_widget.texture
+
+        logging.info('Original image shape: {0}'.format(image.shape))
+        logging.info('Formatted image shape: {0}'.format(formatted_image.shape))
+        logging.info('Texture size: {0}'.format(texture.size))
+
+        if (texture.height, texture.width) != formatted_image.shape:
+            texture.blit_buffer(formatted_image.flatten(),
+                                #size=(formatted_image.shape[1],
+                                #      formatted_image.shape[0]),
+                                colorfmt='luminance',
+                                bufferfmt='ubyte')
+            editor_widget.canvas.ask_update()
+        else:
+            texture.blit_buffer(formatted_image.flatten(),
+                                colorfmt='luminance',
+                                bufferfmt='ubyte')
+
 
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('grammar_file', x)]},
@@ -1435,6 +1466,26 @@ class MUSCIMarkerApp(App):
         """Second part of the bound trigger."""
         self.do_center_current_image()
         Window.unbind(on_draw=self._do_center_current_image_and_unenforce)
+
+    ##########################################################################
+    # Basic image manipulation
+    def rotate_image(self, clockwise=False):
+        logging.info('App: Rotating image, clockwise={0}')
+        n_rot = 1
+        deg_rot = 90
+        if clockwise:
+            n_rot = 3
+            deg_rot = 270
+        new_image = numpy.rot90(self.annot_model.image, k=n_rot)
+        self.annot_model.load_image(new_image,
+                                    do_preprocessing=False,
+                                    update_temp=True)
+        editor_container = self._get_editor_scatter_container_widget()
+        # self.update_image(new_image,
+        #                   # allow_size_change_without_cropobjects=True,
+        #                   do_preprocessing=False,
+        #                   update_temp=True)
+        editor_container.rotation += deg_rot
 
     ##########################################################################
     # Tracking image movement

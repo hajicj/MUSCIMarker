@@ -9,7 +9,7 @@ import uuid
 
 # import cv2
 # import matplotlib.pyplot as plt
-
+import numpy
 from scipy.misc import imsave
 
 from kivy.app import App
@@ -764,8 +764,17 @@ class CropObjectAnnotatorModel(Widget):
         #     plt.imshow(annot_img)
         #     plt.show()
 
+
     ##########################################################################
-    # Connected components: a useful thing to keep track of
+    # Image manipulation
+    def rotate_image_left(self):
+        self.image = numpy.rot90(self.image)
+
+    def rotate_image_right(self):
+        self.image = numpy.rot90(self.image)
+
+    ##########################################################################
+    # Object detection interface
     def call_object_detection(self, bounding_box=None):
         """Call object detection through ``self._object_detection_client``.
         """
@@ -804,6 +813,8 @@ class CropObjectAnnotatorModel(Widget):
         without introducing conflicts,
         """
         result_cropobjects = pos
+        logging.info('Got a total of {0} detected CropObjects.'
+                     ''.format(len(result_cropobjects)))
 
         processed_cropobjects = self._detection_apply_objids(result_cropobjects)
         processed_cropobjects = self._detection_apply_shift(processed_cropobjects)
@@ -813,8 +824,9 @@ class CropObjectAnnotatorModel(Widget):
 
     def _detection_apply_shift(self, cropobjects):
         it, il, ib, ir = self._object_detection_client.input_bounding_box
-        output_cropobjects = [c.translate(down=it, right=il) for c in cropobjects]
-        return output_cropobjects
+        for c in cropobjects:
+            c.translate(down=it, right=il)
+        return cropobjects
 
     def _detection_apply_objids(self, cropobjects):
         _delta_objid = self.get_next_cropobject_id()

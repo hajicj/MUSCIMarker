@@ -50,3 +50,11 @@ class SimpleDeterministicDependencyParser(object):
     def set_grammar(self, grammar):
         # More complex parsers might need to reset some internal states
         self.grammar = grammar
+
+
+class PairwiseClassificationParser(object):
+    """This parser applies a simple classifier that takes the bounding
+    boxes of two CropObjects and their classes and returns whether there
+    is an edge or not."""
+    def __init__(self):
+        raise NotImplementedError()
