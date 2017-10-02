@@ -93,6 +93,13 @@
     "title": "Automation"
   },
 
+  { "type": "bool",
+    "title": "Smart Parsing",
+    "desc": "Enables parsing larger groups of symbols, but with significant risk of errors.",
+    "section": "parsing",
+    "key": "smart_parsing"
+  },
+
   { "type": "numeric",
     "title": "Sparse CropObject threshold",
     "desc": "The alt+shift+t shortcut will select all object where more than this many foreground pixels are not a part of the mask.",

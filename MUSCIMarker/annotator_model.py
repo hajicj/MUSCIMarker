@@ -5,6 +5,7 @@ import codecs
 import itertools
 import logging
 import os
+import pickle
 import uuid
 
 # import cv2
@@ -19,7 +20,8 @@ from kivy.uix.widget import Widget
 from muscima.io import export_cropobject_list
 
 from object_detection import ObjectDetectionHandler
-from syntax.dependency_parsers import SimpleDeterministicDependencyParser
+from syntax.dependency_parsers import SimpleDeterministicDependencyParser, PairwiseClassificationParser, \
+    PairwiseClfFeatureExtractor
 from utils import compute_connected_components
 from tracker import Tracker
 
@@ -358,6 +360,28 @@ class CropObjectAnnotatorModel(Widget):
             port=port,
             hostname=hostname)
         self._object_detection_client.bind(result=self.process_detection_result)
+
+    def init_parser(self, grammar):
+        config = App.get_running_app().config
+        smart_parsing = (config.get('parsing', 'smart_parsing') == '1')
+        logging.info('Initializing parser: Smart parsing = {0}'.format(smart_parsing))
+        if smart_parsing:
+
+            vectorizer_file = config.get('parsing', 'smart_parsing_vectorizer')
+            with open(vectorizer_file) as hdl:
+                vectorizer = pickle.load(hdl)
+            feature_extractor = PairwiseClfFeatureExtractor(vectorizer=vectorizer)
+
+            model_file = config.get('parsing', 'smart_parsing_model')
+            with open(model_file) as hdl:
+                classifier = pickle.load(hdl)
+
+            self.parser = PairwiseClassificationParser(grammar=grammar,
+                                                       clf=classifier,
+                                                       cropobject_feature_extractor=feature_extractor)
+
+        else:
+            self.parser = SimpleDeterministicDependencyParser(grammar=grammar)
 
     def load_image(self, image, compute_cc=False, do_preprocessing=True,
                    update_temp=True):
@@ -702,9 +726,8 @@ class CropObjectAnnotatorModel(Widget):
     def on_grammar(self, instance, g):
         if g is None:
             return
-
         if self.parser is None:
-            self.parser = SimpleDeterministicDependencyParser(grammar=g)
+            self.init_parser(grammar=g)
         else:
             self.parser.set_grammar(g)
 

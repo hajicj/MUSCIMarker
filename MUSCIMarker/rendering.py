@@ -540,9 +540,9 @@ class CropObjectListView(ListView):
             return
 
         # names = [c.clsname for c in cropobjects]
-        edges_idxs = parser.parse(cropobjects)
-        edges = [(cropobjects[i].objid, cropobjects[j].objid)
-                 for i, j in edges_idxs]
+        edges = parser.parse(cropobjects)
+        #edges = [(cropobjects[i].objid, cropobjects[j].objid)
+        #         for i, j in edges_idxs]
         logging.info('CropObjectListView.parse_selection(): {0} edges to add'
                      ''.format(len(edges)))
 

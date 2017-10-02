@@ -726,7 +726,7 @@ class MUSCIMarkerApp(App):
             {
                 'tracking_root_dir': self._get_default_tracking_root_dir(),
             })
-        config.setdefaults('interface', {'center_on_resize': True})
+        config.setdefaults('interface', {'center_on_resize': False})
         config.setdefaults('automation',
             {
                 'sparse_cropobject_threshold': 0.1,
@@ -742,6 +742,16 @@ class MUSCIMarkerApp(App):
                 # 'do_background_thresholding': False,
                 # 'binarization_lightness_tolerance': 127,
             })
+        config.setdefaults('parsing',
+                           {
+                               'smart_parsing': False,
+                               'smart_parsing_model': os.path.join(os.path.dirname(__file__),
+                                                                   'data', 'parsing',
+                                                                   'MM++_OPs_delta-bbox-all200.classifier.pkl'),
+                               'smart_parsing_vectorizer': os.path.join(os.path.dirname(__file__),
+                                                                   'data', 'parsing',
+                                                                   'MM++_OPs_delta-bbox-all200.vectorizer.pkl'),
+                           })
         config.setdefaults('symbol_detection_client',
                            {
                                'port': 33554,

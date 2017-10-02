@@ -3,6 +3,7 @@ from __future__ import print_function, unicode_literals
 
 import logging
 
+import numpy
 from muscima.cropobject import cropobject_distance
 from sklearn.feature_extraction import DictVectorizer
 
@@ -28,7 +29,9 @@ class SimpleDeterministicDependencyParser(object):
         supplied list of symbol names.
         """
         symbol_names = [c.clsname for c in cropobjects]
-        return self.get_all_possible_edges(symbol_names)
+        symbol_name_idxs = self.get_all_possible_edges(symbol_names)
+        edges = [(cropobjects[i].objid, cropobjects[j].objid) for i, j in symbol_name_idxs]
+        return edges
 
     def get_all_possible_edges(self, symbol_names):
         """Collects all symbol edges that are permissible, using the grammar.
@@ -60,23 +63,56 @@ class PairwiseClassificationParser(object):
     """This parser applies a simple classifier that takes the bounding
     boxes of two CropObjects and their classes and returns whether there
     is an edge or not."""
-    def __init__(self, clf, cropobject_feature_extractor):
+    MAXIMUM_DISTANCE_THRESHOLD = 200
+
+    def __init__(self, grammar, clf, cropobject_feature_extractor):
+        self.grammar = grammar
         self.clf = clf
         self.extractor = cropobject_feature_extractor
 
-        raise NotImplementedError()
+    def parse(self, cropobjects):
+        pairs, features = self.extract_all_pairs(cropobjects)
 
+        logging.info('Clf.Parse: {0} object pairs from {1} objects'.format(len(pairs), len(cropobjects)))
+
+        preds = self.clf.predict(features)
+
+        edges = []
+        for idx, (c_from, c_to) in enumerate(pairs):
+            if preds[idx] != 0:
+                edges.append((c_from.objid, c_to.objid))
+        return edges
+
+    def extract_all_pairs(self, cropobjects):
+        pairs = []
+        features = []
+        for u in cropobjects:
+            for v in cropobjects:
+                if u.objid == v.objid:
+                    continue
+                distance = cropobject_distance(u, v)
+                if distance < self.MAXIMUM_DISTANCE_THRESHOLD:
+                    pairs.append((u, v))
+                    f = self.extractor(u, v)
+                    features.append(f)
+
+        # logging.info('Parsing features: {0}'.format(features[0]))
+        features = numpy.array(features)
+        # logging.info('Parsing features: {0}/{1}'.format(features.shape, features))
+        return pairs, features
 
     def is_edge(self, c_from, c_to):
         features = self.extractor(c_from, c_to)
         result = self.clf.predict(features)
         return result
 
+    def set_grammar(self, grammar):
+        self.grammar = grammar
 
 ##############################################################################
 # Feature extraction
 
-class PairwiseClfFeatureExtractor():
+class PairwiseClfFeatureExtractor:
     def __init__(self, vectorizer=None):
         """Initialize the feature extractor.
 
@@ -95,7 +131,8 @@ class PairwiseClfFeatureExtractor():
     def __call__(self, *args, **kwargs):
         """The call is per item (in this case, CropObject pair)."""
         fd = self.get_features_relative_bbox_and_clsname(*args, **kwargs)
-        item_features = self.vectorizer.transform(fd).toarray()
+        # Compensate for the vecotrizer "target", which we don't have here (by :-1)
+        item_features = self.vectorizer.transform(fd).toarray()[0, :-1]
         return item_features
 
     def get_features_relative_bbox_and_clsname(self, c_from, c_to):
@@ -119,6 +156,11 @@ class PairwiseClfFeatureExtractor():
                     c_to.clsname,
                     target)
         dt, dl, db, dr, cu, cv, tgt = features
+        # Normalizing clsnames
+        if cu.startswith('letter'): cu = 'letter'
+        if cu.startswith('numeral'): cu = 'numeral'
+        if cv.startswith('letter'): cv = 'letter'
+        if cv.startswith('numeral'): cv = 'numeral'
         feature_dict = {'dt': dt,
                         'dl': dl,
                         'db': db,
@@ -150,5 +192,18 @@ class PairwiseClfFeatureExtractor():
                     c_from.clsname,
                     c_to.clsname,
                     target)
-        return features
+        dist, dt, dl, db, dr, cu, cv, tgt = features
+        if cu.startswith('letter'): cu = 'letter'
+        if cu.startswith('numeral'): cu = 'numeral'
+        if cv.startswith('letter'): cv = 'letter'
+        if cv.startswith('numeral'): cv = 'numeral'
+        feature_dict = {'dist': dist,
+                        'dt': dt,
+                        'dl': dl,
+                        'db': db,
+                        'dr': dr,
+                        'cls_from': cu,
+                        'cls_to': cv,
+                        'target': tgt}
+        return feature_dict
 
