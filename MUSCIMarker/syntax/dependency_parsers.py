@@ -4,6 +4,7 @@ from __future__ import print_function, unicode_literals
 import logging
 
 from muscima.cropobject import cropobject_distance
+from sklearn.feature_extraction import DictVectorizer
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -75,48 +76,79 @@ class PairwiseClassificationParser(object):
 ##############################################################################
 # Feature extraction
 
-def get_features_relative_bbox_and_clsname(c_from, c_to):
-    """Extract a feature vector from the given pair of CropObjects.
-    Does *NOT* convert the class names to integers.
+class PairwiseClfFeatureExtractor():
+    def __init__(self, vectorizer=None):
+        """Initialize the feature extractor.
 
-    Features: bbox(c_to) - bbox(c_from), clsname(c_from), clsname(c_to)
-    Target: 1 if there is a link from u to v
+        :param vectorizer: A DictVectorizer() from scikit-learn.
+            Used to convert feature dicts to the vectors that
+            the edge classifier of the parser will expect.
+            If None, will create a new DictVectorizer. (This is useful
+            for training; you can then pickle the entire extractor
+            and make sure the feature extraction works for the classifier
+            at runtime.)
+        """
+        if vectorizer is None:
+            vectorizer = DictVectorizer()
+        self.vectorizer = vectorizer
 
-    Returns a tuple.
-    """
-    target = 0
-    if c_from.doc == c_to.doc:
-        if c_to.objid in c_from.outlinks:
-            target = 1
-    features = (c_to.top - c_from.top,
-                c_to.left - c_from.left,
-                c_to.bottom - c_from.bottom,
-                c_to.right - c_from.right,
-                c_from.clsname,
-                c_to.clsname,
-                target)
-    return features
+    def __call__(self, *args, **kwargs):
+        """The call is per item (in this case, CropObject pair)."""
+        fd = self.get_features_relative_bbox_and_clsname(*args, **kwargs)
+        item_features = self.vectorizer.transform(fd).toarray()
+        return item_features
 
-def get_features_distance_relative_bbox_and_clsname(c_from, c_to):
-    """Extract a feature vector from the given pair of CropObjects.
-    Does *NOT* convert the class names to integers.
+    def get_features_relative_bbox_and_clsname(self, c_from, c_to):
+        """Extract a feature vector from the given pair of CropObjects.
+        Does *NOT* convert the class names to integers.
 
-    Features: bbox(c_to) - bbox(c_from), clsname(c_from), clsname(c_to)
-    Target: 1 if there is a link from u to v
+        Features: bbox(c_to) - bbox(c_from), clsname(c_from), clsname(c_to)
+        Target: 1 if there is a link from u to v
 
-    Returns a tuple.
-    """
-    target = 0
-    if c_from.doc == c_to.doc:
-        if c_to.objid in c_from.outlinks:
-            target = 1
-    distance = cropobject_distance(c_from, c_to)
-    features = (distance,
-                c_to.top - c_from.top,
-                c_to.left - c_from.left,
-                c_to.bottom - c_from.bottom,
-                c_to.right - c_from.right,
-                c_from.clsname,
-                c_to.clsname,
-                target)
-    return features
+        Returns a dict that works as input to ``self.vectorizer``.
+        """
+        target = 0
+        if c_from.doc == c_to.doc:
+            if c_to.objid in c_from.outlinks:
+                target = 1
+        features = (c_to.top - c_from.top,
+                    c_to.left - c_from.left,
+                    c_to.bottom - c_from.bottom,
+                    c_to.right - c_from.right,
+                    c_from.clsname,
+                    c_to.clsname,
+                    target)
+        dt, dl, db, dr, cu, cv, tgt = features
+        feature_dict = {'dt': dt,
+                        'dl': dl,
+                        'db': db,
+                        'dr': dr,
+                        'cls_from': cu,
+                        'cls_to': cv,
+                        'target': tgt}
+        return feature_dict
+
+    def get_features_distance_relative_bbox_and_clsname(self, c_from, c_to):
+        """Extract a feature vector from the given pair of CropObjects.
+        Does *NOT* convert the class names to integers.
+
+        Features: bbox(c_to) - bbox(c_from), clsname(c_from), clsname(c_to)
+        Target: 1 if there is a link from u to v
+
+        Returns a tuple.
+        """
+        target = 0
+        if c_from.doc == c_to.doc:
+            if c_to.objid in c_from.outlinks:
+                target = 1
+        distance = cropobject_distance(c_from, c_to)
+        features = (distance,
+                    c_to.top - c_from.top,
+                    c_to.left - c_from.left,
+                    c_to.bottom - c_from.bottom,
+                    c_to.right - c_from.right,
+                    c_from.clsname,
+                    c_to.clsname,
+                    target)
+        return features
+
