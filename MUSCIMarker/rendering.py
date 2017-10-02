@@ -250,6 +250,23 @@ class CropObjectListView(ListView):
         for objid in objids:
             self.get_cropobject_view(objid).ensure_selected()
 
+    def sync_selection_with_adapter(self, *args, **kwargs):
+        """Make sure that the selection state in the adapter is reflected
+        in the selection state of the CropObjectViews themselves.
+
+        Note
+        ----
+
+        Implemented to fix a bug when mass-deletion of CropObjects did not
+        properly call deselect(), whcih manifested itself as undestructible
+        info labels.
+        """
+        for cv in self.rendered_views:
+            if cv in self.adapter.selection:
+                cv.ensure_selected()
+            else:
+                cv.ensure_deselected()
+
     ##########################################################################
     # Keyboard event trapping
     #  - If a child view captures an on_key_down (event on_key_captured),
@@ -704,6 +721,7 @@ class CropObjectRenderer(FloatLayout):
                                        size=self.size, #(self.size[0] / 2, self.size[1] / 2),
                                        pos=self.pos)
         self.adapter.bind(on_selection_change=self.view.broadcast_selection)
+        self.adapter.bind(on_selection_change=self.view.sync_selection_with_adapter)
 
         # Keyboard event trapping implemented there.
         Window.bind(on_key_down=self.view.on_key_down)

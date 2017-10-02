@@ -866,12 +866,6 @@ class CropObjectView(SelectableView, ToggleButton):
         if self.is_selected:
             self.dispatch('on_release')
 
-    def ensure_selected(self):
-        """Proper selection that will be reflected in a ListAdapter
-        containing this view."""
-        if not self.is_selected:
-            self.dispatch('on_release')
-
     def select_from_composite(self, *args):
         self.background_color = self.selected_color
 
