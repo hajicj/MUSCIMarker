@@ -386,7 +386,7 @@ class CropObjectListView(ListView):
         # S for merging all stafflines
         if dispatch_key == '115':
             logging.info('CropObjectListView: handling staffline merge')
-            self.merge_all_stafflines()
+            self.merge_all_stafflines(build_staffs=True)
 
         else:
             logging.info('CropObjectListView: propagating keypress')
@@ -662,9 +662,13 @@ class CropObjectListView(ListView):
                 },
                 fn_name='CropObjectListView.merge_all_stafflines',
                 tracker_name='model')
-    def merge_all_stafflines(self):
+    def merge_all_stafflines(self, build_staffs=False):
         cropobjects = self._model.cropobjects.values()
         new_cropobjects = muscima.stafflines.merge_staffline_segments(cropobjects)
+
+        if build_staffs:
+            staffs = muscima.stafflines.build_staff_cropobjects(new_cropobjects)
+            new_cropobjects = new_cropobjects + staffs
 
         self._model.import_cropobjects(new_cropobjects)
 
