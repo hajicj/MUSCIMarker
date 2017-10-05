@@ -45,6 +45,8 @@ class ObjectDetectionHandler(Widget):
 
     tmp_dir = StringProperty()
 
+    current_request = ObjectProperty(None, allownone=True)
+
     def __init__(self, tmp_dir, port=33555, **kwargs):
         super(ObjectDetectionHandler, self).__init__(**kwargs)
 
@@ -64,6 +66,9 @@ class ObjectDetectionHandler(Widget):
 
         logging.info('ObjectDetectionHandler: Calling with input bounding box {0}'
                      ''.format(self.input_bounding_box))
+
+        self.current_request = request
+
         # Format request for client
         #  (=pickle it, plus pickle-within-pickle for image array)
         f_request = self._format_request(request)
@@ -126,12 +131,15 @@ class ObjectDetectionHandler(Widget):
     def postprocess_cropobjects(self, cropobjects):
         """Handler-specific CropObject postprocessing. Can be configurable
         through MUSCIMarker settings."""
-        return cropobjects
+        filtered_cropobjects = filter_small_cropobjects(cropobjects)
+        filtered_cropobjects = filter_thin_cropobjects(cropobjects)
+        return filtered_cropobjects
 
     def reset(self):
         self.result = None
         self.input = None
         self.input_bounding_box = None
+        self.current_request = None
 
 
     def _format_request(self, request):
@@ -212,3 +220,11 @@ class ObjectDetectionOMRAppClient(object):
 
 
 ##############################################################################
+
+
+def filter_small_cropobjects(cropobjects, threshold=20):
+    return [c for c in cropobjects if c.mask.sum() > threshold]
+
+def filter_thin_cropobjects(cropobjects, threshold=2):
+    return [c for c in cropobjects if min(c.width, c.height) > threshold]
+

@@ -511,6 +511,12 @@ class CropObjectView(SelectableView, ToggleButton):
                 pitch_text += '{0}'.format(c.data['pitch_octave'])
             if pitch_text:
                 text += ' | {0}'.format(pitch_text)
+
+            if 'duration_beats' in c.data:
+                text += ' | {0}'.format(c.data['duration_beats'])
+            if 'onset_beats' in c.data:
+                text += ' | {0}'.format(c.data['onset_beats'])
+
             duration_text = None
             if 'duration_beats' in c.data:
                 duration_text = '{0:.2f}'.format(c.data['duration_beats'])

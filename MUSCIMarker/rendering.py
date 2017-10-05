@@ -23,6 +23,7 @@ from kivy.uix.widget import Widget
 
 from cropobject_view import CropObjectView
 import muscima
+import muscima.stafflines
 from muscima.inference_engine_constants import InferenceEngineConstants
 from muscima.cropobject import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
 import tracker as tr
@@ -382,6 +383,11 @@ class CropObjectListView(ListView):
             logging.info('CropObjectListView: handling precedence parse')
             self.infer_precedence_for_current_selection(unselect_at_end=True)
 
+        # S for merging all stafflines
+        if dispatch_key == '115':
+            logging.info('CropObjectListView: handling staffline merge')
+            self.merge_all_stafflines()
+
         else:
             logging.info('CropObjectListView: propagating keypress')
             return False
@@ -557,7 +563,10 @@ class CropObjectListView(ListView):
             return
 
         # names = [c.clsname for c in cropobjects]
-        edges = parser.parse(cropobjects)
+        non_staff_cropobjects = [c for c in cropobjects
+                                 if c.clsname not in \
+                                 InferenceEngineConstants.STAFF_CROPOBJECT_CLSNAMES]
+        edges = parser.parse(non_staff_cropobjects)
         #edges = [(cropobjects[i].objid, cropobjects[j].objid)
         #         for i, j in edges_idxs]
         logging.info('CropObjectListView.parse_selection(): {0} edges to add'
@@ -644,6 +653,20 @@ class CropObjectListView(ListView):
         raise KeyError('CropObjectView with objid {0} not found among rendered'
                        ' CropObjects.'.format(objid))
 
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [
+                    lambda v: ('objids', [c.objid for c in v.selected_views]),
+                    lambda v: ('mlclass_names', [c._model_counterpart.clsname
+                                                 for c in v.selected_views])
+                ]
+                },
+                fn_name='CropObjectListView.merge_all_stafflines',
+                tracker_name='model')
+    def merge_all_stafflines(self):
+        cropobjects = self._model.cropobjects.values()
+        new_cropobjects = muscima.stafflines.merge_staffline_segments(cropobjects)
+
+        self._model.import_cropobjects(new_cropobjects)
 
 ##############################################################################
 
