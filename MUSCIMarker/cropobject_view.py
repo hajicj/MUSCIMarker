@@ -513,15 +513,15 @@ class CropObjectView(SelectableView, ToggleButton):
                 text += ' | {0}'.format(pitch_text)
 
             if 'duration_beats' in c.data:
-                text += ' | {0:.4f}'.format(c.data['duration_beats'])
+                text += ' | {0:.2f}'.format(c.data['duration_beats'])
             if 'onset_beats' in c.data:
-                text += ' | {0:.4f}'.format(c.data['onset_beats'])
+                text += ' | {0:.3f}'.format(c.data['onset_beats'])
 
-            duration_text = None
-            if 'duration_beats' in c.data:
-                duration_text = '{0:.2f}'.format(c.data['duration_beats'])
-            if duration_text is not None:
-                text += ' | {0}'.format(duration_text)
+            # duration_text = None
+            # if 'duration_beats' in c.data:
+            #     duration_text = '{0:.2f}'.format(c.data['duration_beats'])
+            # if duration_text is not None:
+            #     text += ' | {0}'.format(duration_text)
         return text
 
     def update_info_label(self, *args):

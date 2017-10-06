@@ -380,14 +380,16 @@ class CropObjectListView(ListView):
 
         # N for precedence edge inference
         if dispatch_key == '110':
-            logging.info('CropObjectListView: handling precedence parse')
-            self.infer_precedence_for_current_selection(unselect_at_end=True)
+            logging.info('CropObjectListView: handling precedence parse,'
+                         'IS factored by staff')
+            self.infer_precedence_for_current_selection(unselect_at_end=True,
+                                                        factor_by_staff=True)
         # N for precedence edge inference
         if dispatch_key == '110+shift':
             logging.info('CropObjectListView: handling precedence parse, '
-                         'factored by staff')
+                         'NOT factored by staff')
             self.infer_precedence_for_current_selection(unselect_at_end=True,
-                                                        factor_by_staff=True)
+                                                        factor_by_staff=False)
 
 
         # S for merging all stafflines
