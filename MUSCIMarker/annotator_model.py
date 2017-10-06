@@ -921,10 +921,19 @@ class CropObjectAnnotatorModel(Widget):
 
     ##########################################################################
     # MIDI export
-    def build_midi(self):
+    def build_midi(self,
+                   retain_pitches=True,
+                   retain_durations=True,
+                   retain_onsets=True):
         """Attempts to export a MIDI file from the current graph. Assumes that
         all the staff objects and their relations have been correctly established,
         and that the correct precedence graph is available.
+
+        :param retain_pitches: If set, will record the pitch information
+            in pitched objects.
+
+        :param retain_durations: If set, will record the duration information
+            in objects to which it applies.
 
         :returns: A single-track ``midiutil.MidiFile.MIDIFile`` object. It can be
             written to a stream using its ``mf.writeFile()`` method."""
@@ -940,6 +949,14 @@ class CropObjectAnnotatorModel(Widget):
             logging.exception(traceback.format_exc(e))
             return
 
+        if retain_pitches:
+            for objid in pitches:
+                c = self.cropobjects[objid]
+                pitch_step, pitch_octave = pitch_names[objid]
+                c.data['midi_pitch_code'] = pitches[objid]
+                c.data['normalized_pitch_step'] = pitch_step
+                c.data['pitch_octave'] = pitch_octave
+
         try:
             logging.info('Running durations inference.')
             durations = time_inference_engine.durations(self.cropobjects.values())
@@ -948,6 +965,11 @@ class CropObjectAnnotatorModel(Widget):
             logging.exception(traceback.format_exc(e))
             return
 
+        if retain_durations:
+            for objid in durations:
+                c = self.cropobjects[objid]
+                c.data['duration_beats'] = durations[objid]
+
         try:
             logging.info('Running onsets inference.')
             onsets = time_inference_engine.onsets(self.cropobjects.values())
@@ -955,6 +977,11 @@ class CropObjectAnnotatorModel(Widget):
             logging.warning('Model: Onset inference failed!')
             logging.exception(traceback.format_exc(e))
             return
+
+        if retain_onsets:
+            for objid in onsets:
+                c = self.cropobjects[objid]
+                c.data['onset_beats'] = onsets[objid]
 
         tempo = int(App.get_running_app().config.get('midi', 'default_tempo'))
 

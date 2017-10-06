@@ -513,9 +513,9 @@ class CropObjectView(SelectableView, ToggleButton):
                 text += ' | {0}'.format(pitch_text)
 
             if 'duration_beats' in c.data:
-                text += ' | {0}'.format(c.data['duration_beats'])
+                text += ' | {0:.4f}'.format(c.data['duration_beats'])
             if 'onset_beats' in c.data:
-                text += ' | {0}'.format(c.data['onset_beats'])
+                text += ' | {0:.4f}'.format(c.data['onset_beats'])
 
             duration_text = None
             if 'duration_beats' in c.data:
