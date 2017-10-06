@@ -382,6 +382,13 @@ class CropObjectListView(ListView):
         if dispatch_key == '110':
             logging.info('CropObjectListView: handling precedence parse')
             self.infer_precedence_for_current_selection(unselect_at_end=True)
+        # N for precedence edge inference
+        if dispatch_key == '110+shift':
+            logging.info('CropObjectListView: handling precedence parse, '
+                         'factored by staff')
+            self.infer_precedence_for_current_selection(unselect_at_end=True,
+                                                        factor_by_staff=True)
+
 
         # S for merging all stafflines
         if dispatch_key == '115':
@@ -586,21 +593,45 @@ class CropObjectListView(ListView):
                 },
                 fn_name='CropObjectListView.infer_precedence_for_current_selection',
                 tracker_name='model')
-    def infer_precedence_for_current_selection(self, unselect_at_end=True):
+    def infer_precedence_for_current_selection(self,
+                                               unselect_at_end=True,
+                                               factor_by_staff=False):
         """Adds edges among the current selection according to the model's
         grammar and parser."""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
-        self._infer_precedence(cropobjects)
+        if len(cropobjects) == 0:
+            cropobjects = self._model.cropobjects.values()
+
+        self._infer_precedence(cropobjects, factor_by_staff=factor_by_staff)
 
         if unselect_at_end:
             self.unselect_all()
 
-    def _infer_precedence(self, cropobjects):
+    def _infer_precedence(self, cropobjects, factor_by_staff=False):
 
         _relevant_clsnames = set(list(InferenceEngineConstants.NONGRACE_NOTEHEAD_CLSNAMES)
                                  + list(InferenceEngineConstants.REST_CLSNAMES))
         prec_cropobjects = [c for c in cropobjects
                             if c.clsname in _relevant_clsnames]
+
+        # Group the objects according to the staff they are related to
+        # and infer precedence on these subgroups.
+        if factor_by_staff:
+            staffs = [c for c in cropobjects
+                      if c.clsname == InferenceEngineConstants.STAFF_CLSNAME]
+            staff_objids = {c.objid: i for i, c in enumerate(staffs)}
+            prec_cropobjects_per_staff = [[] for _ in staffs]
+            # All CropObjects relevant for precedence have a relationship
+            # to a staff.
+            for c in prec_cropobjects:
+                for o in c.outlinks:
+                    if o in staff_objids:
+                        prec_cropobjects_per_staff[staff_objids[o]].append(c)
+
+            for prec_cropobjects_group in prec_cropobjects_per_staff:
+                self._infer_precedence(prec_cropobjects_group,
+                                       factor_by_staff=False)
+            return
 
         if len(prec_cropobjects) <= 1:
             logging.info('EdgeListView._infer_precedence: less than 2'
