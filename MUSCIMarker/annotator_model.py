@@ -6,6 +6,7 @@ import itertools
 import logging
 import os
 import pickle
+import traceback
 import uuid
 
 # import cv2
@@ -18,6 +19,8 @@ from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListP
 from kivy.uix.widget import Widget
 
 from muscima.io import export_cropobject_list
+import muscima.stafflines
+from muscima.inference import PitchInferenceEngine, OnsetsInferenceEngine, MIDIBuilder, play_midi
 
 from object_detection import ObjectDetectionHandler
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser, PairwiseClassificationParser, \
@@ -92,6 +95,11 @@ class ObjectGraph(Widget):
         logging.info('Graph: adding edge {0} with label {1}'.format(edge, label))
         a1 = edge[0]
         a2 = edge[1]
+
+        if a1 == a2:
+            logging.warn('Requested adding loop {0}-{1}; cannot add loops!'.format(a1, a2))
+            return
+
         if a1 not in self.vertices:
             raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
                              ''.format(edge, a1))
@@ -113,6 +121,10 @@ class ObjectGraph(Widget):
 
         # First add to edges index
         for a1, a2 in edges:
+            if a1 == a2:
+                logging.warn('Requested adding loop {0}-{1}; cannot add loops!'.format(a1, a2))
+                continue
+
             if a1 not in self.vertices:
                 raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
                                  ''.format((a1, a2), a1))
@@ -481,6 +493,7 @@ class CropObjectAnnotatorModel(Widget):
         # is tied to any change of self.cropobjects
         self.cropobjects = {c.objid: c for c in cropobjects}
         self.sync_cropobjects_to_graph()
+        # self.ensure_consistent()
 
     @Tracker(track_names=[],
              fn_name='model.export_cropobjects_string',
@@ -610,10 +623,12 @@ class CropObjectAnnotatorModel(Widget):
             # It is sufficient to collect outlinks -- the corresponding
             # inlink would just duplicate the edge.
             for o in c.outlinks:
-                attachment_edges.append((c.objid, o))
+                if c.objid != o:
+                    attachment_edges.append((c.objid, o))
             if 'precedence_outlinks' in c.data:
                 for o in c.data['precedence_outlinks']:
-                    precedence_edges.append((c.objid, o))
+                    if c.objid != o:
+                        precedence_edges.append((c.objid, o))
 
         # Add all edges at once.
         self.graph.add_edges(attachment_edges, label='Attachment')
@@ -622,6 +637,15 @@ class CropObjectAnnotatorModel(Widget):
     def ensure_consistent(self):
         """Make sure that the model is in a consistent state.
         (Fires all lazy synchronization routines between model components.)"""
+        self.ensure_no_loops()
+        self.sync_graph_to_cropobjects()
+
+    def ensure_no_loops(self):
+        """Makes sure that there are no loops in the graph.
+        This is especially important for precedence edges."""
+        for a1, a2 in self.graph.edges:
+            if a1 == a2:
+                self.graph.ensure_remove_edge(a1, a2)
         self.sync_graph_to_cropobjects()
 
     def ensure_remove_edge(self, from_objid, to_objid):
@@ -866,3 +890,88 @@ class CropObjectAnnotatorModel(Widget):
             _next_objid += 1
 
         return output_cropobjects
+
+    ##########################################################################
+    # Staffline building
+    def process_stafflines(self,
+                           build_staffs=False,
+                           build_staffspaces=False,
+                           add_staff_relationships=False):
+        """Merges staffline fragments into stafflines. Can group them into staffs,
+        add staffspaces, and add the various obligatory relationships of other
+        objects to the staff objects. Required before attempting to export MIDI."""
+        if len([c for c in self.cropobjects.values() if c.clsname == 'staff']) > 0:
+            logging.warn('Stafflines have already been processed, cannot reprocess.')
+            return
+
+        new_cropobjects = muscima.stafflines.merge_staffline_segments(self.cropobjects.values())
+
+        if build_staffs:
+            staffs = muscima.stafflines.build_staff_cropobjects(new_cropobjects)
+            new_cropobjects = new_cropobjects + staffs
+
+        if build_staffspaces:
+            staffspaces = muscima.stafflines.build_staffspace_cropobjects(new_cropobjects)
+            new_cropobjects = new_cropobjects + staffspaces
+
+        if add_staff_relationships:
+            new_cropobjects = muscima.stafflines.add_staff_relationships(new_cropobjects)
+
+        self.import_cropobjects(new_cropobjects)
+
+    ##########################################################################
+    # MIDI export
+    def build_midi(self):
+        """Attempts to export a MIDI file from the current graph. Assumes that
+        all the staff objects and their relations have been correctly established,
+        and that the correct precedence graph is available.
+
+        :returns: A single-track ``midiutil.MidiFile.MIDIFile`` object. It can be
+            written to a stream using its ``mf.writeFile()`` method."""
+        pitch_inference_engine = PitchInferenceEngine()
+        time_inference_engine = OnsetsInferenceEngine(cropobjects=self.cropobjects.values())
+
+        try:
+            logging.info('Running pitch inference.')
+            pitches, pitch_names = pitch_inference_engine.infer_pitches(self.cropobjects.values(),
+                                                                        with_names=True)
+        except Exception as e:
+            logging.warning('Model: Pitch inference failed!')
+            logging.exception(traceback.format_exc(e))
+            return
+
+        try:
+            logging.info('Running durations inference.')
+            durations = time_inference_engine.durations(self.cropobjects.values())
+        except Exception as e:
+            logging.warning('Model: Duration inference failed!')
+            logging.exception(traceback.format_exc(e))
+            return
+
+        try:
+            logging.info('Running onsets inference.')
+            onsets = time_inference_engine.onsets(self.cropobjects.values())
+        except Exception as e:
+            logging.warning('Model: Onset inference failed!')
+            logging.exception(traceback.format_exc(e))
+            return
+
+        tempo = int(App.get_running_app().config.get('midi', 'default_tempo'))
+
+        midi_builder = MIDIBuilder()
+        mf = midi_builder.build_midi(pitches=pitches, durations=durations, onsets=onsets,
+                                     tempo=tempo)
+
+        return mf
+
+    def play(self):
+        """Attempts to play the midi file."""
+        soundfont = App.get_running_app().config.get('midi', 'soundfont')
+
+        midi = self.build_midi()
+        if midi is not None:
+            play_midi(midi=midi,
+                      tmp_dir=App.get_running_app().tmp_dir,
+                      soundfont=soundfont)
+        else:
+            logging.warning('Exporting MIDI failed, nothing to play!')

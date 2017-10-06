@@ -1,0 +1,20 @@
+[
+  { "type": "title",
+    "title": "MIDI export settings"
+  },
+
+
+  { "type": "string",
+    "title": "Soundfont",
+    "desc": "The *.sf2 file with the soundfonts that you want to use.",
+    "section": "midi",
+    "key": "soundfont"
+  },
+
+  { "type": "numeric",
+    "title": "Default tempo",
+    "desc": "The default tempo at which the MIDI should be played.",
+    "section": "midi",
+    "key": "default_tempo"
+  }
+]

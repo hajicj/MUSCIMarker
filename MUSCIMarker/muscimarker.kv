@@ -742,6 +742,10 @@ MUSCIMarkerLayout:
                 text: 'HELP'
                 on_release: app.open_help()
 
+            ActionButton:
+                text: 'PLAY'
+                on_release: app.annot_model.play()
+
             #ActionButton:
             #    text: 'ROT.CCW'
             #    on_release: app.rotate_image(clockwise=False)

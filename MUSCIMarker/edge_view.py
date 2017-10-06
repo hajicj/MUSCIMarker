@@ -111,9 +111,9 @@ class EdgeView(SelectableView, ToggleButton):
         # Overriding default release
         self.always_release = False
 
-        logging.debug('EdgeView: Initialized for edge {0}'
-                      #', with pos={1}, size={2}'
-                      ''.format(self.edge, self.pos, self.size))
+        # logging.debug('EdgeView: Initialized for edge {0}'
+        #               #', with pos={1}, size={2}'
+        #               ''.format(self.edge, self.pos, self.size))
         self.do_render()
 
         self.register_event_type('on_key_captured')
@@ -205,7 +205,7 @@ class EdgeView(SelectableView, ToggleButton):
         return rgb, alpha
 
     def create_bindings(self):
-        logging.debug('EdgeView\t{0}: Creating bindings'.format(self.edge))
+        # logging.debug('EdgeView\t{0}: Creating bindings'.format(self.edge))
         Window.bind(on_key_down=self.on_key_down)
         Window.bind(on_key_up=self.on_key_up)
         #logging.info('EdgeView\t{0}: Current on_key_down total observers: {1}, obs:\n{2}'
@@ -213,7 +213,7 @@ class EdgeView(SelectableView, ToggleButton):
         #                       pprint.pformat(Window.get_property_observers('on_key_down'))))
 
     def remove_bindings(self):
-        logging.debug('EdgeView\t{0}: Removing bindings'.format(self.edge))
+        # logging.debug('EdgeView\t{0}: Removing bindings'.format(self.edge))
         Window.unbind(on_key_down=self.on_key_down)
         Window.unbind(on_key_up=self.on_key_up)
 

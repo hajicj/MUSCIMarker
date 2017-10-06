@@ -94,8 +94,8 @@ class CropObjectView(SelectableView, ToggleButton):
         :param kwargs:
         :return:
         """
-        logging.debug('Render: Initializing CropObjectView with args: c={0},'
-                      ' rgb={1}, alpha={2}'.format(selectable_cropobject, rgb, alpha))
+        # logging.debug('Render: Initializing CropObjectView with args: c={0},'
+        #               ' rgb={1}, alpha={2}'.format(selectable_cropobject, rgb, alpha))
         super(CropObjectView, self).__init__(**kwargs)
 
         self.text = ''   # We don't want any text showing up
@@ -454,7 +454,7 @@ class CropObjectView(SelectableView, ToggleButton):
             self.create_info_label()
 
     def create_info_label(self):
-        logging.debug('CropObjectView.create_info_label() called.')
+        # logging.debug('CropObjectView.create_info_label() called.')
         info_label = Label(text=self.get_info_label_text())
         _info_palette = App.get_running_app()._get_tool_info_palette()
 
@@ -466,7 +466,7 @@ class CropObjectView(SelectableView, ToggleButton):
         self._info_label_shown = True
 
     def destroy_info_label(self, *args, **kwargs):
-        logging.debug('CropObjectView.destroy_info_label() called.')
+        # logging.debug('CropObjectView.destroy_info_label() called.')
         App.get_running_app()._get_tool_info_palette().remove_widget(self.info_label)
         self._info_label_shown = False
         self.info_label = None
@@ -840,10 +840,10 @@ class CropObjectView(SelectableView, ToggleButton):
         Use ensure_deselected() instead."""
         # logging.debug('CropObjectView\t{0}: called deselection'
         #               ''.format(self.cropobject.objid))
-        logging.debug('CropObjectView.deselect: info label shown? {0}'
-                      ''.format(self._info_label_shown))
+        # logging.debug('CropObjectView.deselect: info label shown? {0}'
+        #               ''.format(self._info_label_shown))
         if self._info_label_shown:
-            logging.debug('CropObjectView.deselect: destroying info label.')
+            # logging.debug('CropObjectView.deselect: destroying info label.')
             self.destroy_info_label()
         if self._mlclass_selection_spinner_shown:
             self.destroy_mlclass_selection_spinner()

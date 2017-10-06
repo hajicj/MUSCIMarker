@@ -168,8 +168,8 @@ class CropObjectListView(ListView):
                 raise ValueError('CropObjectListView.populate(): Adapter sorted_keys'
                                  ' out of sync with data.')
             item_view = self.adapter.get_view(c_idx)
-            logging.debug('Populating with view that has color {0}'
-                          ''.format(item_view.selected_color))
+            # logging.debug('Populating with view that has color {0}'
+            #               ''.format(item_view.selected_color))
             # See CropObjectListView key trapping below.
             item_view.bind(on_key_captured=self.set_key_trap)
 
@@ -386,7 +386,9 @@ class CropObjectListView(ListView):
         # S for merging all stafflines
         if dispatch_key == '115':
             logging.info('CropObjectListView: handling staffline merge')
-            self.merge_all_stafflines(build_staffs=True)
+            self.process_stafflines(build_staffs=True,
+                                    build_staffspaces=True,
+                                    add_staff_relationships=True)
 
         else:
             logging.info('CropObjectListView: propagating keypress')
@@ -662,15 +664,13 @@ class CropObjectListView(ListView):
                 },
                 fn_name='CropObjectListView.merge_all_stafflines',
                 tracker_name='model')
-    def merge_all_stafflines(self, build_staffs=False):
-        cropobjects = self._model.cropobjects.values()
-        new_cropobjects = muscima.stafflines.merge_staffline_segments(cropobjects)
-
-        if build_staffs:
-            staffs = muscima.stafflines.build_staff_cropobjects(new_cropobjects)
-            new_cropobjects = new_cropobjects + staffs
-
-        self._model.import_cropobjects(new_cropobjects)
+    def process_stafflines(self,
+                           build_staffs=False,
+                           build_staffspaces=False,
+                           add_staff_relationships=False):
+        self._model.process_stafflines(build_staffs=build_staffs,
+                                       build_staffspaces=build_staffspaces,
+                                       add_staff_relationships=add_staff_relationships)
 
 ##############################################################################
 
@@ -934,8 +934,8 @@ class CropObjectRenderer(FloatLayout):
             'selectable_cropobject': rec,
             'rgb': rgb,
         }
-        logging.debug('Render: Converter fired, input object {0}/{1}, with output:\n{2}'
-                      ''.format(row_index, rec, output))
+        # logging.debug('Render: Converter fired, input object {0}/{1}, with output:\n{2}'
+        #               ''.format(row_index, rec, output))
         return output
 
     def clear(self, instance, pos):

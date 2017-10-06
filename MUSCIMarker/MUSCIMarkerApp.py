@@ -757,6 +757,11 @@ class MUSCIMarkerApp(App):
                                'port': 33554,
                                'hostname': '127.0.0.1',
                            })
+        config.setdefaults('midi',
+                           {
+                               'soundfont': '~/.fluidsynth/FluidR3_GM.sf2',
+                               'default_tempo': 120,
+                           })
 
         Config.set('kivy', 'exit_on_escape', '0')
 
@@ -776,6 +781,12 @@ class MUSCIMarkerApp(App):
                                'muscimarker_detection_client.json')) as hdl:
             jsondata = hdl.read()
         settings.add_json_panel('Symbol Detection Client',
+                                self.config, data=jsondata)
+
+        with open(os.path.join(os.path.dirname(__file__),
+                               'muscimarker_midi.json')) as hdl:
+            jsondata = hdl.read()
+        settings.add_json_panel('MIDI settings',
                                 self.config, data=jsondata)
 
 
