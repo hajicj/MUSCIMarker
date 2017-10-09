@@ -1027,6 +1027,10 @@ class CropObjectAnnotatorModel(Widget):
                 c = self.cropobjects[objid]
                 c.data['onset_beats'] = onsets[objid]
 
+        # Process ties
+        durations, onsets = time_inference_engine.process_ties(self.cropobjects.values(),
+                                                               durations, onsets)
+
         tempo = int(App.get_running_app().config.get('midi', 'default_tempo'))
 
         if selected_cropobjects is None:
@@ -1042,7 +1046,7 @@ class CropObjectAnnotatorModel(Widget):
 
     def play(self, cropobjects=None):
         """Attempts to play the midi file."""
-        if cropobjects is None:
+        if not cropobjects:
             cropobjects = self.cropobjects.values()
 
         soundfont = App.get_running_app().config.get('midi', 'soundfont')
