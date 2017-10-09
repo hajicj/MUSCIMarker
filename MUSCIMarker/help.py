@@ -94,6 +94,7 @@ MUSCIMARKER_AVAILABLE_KEYBOARD_SHORTCUTS = [
         'Alt+Shift+d': 'Find objects that have more than 1 connected component.',
         'Alt+Shift+s': 'Like alt+shift+d, but only finds objects without outlinks.',
         'Alt+Shift+o': 'Find objects that have the same bounding box, but are not attached to each other.',
+        'Alt+Shift+q': 'Find objects that are suspiciously small. (Mostly for catching auto-detection errors.)',
     }),
     ('Automation', {
         'Alt+Shift+b': 'Add \'measure_separator\' objects from barlines.',

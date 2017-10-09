@@ -1082,8 +1082,10 @@ class MUSCIMarkerApp(App):
             self.find_objects_with_disconnected_masks(leaves_only=False)
         elif dispatch_key == '115+alt,shift':  # "alt+shift+s" -- disconnected cropobjects that have no outlinks,
             self.find_objects_with_disconnected_masks(leaves_only=True)
-        elif dispatch_key == '111+alt,shift':  # "alt+shift+d" -- disconnected cropobjects
+        elif dispatch_key == '111+alt,shift':  # "alt+shift+o" -- perfectly overlapping cropobjects,
             self.find_objects_with_identical_bounding_box()
+        elif dispatch_key == '113+alt,shift':  # "alt+shift+q" -- suspiciously small
+            self.find_suspiciously_small_objects()
 
         # logging.info('App: Checking keyboard dispatch, {0}'
         #              ''.format(self.keyboard_dispatch.keys()))
@@ -2255,3 +2257,14 @@ class MUSCIMarkerApp(App):
 
         c_l_view.unselect_all()
         c_l_view.ensure_selected_objids(_objids_duplicate)
+
+    def find_suspiciously_small_objects(self):
+        raise NotImplementedError()
+
+    ##########################################################################
+    # Playback
+    def play(self):
+        """Plays the current selection as MIDI."""
+        selection = [v._model_counterpart
+                     for v in self.cropobject_list_renderer.view.selected_views]
+        self.annot_model.play(selection)

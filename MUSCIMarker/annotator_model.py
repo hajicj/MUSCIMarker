@@ -168,8 +168,17 @@ class ObjectGraph(Widget):
 
     def remove_edge(self, a1, a2):
         """Object a1 will no longer point at object a2."""
-        self._inlinks[a2].remove(a1)
-        self._outlinks[a1].remove(a2)
+        if a1 not in self._inlinks[a2]:
+            logging.warn('Edge {0} --> {1}: not found in inlinks of {1}'
+                         ''.format(a1, a2))
+        else:
+            self._inlinks[a2].remove(a1)
+
+        if a2 not in self._outlinks[a1]:
+            logging.warn('Edge {0} --> {1}: not found in outlinks of {0}'
+                         ''.format(a1, a2))
+        else:
+            self._outlinks[a1].remove(a2)
         del self.edges[a1, a2]
 
     def remove_obj_from_graph(self, objid):
@@ -492,6 +501,7 @@ class CropObjectAnnotatorModel(Widget):
         # Batch processing is more efficient, since rendering the CropObjectList
         # is tied to any change of self.cropobjects
         self.cropobjects = {c.objid: c for c in cropobjects}
+        # self.ensure_cropobjects_consistent()
         self.sync_cropobjects_to_graph()
         # self.ensure_consistent()
 
@@ -637,8 +647,29 @@ class CropObjectAnnotatorModel(Widget):
     def ensure_consistent(self):
         """Make sure that the model is in a consistent state.
         (Fires all lazy synchronization routines between model components.)"""
+        # self.ensure_cropobjects_consistent()
         self.ensure_no_loops()
         self.sync_graph_to_cropobjects()
+
+    def ensure_cropobjects_consistent(self, cropobjects=None):
+        """Makes sure that the CropObjects are all well-formed.
+        Checks for:
+
+        * Match between objid and uid
+
+        Dispatches ``on_cropobjects`` in order to reflect the in-place
+        updates.
+        """
+        if cropobjects is None:
+            cropobjects = self.cropobjects.values()
+        for c in cropobjects:
+            dataset, doc, num = c._parse_uid(c.uid)
+            if c.objid != num:
+                logging.warn('CropObject consistency check: object with objid {0}'
+                             ' has UID {1}, setting UID to match objid.'
+                             ''.format(c.objid, c.uid))
+                c.set_objid(c.objid)
+        return cropobjects
 
     def ensure_no_loops(self):
         """Makes sure that there are no loops in the graph.
@@ -731,6 +762,13 @@ class CropObjectAnnotatorModel(Widget):
 
         return list(set([c.objid for c in very_small_cropobjects]))
 
+    def find_vertices_with_loops(self):
+        loop_objids = []
+        for objid in self.cropdobjects:
+            if (objid, objid) in self.graph.edges:
+                loop_objids.append(objid)
+        return loop_objids
+
     def find_wrong_vertices(self, provide_reasons=False):
         v, i, o, r_v, r_i, r_o = self.find_grammar_errors()
 
@@ -740,6 +778,12 @@ class CropObjectAnnotatorModel(Widget):
             if objid not in v:
                 v.append(objid)
                 r_v[objid] = 'Object {0} is suspiciously small.'.format(objid)
+
+        v_loops = self.find_vertices_with_loops()
+        for objid in v_loops:
+            if objid not in v:
+                v.append(objid)
+                r_v[objid] = 'Object {0} has loops.'.format(objid)
 
         if provide_reasons:
             return v, r_v
@@ -881,7 +925,7 @@ class CropObjectAnnotatorModel(Widget):
 
         output_cropobjects = []
         for c in cropobjects:
-            c.objid = _next_objid
+            c.set_objid(_next_objid)
 
             c.inlinks = [i + _delta_objid for i in c.inlinks]
             c.outlinks = [o + _delta_objid for o in c.outlinks]
@@ -921,7 +965,7 @@ class CropObjectAnnotatorModel(Widget):
 
     ##########################################################################
     # MIDI export
-    def build_midi(self,
+    def build_midi(self, selected_cropobjects=None,
                    retain_pitches=True,
                    retain_durations=True,
                    retain_onsets=True):
@@ -985,17 +1029,25 @@ class CropObjectAnnotatorModel(Widget):
 
         tempo = int(App.get_running_app().config.get('midi', 'default_tempo'))
 
+        if selected_cropobjects is None:
+            selected_cropobjects = self.cropobjects.values()
+        selection_objids = [c.objid for c in selected_cropobjects]
+
         midi_builder = MIDIBuilder()
-        mf = midi_builder.build_midi(pitches=pitches, durations=durations, onsets=onsets,
-                                     tempo=tempo)
+        mf = midi_builder.build_midi(
+            pitches=pitches, durations=durations, onsets=onsets,
+            selection=selection_objids, tempo=tempo)
 
         return mf
 
-    def play(self):
+    def play(self, cropobjects=None):
         """Attempts to play the midi file."""
+        if cropobjects is None:
+            cropobjects = self.cropobjects.values()
+
         soundfont = App.get_running_app().config.get('midi', 'soundfont')
 
-        midi = self.build_midi()
+        midi = self.build_midi(selected_cropobjects=cropobjects)
         if midi is not None:
             play_midi(midi=midi,
                       tmp_dir=App.get_running_app().tmp_dir,
