@@ -9,7 +9,7 @@ import uuid
 
 import numpy
 import time
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.properties import ObjectProperty, StringProperty, NumericProperty
 from kivy.uix.widget import Widget
 
 from muscima.io import parse_cropobject_list, export_cropobject_list
@@ -34,6 +34,10 @@ class ObjectDetectionHandler(Widget):
     '''Remembers the bounding box of the current input, so that
     the positions of detected CropObjects with respect to the input
     image can be derived from it.'''
+
+    input_bounding_box_margin = ObjectProperty(None, allownone=True)
+    '''Remembers the margin used for clearing detecction boundary
+    artifacts. Also in the (t, l, b, r) format.'''
 
     result = ObjectProperty(None, allownone=True)
     '''The output of the remote OMR engine is stored here. An external

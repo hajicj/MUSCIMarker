@@ -84,7 +84,7 @@
 
   { "type": "bool",
     "title": "Selection: ignore staff objs.",
-    "desc": "The Obj. and Rel. Select tools will ignore staff objects and relationships to them.",
+    "desc": "The Parse, Obj. and Rel. Select tools will ignore staff objects and relationships to them.",
     "section": "toolkit",
     "key": "selection_ignore_staff"
   },

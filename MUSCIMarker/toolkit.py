@@ -1164,7 +1164,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
 
 class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
     """Select the activated CropObjectViews."""
-    def __init__(self, ignore_staff, **kwargs):
+    def __init__(self, ignore_staff=False, **kwargs):
         super(CropObjectViewsSelectTool, self).__init__(**kwargs)
         self.ignore_staff = ignore_staff
 
@@ -1596,7 +1596,12 @@ def get_tool_kwargs_dispatch(name):
         active_selection = False
         logging.info('Toolkit: got active_selection={0}'
                      ''.format(active_selection))
-        return {'active_selection': active_selection}
+        _ignore_staff_str = conf.get('toolkit', 'selection_ignore_staff')
+        ignore_staff = _safe_parse_bool_from_conf(_ignore_staff_str)
+        logging.info('Toolkit: got active_selection={0}, ignore_staff={1}'
+                     ''.format(active_selection, ignore_staff))
+        return {'active_selection': active_selection,
+                'ignore_staff': ignore_staff}
 
 
 def _safe_parse_bool_from_conf(conf_str):

@@ -866,8 +866,17 @@ class CropObjectAnnotatorModel(Widget):
 
     ##########################################################################
     # Object detection interface
-    def call_object_detection(self, bounding_box=None):
+    def call_object_detection(self, bounding_box=None, margin=32):
         """Call object detection through ``self._object_detection_client``.
+
+        Some "improvements" (quick workarounds):
+
+        * A slightly larger bounding box is sent for detection. After receiving
+          objects, those that are located at least partly in the margins are
+          discarded. This helps with boundary artifacts. The size of the margin
+          should roughly correspond to the size of the receptive field of an output
+          pixel.
+
         """
         if bounding_box is None:
             bounding_box = (0, 0, self.image.shape[0], self.image.shape[1])
@@ -878,9 +887,18 @@ class CropObjectAnnotatorModel(Widget):
                          ' bounding box: {0}'.format(bounding_box))
             return
 
-        self._object_detection_client.input_bounding_box = bounding_box
+        # Apply margin
+        _t = max(0, t - margin)
+        _l = max(0, l - margin)
+        _b = min(self.image.shape[0], b + margin)
+        _r = min(self.image.shape[1], r + margin)
 
-        image_crop = self.image[t:b, l:r]
+        real_margin = t - _t, l - _l, _b - b, _r - r
+
+        self._object_detection_client.input_bounding_box = bounding_box
+        self._object_detection_client.input_bounding_box_margin = real_margin
+
+        image_crop = self.image[_t:_b, _l:_r]
 
         request = {'image': image_crop,
                    'clsname': [App.get_running_app().currently_selected_mlclass_name]
@@ -909,14 +927,44 @@ class CropObjectAnnotatorModel(Widget):
 
         processed_cropobjects = self._detection_apply_objids(result_cropobjects)
         processed_cropobjects = self._detection_apply_shift(processed_cropobjects)
+        processed_cropobjects = self._detection_apply_margin(result_cropobjects,
+                                                             margin=self._object_detection_client.input_bounding_box_margin,
+                                                             bounding_box=self._object_detection_client.input_bounding_box)
+
 
         for c in processed_cropobjects:
             self.add_cropobject(c)
 
+    def _detection_apply_margin(self, cropobjects, margin, bounding_box):
+        """Checks if the CropObject aren't within the given margin. Note that this
+        is applied *after* translation back to coordinates w.r.t. image, not w.r.t.
+        detection crop; the bounding box is therefore also w.r.t. image."""
+        if margin is None:
+            return cropobjects
+
+        if bounding_box is None:
+            logging.warn('Trying to filter boundary artifacts, but no input bounding box available...')
+            return cropobjects
+
+        def _within_margin(c, m, bbox):
+            t, l, b, r = bbox
+            mt, ml, mb, mr = m
+            if (c.top < t + mt) \
+                or (c.left < t + ml) \
+                or (c.bottom > b - mb) \
+                or (c.right > r - mr):
+                return False
+            else:
+                return True
+
+        output_cropobjects = [c for c in cropobjects if _within_margin(c, margin, bounding_box)]
+        return output_cropobjects
+
     def _detection_apply_shift(self, cropobjects):
         it, il, ib, ir = self._object_detection_client.input_bounding_box
+        mt, ml, mb, mr = self._object_detection_client.input_bounding_box_margin
         for c in cropobjects:
-            c.translate(down=it, right=il)
+            c.translate(down=it - mt, right=il - ml)
         return cropobjects
 
     def _detection_apply_objids(self, cropobjects):

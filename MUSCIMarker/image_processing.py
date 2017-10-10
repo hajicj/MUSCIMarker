@@ -165,14 +165,14 @@ class PerspectiveRegistrationProcessor():
     def process(self, image, verbosity=0):
         """ warp image """
         img = image * 1  # Work on a copy
-        import cv2
+        import cv2   # Local import, so that people can live without OpenCV
 
         # resize image to target size
         h = int(numpy.float(self.w) / img.shape[1] * img.shape[0])
         img = cv2.resize(img, (self.w, h))
 
         # pre-process image
-        img = cv2.bilateralFilter(img, 1, 10, 120 )
+        img = cv2.bilateralFilter(img, 1, 10, 120)
 
         # stretch image intensities
         img = _stretch_intensity(img)
@@ -239,6 +239,16 @@ class PerspectiveRegistrationProcessor():
                                   [0, 0],
                                   [self.w - 1, 0]], dtype="float32")
 
+
+        # fix order of contour points for homography computation
+        polygon = polygons[0].astype(numpy.float32)
+
+        # from scipy.spatial.distance import cdist
+        # distances = cdist(numpy.asarray([self.w, h])[numpy.newaxis], polygon)
+        # closest_idx = numpy.argmin(distances)
+        # new_order = [numpy.mod(closest_idx + i, len(polygon)) for i in xrange(len(polygon))]
+        # polygon = polygon[new_order]
+
         # The polygon points should be rotated so that they match
         # the orientation of the ref_points.
         polygon = self.orient_polygon(img, polygon, ref_points,
@@ -262,14 +272,11 @@ class PerspectiveRegistrationProcessor():
     def orient_polygon(self, img, polygon, ref_points, shape):
         """Guesses how to align the polygon points and ref points,
         so that the warp orients the sheet correctly."""
-        # Get polygon neighbor structure
-        neighbors = {tuple(polygon[0]): (polygon[1], polygon[3]),
-                     tuple(polygon[1]): (polygon[2], polygon[0]),
-                     tuple(polygon[2]): (polygon[3], polygon[1]),
-                     tuple(polygon[3]): (polygon[0], polygon[2])}
-
-        # Find lowest point
-
+        from scipy.spatial.distance import cdist
+        distances = cdist(numpy.asarray(shape)[numpy.newaxis], polygon)
+        closest_idx = numpy.argmin(distances)
+        new_order = [numpy.mod(closest_idx + i, len(polygon)) for i in xrange(len(polygon))]
+        polygon = polygon[new_order]
         return polygon
 
 
