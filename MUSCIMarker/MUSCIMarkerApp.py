@@ -721,6 +721,8 @@ class MUSCIMarkerApp(App):
                 'trimmed_lasso_helper_line_length': 100,
                 'active_selection': 0,
                 'binarization_retain_foreground': 1,
+                'split_on_eraser': 1,
+                'selection_ignore_staff': 1,
             })
         config.setdefaults('tracking',
             {

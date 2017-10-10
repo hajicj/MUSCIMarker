@@ -764,7 +764,7 @@ class CropObjectAnnotatorModel(Widget):
 
     def find_vertices_with_loops(self):
         loop_objids = []
-        for objid in self.cropdobjects:
+        for objid in self.cropobjects:
             if (objid, objid) in self.graph.edges:
                 loop_objids.append(objid)
         return loop_objids

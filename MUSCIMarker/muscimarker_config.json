@@ -83,6 +83,20 @@
   },
 
   { "type": "bool",
+    "title": "Selection: ignore staff objs.",
+    "desc": "The Obj. and Rel. Select tools will ignore staff objects and relationships to them.",
+    "section": "toolkit",
+    "key": "selection_ignore_staff"
+  },
+
+  { "type": "bool",
+    "title": "Eraser: Split disconnected",
+    "desc": "When using the eraser lasso, objects will be split if their mask becomes disconnected.",
+    "section": "toolkit",
+    "key": "split_on_eraser"
+  },
+
+  { "type": "bool",
     "title": "Binarization: Retain foreground",
     "desc": "If this is on, the Region Binarization tool will retain the shade of the foreground pixels.",
     "section": "toolkit",
