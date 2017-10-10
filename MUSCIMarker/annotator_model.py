@@ -925,9 +925,10 @@ class CropObjectAnnotatorModel(Widget):
         logging.info('Got a total of {0} detected CropObjects.'
                      ''.format(len(result_cropobjects)))
 
-        processed_cropobjects = self._detection_apply_objids(result_cropobjects)
+        processed_cropobjects = self._detection_filter_tiny(result_cropobjects)
+        processed_cropobjects = self._detection_apply_objids(processed_cropobjects)
         processed_cropobjects = self._detection_apply_shift(processed_cropobjects)
-        processed_cropobjects = self._detection_apply_margin(result_cropobjects,
+        processed_cropobjects = self._detection_apply_margin(processed_cropobjects,
                                                              margin=self._object_detection_client.input_bounding_box_margin,
                                                              bounding_box=self._object_detection_client.input_bounding_box)
 
@@ -938,7 +939,12 @@ class CropObjectAnnotatorModel(Widget):
     def _detection_apply_margin(self, cropobjects, margin, bounding_box):
         """Checks if the CropObject aren't within the given margin. Note that this
         is applied *after* translation back to coordinates w.r.t. image, not w.r.t.
-        detection crop; the bounding box is therefore also w.r.t. image."""
+        detection crop; the bounding box is therefore also w.r.t. image.
+
+        Because the bounding box is recorded *without* the margin, we do not explicitly need
+        it here. We just need to check that all the detected objects fit inside this
+        bounding box.
+        """
         if margin is None:
             return cropobjects
 
@@ -948,16 +954,24 @@ class CropObjectAnnotatorModel(Widget):
 
         def _within_margin(c, m, bbox):
             t, l, b, r = bbox
-            mt, ml, mb, mr = m
-            if (c.top < t + mt) \
-                or (c.left < t + ml) \
-                or (c.bottom > b - mb) \
-                or (c.right > r - mr):
+            # mt, ml, mb, mr = m
+            if (c.top < t) \
+                or (c.left < l) \
+                or (c.bottom > b) \
+                or (c.right > r):
                 return False
             else:
                 return True
 
         output_cropobjects = [c for c in cropobjects if _within_margin(c, margin, bounding_box)]
+        cropobjects_in_margin = [c for c in cropobjects if c not in output_cropobjects]
+        logging.info('Detection: Bounding box: {0}'.format(bounding_box))
+        logging.info('Detection: Margin: {0}'.format(margin))
+        logging.info('Detection: Filtering out {0} cropobjects found only in the margin.'
+                     ''.format(len(cropobjects_in_margin)))
+        for c in cropobjects_in_margin:
+            logging.info('Detection: \tC. in margin: bbox {0}'.format(c.bounding_box))
+
         return output_cropobjects
 
     def _detection_apply_shift(self, cropobjects):
@@ -982,6 +996,16 @@ class CropObjectAnnotatorModel(Widget):
             _next_objid += 1
 
         return output_cropobjects
+
+    def _detection_filter_tiny(self, cropobjects, min_mask_area=10, min_width=4):
+        tiny = [c for c in cropobjects if c.mask.sum() < min_mask_area]
+        logging.info('Detection: Filtering out {0} tiny cropobjects'.format(len(tiny)))
+        narrow = [c for c in cropobjects if c.width < min_width]
+        logging.info('Detection: Filtering out {0} narrow cropobjects'.format(len(narrow)))
+
+        output = [c for c in cropobjects
+                  if (c.mask.sum() >= min_mask_area) and (c.width >= min_width)]
+        return output
 
     ##########################################################################
     # Staffline building
