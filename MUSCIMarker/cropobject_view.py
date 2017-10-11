@@ -800,7 +800,10 @@ class CropObjectView(SelectableView, ToggleButton):
         scipy.misc.imsave(full_path, combined_crop, )
 
         # Make popup with the crop
-        popup = InspectionPopup(title='Inspecting obj. {0}'.format(self.objid),
+        popup = InspectionPopup(title='Inspecting obj. {0} | clsname: {1} | bbox: {2}'
+                                      ''.format(self.objid,
+                                                self._model_counterpart.clsname,
+                                                self._model_counterpart.bounding_box),
                                 source=full_path)
 
         # Bind to delete the temp file on cancel()

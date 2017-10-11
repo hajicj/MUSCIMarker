@@ -262,10 +262,17 @@ class CropObjectListView(ListView):
         properly call deselect(), whcih manifested itself as undestructible
         info labels.
         """
+        # logging.warn('CropObjectViewList: sync selection state: {0}'.format(self.adapter.selection))
         for cv in self.rendered_views:
             if cv in self.adapter.selection:
+                # if not cv.is_selected:
+                #     logging.debug('CropObjectViewList: sync adding obj {0}'.format(cv._model_counterpart.objid))
                 cv.ensure_selected()
             else:
+                # if cv.is_selected:
+                #     logging.debug('CropObjectViewList: sync removing obj {0}'.format(cv.cropobject.objid))
+                # else:
+                #     logging.debug('CropObjectViewList: sync already removed obj {0}'.format(cv.cropobject.objid))
                 cv.ensure_deselected()
 
     ##########################################################################

@@ -51,7 +51,12 @@ class ImageProcessing(object):
             return image
 
         if self.warp_registration:
-            image = PerspectiveRegistrationProcessor().process(image)
+            try:
+                image = PerspectiveRegistrationProcessor().process(image)
+            except Exception as e:
+                logging.warn('Perspective transformation failed! Are you sure'
+                             ' the input is a photo of a light sheet of music'
+                             ' on a dark background?')
 
         if self.auto_invert:
             logging.info('ImageProcessing: auto-invert set to {0}, type {1},'
