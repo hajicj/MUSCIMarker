@@ -109,6 +109,8 @@ class ObjectDetectionHandler(Widget):
             cropobjects = parse_cropobject_list(response_fname)
             print(export_cropobject_list(cropobjects))
             # Verify that result is valid (re-request on failure?)
+            if os.path.isfile(response_fname):
+                os.unlink(response_fname)
 
         except:
             logging.warn('ObjectDetectionHandler: Could not parse'
@@ -119,8 +121,6 @@ class ObjectDetectionHandler(Widget):
             logging.info('Cleaning up files.')
             if os.path.isfile(request_fname):
                 os.unlink(request_fname)
-            if os.path.isfile(response_fname):
-                os.unlink(response_fname)
 
         # Bind output representation to self.result to fire bindings
         #  - Subsequent processing means adding the CropObjects

@@ -1487,6 +1487,10 @@ class SymbolDetectionTool(MUSCIMarkerTool):
     Requires having a detection server running on a configured host/port.
     The detection server is currently not open-source.
     """
+    def __init__(self, use_current_class, clsnames, **kwargs):
+        super(SymbolDetectionTool, self).__init__(**kwargs)
+        self.use_current_class = use_current_class
+        self.clsnames = clsnames
 
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
@@ -1502,7 +1506,13 @@ class SymbolDetectionTool(MUSCIMarkerTool):
         m_t, m_l, m_b, m_r = self.editor_to_model_bbox(ed_t, ed_l, ed_b, ed_r)
         m_t, m_l, m_b, m_r = bbox_to_integer_bounds(m_t, m_l, m_b, m_r)
 
-        self.app_ref.annot_model.call_object_detection(bounding_box=(m_t, m_l, m_b, m_r))
+        if self.use_current_class:
+            clsnames = None
+        else:
+            clsnames = self.clsnames
+
+        self.app_ref.annot_model.call_object_detection(bounding_box=(m_t, m_l, m_b, m_r),
+                                                       clsnames=clsnames)
 
         self.editor_widgets['bbox_tracer'].clear()
 
@@ -1539,7 +1549,6 @@ def get_tool_kwargs_dispatch(name):
         'gesture_select_tool': dict(),
         # 'region_binarize_tool': dict(),
         'background_lasso_tool': dict(),
-        'symbol_detection_tool': dict(),
     }
 
     if name in no_kwarg_tools:
@@ -1547,6 +1556,13 @@ def get_tool_kwargs_dispatch(name):
 
     app = App.get_running_app()
     conf = app.config
+
+    if name == 'symbol_detection_tool':
+        _use_ccls = conf.get('toolkit', 'detection_use_current_class')
+        use_ccls = _safe_parse_bool_from_conf(_use_ccls)
+        clsnames = conf.get('toolkit', 'detection_classes').split(',')
+        return {'use_current_class': use_ccls,
+                'clsnames': clsnames}
 
     if name == 'region_binarize_tool':
         _retain_fg = conf.get('toolkit', 'binarization_retain_foreground')

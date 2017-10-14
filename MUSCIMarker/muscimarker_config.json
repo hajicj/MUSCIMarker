@@ -103,6 +103,21 @@
     "key": "binarization_retain_foreground"
   },
 
+  { "type": "bool",
+    "title": "Detection: use current class?",
+    "desc": "When calling the detector, only ask for the currently selected object class.",
+    "section": "toolkit",
+    "key": "detection_use_current_class"
+  },
+
+  { "type": "string",
+    "title": "Detection: use the given classes",
+    "desc": "When calling the detector, detect these classes (comma-separated, no whitespace).",
+    "section": "toolkit",
+    "key": "detection_classes"
+  },
+
+
   { "type": "title",
     "title": "Automation"
   },

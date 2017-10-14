@@ -24,6 +24,7 @@ from kivy.uix.scatter import Scatter
 from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.spinner import Spinner
 from kivy.uix.togglebutton import ToggleButton
+from muscima.cropobject import split_cropobject_on_connected_components
 
 import tracker as tr
 from utils import InspectionPopup, keypress_to_dispatch_key
@@ -329,7 +330,7 @@ class CropObjectView(SelectableView, ToggleButton):
             self.inspect()
 
         elif dispatch_key == '120':  # x
-            logging.info('CropObjectView: handling split')
+            logging.info('CropObjectView: handling split to connected components')
             self.split()
 
         else:
@@ -678,44 +679,19 @@ class CropObjectView(SelectableView, ToggleButton):
                                           lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.split',
                 tracker_name='editing')
-    def split(self, ratio=0.5):
-        """Split the CropObject into two. If it is taller than wide, the split
-        will lead horizontally (so the new CropObjects will be one above the
-        other), if the CropObject is rather wide than tall, the split leads
-        vertically. Both the generated CropObjects will have the original
-        object's ``clsid``.
-
-        :param ratio: Controls how far to the top/right the split will
-            occurr. Keep between 0 and 1.
+    def split(self):
+        """Split the CropObject according to its mask.
         """
-        c = self.cropobject
-        if c.width > c.height:
-            # split along width
-            t1 = t2 = c.x + c.height
-            b1 = b2 = c.x
-            l1 = c.y
-            r1 = l2 = c.y + (c.width * ratio)
-            r2 = c.y + c.width
-            # Make a small gap between the two new objects
-            r1 -= 0.3
-            l2 += 0.3
-        else:
-            # split along height
-            b1 = c.x
-            t1 = b2 = c.x + (c.height * ratio)
-            t2 = c.x + c.height
-            l1 = l2 = c.y
-            r1 = r2 = c.y + c.width
-            t1 -= 0.3
-            b2 += 0.3
-        coords_1 = {'top': t1, 'bottom': b1, 'left': l1, 'right': r1}
-        coords_2 = {'top': t2, 'bottom': b2, 'left': l2, 'right': r2}
-
-        clsname= self.cropobject.clsname
-        App.get_running_app().add_cropobject_from_selection(coords_1, clsname=clsname)
-        App.get_running_app().add_cropobject_from_selection(coords_2, clsname=clsname)
+        _next_objid = self._model.get_next_cropobject_id()
+        new_cropobjects = split_cropobject_on_connected_components(self._model_counterpart,
+                                                                   next_objid=_next_objid)
+        if len(new_cropobjects) == 1:
+            return
 
         self.remove_from_model()
+        for c in new_cropobjects:
+            self._model.add_cropobject(c)
+
 
     ##########################################################################
     # Clone class

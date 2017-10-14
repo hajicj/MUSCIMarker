@@ -723,6 +723,10 @@ class MUSCIMarkerApp(App):
                 'binarization_retain_foreground': 1,
                 'split_on_eraser': 1,
                 'selection_ignore_staff': 1,
+                'detection_classes': 'staff_line,notehead-full,notehead-empty,ledger_line,' + \
+                                     'sharp,flat,natural,stem,beam,duration-dot,' + \
+                                     'thin_barline,g-clef,f-clef,c-clef',
+                'detection_use_current_class': True,
             })
         config.setdefaults('tracking',
             {

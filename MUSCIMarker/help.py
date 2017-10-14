@@ -78,6 +78,7 @@ MUSCIMARKER_AVAILABLE_KEYBOARD_SHORTCUTS = [
         'a': 'Add relationship from first to second selected object. [Not recommended.]',
         'd': 'Remove relationship from first to second selected object. [Not recommended.]',
         'p': 'Automatically add all possible relationships among selected objects.',
+        'Shift+p': 'Infer relationships among selected objects with a probabilistic parser.',
         'n': 'Automatically add precedence relationships within a single-voice selection.',
         'Alt+h': 'Hide/Show the selected objects\' relationships.',
     }),
@@ -85,6 +86,7 @@ MUSCIMARKER_AVAILABLE_KEYBOARD_SHORTCUTS = [
         'c': 'Open object class selection dialog.',
         'o': 'Open dialog for selecting objects by their objids.',
         'Alt+h': 'Hide/Show all relationships.',
+        'Shift+s': 'Process staffs from individual staffline fragments. (Only once!)',
     }),
     ('Validation', {
         'v': 'Check notation graph against syntactic constraints.',

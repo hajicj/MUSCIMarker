@@ -21,6 +21,7 @@ from kivy.uix.widget import Widget
 from muscima.io import export_cropobject_list
 import muscima.stafflines
 from muscima.inference import PitchInferenceEngine, OnsetsInferenceEngine, MIDIBuilder, play_midi
+from muscima.inference_engine_constants import InferenceEngineConstants as _CONST
 
 from object_detection import ObjectDetectionHandler
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser, PairwiseClassificationParser, \
@@ -341,6 +342,7 @@ class CropObjectAnnotatorModel(Widget):
     graph = ObjectProperty()
 
     parser = ObjectProperty(None, allownone=True)
+    backup_parser = ObjectProperty(None, allownone=True)
     grammar = ObjectProperty(None, allownone=True)
 
     _current_tmp_image_filename = StringProperty(None, allownone=True)
@@ -380,6 +382,7 @@ class CropObjectAnnotatorModel(Widget):
             tmp_dir=App.get_running_app().tmp_dir,
             port=port,
             hostname=hostname)
+
         self._object_detection_client.bind(result=self.process_detection_result)
 
     def init_parser(self, grammar):
@@ -403,6 +406,7 @@ class CropObjectAnnotatorModel(Widget):
 
         else:
             self.parser = SimpleDeterministicDependencyParser(grammar=grammar)
+        self.backup_parser = SimpleDeterministicDependencyParser(grammar=grammar)
 
     def load_image(self, image, compute_cc=False, do_preprocessing=True,
                    update_temp=True):
@@ -866,7 +870,8 @@ class CropObjectAnnotatorModel(Widget):
 
     ##########################################################################
     # Object detection interface
-    def call_object_detection(self, bounding_box=None, margin=32):
+    def call_object_detection(self, bounding_box=None, margin=32,
+                              clsnames=None):
         """Call object detection through ``self._object_detection_client``.
 
         Some "improvements" (quick workarounds):
@@ -877,6 +882,9 @@ class CropObjectAnnotatorModel(Widget):
           should roughly correspond to the size of the receptive field of an output
           pixel.
 
+        :param clsnames: If set to None, will use current class. (In MUSCIMarker,
+            this is configurable through ObjectDetectionTool settings: config
+            class
         """
         if bounding_box is None:
             bounding_box = (0, 0, self.image.shape[0], self.image.shape[1])
@@ -900,8 +908,16 @@ class CropObjectAnnotatorModel(Widget):
 
         image_crop = self.image[_t:_b, _l:_r]
 
+        if clsnames is None:
+            clsnames = [App.get_running_app().currently_selected_mlclass_name]
+        if len(clsnames) == 0:
+            logging.warning('Object detection: got called without specifying'
+                            ' clsname and without specifying that the current'
+                            ' clsname should be used.')
+            return
+
         request = {'image': image_crop,
-                   'clsname': [App.get_running_app().currently_selected_mlclass_name]
+                   'clsname': clsnames,
                    }
         self._object_detection_client.input = request
 
@@ -932,6 +948,7 @@ class CropObjectAnnotatorModel(Widget):
                                                              margin=self._object_detection_client.input_bounding_box_margin,
                                                              bounding_box=self._object_detection_client.input_bounding_box)
 
+        # Do false positive filtering here (per class)
 
         for c in processed_cropobjects:
             self.add_cropobject(c)
@@ -997,15 +1014,35 @@ class CropObjectAnnotatorModel(Widget):
 
         return output_cropobjects
 
-    def _detection_filter_tiny(self, cropobjects, min_mask_area=10, min_width=4):
+    def _detection_filter_tiny(self, cropobjects, min_mask_area=40, min_size=5):
+        """Exceptional treatment:
+
+        * Stafflines: only checks width
+        *
+
+        :param cropobjects:
+        :param min_mask_area:
+        :param min_size:
+        :return:
+        """
+        # Note that stafflines get special treatment: only checked against width, not height.
         tiny = [c for c in cropobjects if c.mask.sum() < min_mask_area]
         logging.info('Detection: Filtering out {0} tiny cropobjects'.format(len(tiny)))
-        narrow = [c for c in cropobjects if c.width < min_width]
+        narrow = [c for c in cropobjects if c.width < min_size]
         logging.info('Detection: Filtering out {0} narrow cropobjects'.format(len(narrow)))
 
+        output_stafflines = [c for c in cropobjects
+                             if (c.clsname == _CONST.STAFFLINE_CLSNAME) and (c.width >= min_size)]
+        duration_dots = [c for c in cropobjects
+                         if (c.clsname == 'duration-dot') \
+                            and (c.mask.sum() >= 10)]
         output = [c for c in cropobjects
-                  if (c.mask.sum() >= min_mask_area) and (c.width >= min_width)]
-        return output
+                  if (c.clsname != _CONST.STAFFLINE_CLSNAME) \
+                    and (c.clsname != 'duration-dot')
+                    and (c.mask.sum() >= min_mask_area) \
+                    and (min(c.width, c.height) >= min_size)]
+
+        return output + output_stafflines + duration_dots
 
     ##########################################################################
     # Staffline building
@@ -1020,7 +1057,12 @@ class CropObjectAnnotatorModel(Widget):
             logging.warn('Stafflines have already been processed, cannot reprocess.')
             return
 
-        new_cropobjects = muscima.stafflines.merge_staffline_segments(self.cropobjects.values())
+        try:
+            new_cropobjects = muscima.stafflines.merge_staffline_segments(self.cropobjects.values())
+        except ValueError as e:
+            logging.warn('Model: Staffline merge failed:\n\t\t'
+                         '{0}'.format(e.message))
+            return
 
         if build_staffs:
             staffs = muscima.stafflines.build_staff_cropobjects(new_cropobjects)

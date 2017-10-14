@@ -382,8 +382,13 @@ class CropObjectListView(ListView):
 
         # P for actual parsing
         if dispatch_key == '112':
-            logging.info('CropObjectListView: handling parse')
-            self.parse_current_selection(unselect_at_end=True)
+            logging.info('CropObjectListView: handling parse with deterministic parser')
+            self.parse_current_selection(unselect_at_end=True, backup=True)
+
+        if dispatch_key == '112+shift':
+            logging.info('CropObjectListView: handling parse with probabilistic parser')
+            self.parse_current_selection(unselect_at_end=True, backup=False)
+
 
         # N for precedence edge inference
         if dispatch_key == '110':
@@ -400,7 +405,7 @@ class CropObjectListView(ListView):
 
 
         # S for merging all stafflines
-        if dispatch_key == '115':
+        if dispatch_key == '115+shift':
             logging.info('CropObjectListView: handling staffline merge')
             self.process_stafflines(build_staffs=True,
                                     build_staffspaces=True,
@@ -560,22 +565,26 @@ class CropObjectListView(ListView):
                 },
                 fn_name='CropObjectListView.parse_current_selection',
                 tracker_name='model')
-    def parse_current_selection(self, unselect_at_end=True):
+    def parse_current_selection(self, unselect_at_end=True, backup=True):
         """Adds edges among the current selection according to the model's
         grammar and parser."""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
-        self._parse_cropobjects(cropobjects)
+        self._parse_cropobjects(cropobjects, backup=backup)
 
         if unselect_at_end:
             self.unselect_all()
 
-    def _parse_cropobjects(self, cropobjects):
+    def _parse_cropobjects(self, cropobjects, backup=True):
         """Adds edges among the given cropobjects according to the model's
         grammar and parser."""
         logging.info('CropObjectListView.parse_selection(): {0} cropobjects'
                      ''.format(len(cropobjects)))
 
-        parser = self._model.parser
+        if backup:
+            parser = self._model.backup_parser
+        else:
+            parser = self._model.parser
+
         if parser is None:
             logging.info('CropObjectListView.parse_selection(): No parser found!')
             return
