@@ -22,6 +22,7 @@ from muscima.io import export_cropobject_list
 import muscima.stafflines
 from muscima.inference import PitchInferenceEngine, OnsetsInferenceEngine, MIDIBuilder, play_midi
 from muscima.inference_engine_constants import InferenceEngineConstants as _CONST
+from muscima.graph import find_beams_incoherent_with_stems, find_misdirected_ledger_line_edges
 
 from object_detection import ObjectDetectionHandler
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser, PairwiseClassificationParser, \
@@ -793,6 +794,14 @@ class CropObjectAnnotatorModel(Widget):
             return v, r_v
         return v
 
+    def find_wrong_edges(self, provide_reasons=False):
+        incoherent_beam_pairs = find_beams_incoherent_with_stems(self.cropobjects.values())
+        misdirected_ledger_lines = find_misdirected_ledger_line_edges(self.cropobjects.values())
+
+        wrong_edges = [(n.objid, b.objid)
+                       for n, b in incoherent_beam_pairs + misdirected_ledger_lines]
+        return wrong_edges
+
     ##########################################################################
     # Keeping the model in a consistent state
     def on_grammar(self, instance, g):
@@ -1018,7 +1027,7 @@ class CropObjectAnnotatorModel(Widget):
         """Exceptional treatment:
 
         * Stafflines: only checks width
-        *
+        * Duration dots: special mask sum (only 10)
 
         :param cropobjects:
         :param min_mask_area:

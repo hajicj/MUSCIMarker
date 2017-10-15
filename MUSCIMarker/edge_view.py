@@ -734,3 +734,10 @@ class EdgeListView(ListView):
     def on_key_up(self, window, key, scancode, *args, **kwargs):
         logging.info('EdgeListView.on_key_up(): got keypress {0}'
                      ''.format(key))
+
+    def get_edge_view(self, from_objid, to_objid):
+        for ev in self.rendered_views:
+            e_f, e_t = ev.start_objid, ev.end_objid
+            if (e_f, e_t) == (from_objid, to_objid):
+                return ev
+        return None

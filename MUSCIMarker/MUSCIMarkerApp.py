@@ -1076,6 +1076,8 @@ class MUSCIMarkerApp(App):
 
         elif dispatch_key == '118':  # "v" -- validate
             self.find_cropobjects_with_errors()
+        elif dispatch_key == '118+alt':  # "alt+v" -- validate edges
+            self.find_wrong_edges()
 
         # alt+shift for automation commands
         elif dispatch_key == '98+alt,shift':   # "alt+shift+b" -- barlines automation
@@ -1839,6 +1841,24 @@ class MUSCIMarkerApp(App):
                         c.dispatch('on_release')
                 else:
                     c.dispatch('on_release')
+
+    def find_wrong_edges(self):
+        cropobjects = [c for c in self.cropobject_list_renderer.view.selected_views]
+        if len(cropobjects) == 0:
+            cropobjects = self.annot_model.cropobjects.values()
+
+        edges = self.annot_model.find_wrong_edges()
+        # TODO: Integrate on alt+V
+
+        for objid_from, objid_to in edges:
+            ev = self.graph_renderer.view.get_edge_view(objid_from, objid_to)
+            if ev is not None:
+                if not ev.is_selected:
+                    ev.dispatch('on_release')
+            else:
+                logging.warn('Found wrong edge {0}, but it is not currently rendered,'
+                             ' so it cannot be selected. You should run edge validation'
+                             ' with all edges visible.')
 
     ##########################################################################
     # MLClass selection tracking
