@@ -31,13 +31,28 @@ install:
   - conda install -c anaconda lxml
   - conda install -c anaconda libxslt
   - conda install -c anaconda libxml2
-  - conda install -c anaconda cython
+  - conda install -c anaconda cython==0.23
 
   # Install additional requirements (Keras and Tensorflow CPU-Version)
-  - pip install -r requirements.txt
+  - pip install -r requirements.txt  
   
   # List installed packages for debuggin purposes
   - pip list
+  
+  # Install Kivy 1.9.1, see https://kivy.org/docs/installation/installation-linux.html#installation-in-a-virtual-environment
+  - sudo add-apt-repository ppa:kivy-team/kivy
+  - sudo apt-get update
+  - sudo apt-get install python-kivy \    
+        libsdl2-dev \
+        libsdl2-image-dev \
+        libsdl2-mixer-dev \
+        libsdl2-ttf-dev \
+        libportmidi-dev \
+        libswscale-dev \
+        libavformat-dev \
+        libavcodec-dev \
+        zlib1g-dev
+   - pip install kivy==1.9.1
 
 script:
   #pytest

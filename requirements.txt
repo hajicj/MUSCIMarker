@@ -7,8 +7,6 @@ numpy
 opencv-python
 docutils
 pygments
-kivy.deps.glew
-kivy.deps.angle
 kivy
 future
 muscima
@@ -24,3 +22,5 @@ codecov
 # Only Windows
 # kivy.deps.sdl2
 # pypiwin32
+# kivy.deps.glew
+# kivy.deps.angle
