@@ -108,7 +108,7 @@ if (! $env:PLATFORM) {
 
 # Install no python path is specified 
 if (! $env:PYTHON) {
-   $env:PYTHON="C:\Python\"
+   $env:PYTHON= $pwd.Path + "\" + "Python"
 }
 
 InstallMiniconda $env:MINICONDA_VERSION $env:PLATFORM $env:PYTHON
