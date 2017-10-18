@@ -136,27 +136,8 @@ if ($env:CONDA_CHANNELS) {
    rm env:CONDA_CHANNELS
 }
 
-# Install the build and runtime dependencies of the project.
-conda install $QUIET conda=$env:CONDA_VERSION
-checkLastExitCode
-
-if (! $env:CONDA_CHANNEL_PRIORITY) {
-   $CONDA_CHANNEL_PRIORITY="false"
-} else {
-   $CONDA_CHANNEL_PRIORITY=$env:CONDA_CHANNEL_PRIORITY.ToLower()
-}
-
-# We need to add this after the update, otherwise the ``channel_priority``
-# key may not yet exists
-conda config  --set channel_priority $CONDA_CHANNEL_PRIORITY
-checkLastExitCode
-
-# Create a conda environment using the astropy bonus packages
-if (! $env:CONDA_ENVIRONMENT ) {
-   conda create $QUIET -n test python=$env:PYTHON_VERSION
-} else {
-   conda env create $QUIET -n test -f $env:CONDA_ENVIRONMENT
-}
+# Create a conda environment
+conda create $QUIET -n test python=$env:PYTHON_VERSION
 checkLastExitCode
 
 activate test
