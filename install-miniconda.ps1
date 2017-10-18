@@ -123,7 +123,7 @@ $env:PATH = "${env:PYTHON};${env:PYTHON}\Scripts;" + $env:PATH
 conda config --set always_yes true
 checkLastExitCode
 
-conda config --add channels defaults
+conda config --add channels anaconda
 checkLastExitCode
 
 if ($env:CONDA_CHANNELS) {
