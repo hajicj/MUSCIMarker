@@ -42,8 +42,8 @@ function DownloadMiniconda ($version, $platform_suffix) {
     $filename = "Miniconda3-" + $version + "-Windows-" + $platform_suffix + ".exe"
 
     $url = $MINICONDA_URL + $filename
-
     $basedir = $pwd.Path + "\"
+
     $filepath = $basedir + $filename
     if (Test-Path $filename) {
         Write-Host "Reusing" $filepath
@@ -84,7 +84,7 @@ function InstallMiniconda ($miniconda_version, $architecture, $python_home) {
     }
     $filepath = DownloadMiniconda $miniconda_version $platform_suffix
     Write-Host "Installing" $filepath "to" $python_home
-    $args = "/InstallationType=AllUsers /S /AddToPath=1 /RegisterPython=1 /D=" + $python_home
+    $args = "/S /AddToPath=1 /RegisterPython=1 /D=" + $python_home
     Write-Host $filepath $args
     Start-Process -FilePath $filepath -ArgumentList $args -Wait -Passthru
     #Start-Sleep -s 15
