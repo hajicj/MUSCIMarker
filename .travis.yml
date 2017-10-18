@@ -16,7 +16,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pandas pytest h5py
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pytest h5py scikit-image
   - source activate test-environment
 
   - add-apt-repository ppa:kivy-team/kivy
@@ -32,8 +32,6 @@ install:
   - conda install -c anaconda libxslt
   - conda install -c anaconda libxml2
   - conda install -c anaconda cython
-  - conda install numpy
-  - conda install scikit-image
 
   # Install additional requirements (Keras and Tensorflow CPU-Version)
   - pip install -r requirements.txt

@@ -7,7 +7,6 @@ numpy
 opencv-python
 docutils
 pygments
-pypiwin32
 kivy.deps.glew
 kivy.deps.angle
 kivy
@@ -24,3 +23,4 @@ codecov
 
 # Only Windows
 # kivy.deps.sdl2
+# pypiwin32
