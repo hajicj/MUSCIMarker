@@ -147,10 +147,8 @@ checkLastExitCode
 $env:PATH = "${env:PYTHON}\envs\test;${env:PYTHON}\envs\test\Scripts;${env:PYTHON}\envs\test\Library\bin;" + $env:PATH
 
 # Check that we have the expected version of Python
-python --version
-checkLastExitCode
+# python --version # Don't output, because it prints this thing to the std-error output
 pip --version
-checkLastExitCode
 
 conda install $QUIET -n test pytest pip numpy scipy matplotlib pytest h5py scikit-image
 checkLastExitCode
