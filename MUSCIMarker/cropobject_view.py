@@ -501,8 +501,8 @@ class CropObjectView(SelectableView, ToggleButton):
         c = self._model_counterpart
         text = '({0})  {1}'.format(c.objid, c.clsname)
         if c.data is not None:
-            logging.warn('Creating info label for object {0}:'
-                         ' data {1}'.format(c.uid, c.data))
+            logging.debug('Creating info label for object {0}:'
+                          ' data {1}'.format(c.uid, c.data))
             pitch_text = ''
             if 'pitch_step' in c.data:
                 pitch_text = '{0}'.format(c.data['pitch_step'])

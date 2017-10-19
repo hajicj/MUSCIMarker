@@ -265,14 +265,16 @@ class CropObjectListView(ListView):
         # logging.warn('CropObjectViewList: sync selection state: {0}'.format(self.adapter.selection))
         for cv in self.rendered_views:
             if cv in self.adapter.selection:
-                # if not cv.is_selected:
-                #     logging.debug('CropObjectViewList: sync adding obj {0}'.format(cv._model_counterpart.objid))
+                # if cv.is_selected:
+                #     logging.warn('CropObjectViewList: Out of sync adapter.selection and view.is_selected: object {0}'
+                #                  ''.format(cv.cropobject.objid))
+                #     continue
                 cv.ensure_selected()
             else:
-                # if cv.is_selected:
-                #     logging.debug('CropObjectViewList: sync removing obj {0}'.format(cv.cropobject.objid))
-                # else:
-                #     logging.debug('CropObjectViewList: sync already removed obj {0}'.format(cv.cropobject.objid))
+                # if not cv.is_selected:
+                #     logging.warn('CropObjectViewList: Out of sync adapter.selection and view.is_selected: object {0}'
+                #                  ''.format(cv.cropobject.objid))
+                #     continue
                 cv.ensure_deselected()
 
     ##########################################################################
@@ -286,25 +288,25 @@ class CropObjectListView(ListView):
     #    is set, the event is captured and doesn't bubble further up.
     # This strategy means one keystroke applies to all selected CropObjects.
     def handle_key_trap(self, *args):
-        logging.info('CropObjectListView: handling key trap in state {0}'
-                     ''.format(self._trap_key))
+        logging.debug('CropObjectListView: handling key trap in state {0}'
+                      ''.format(self._trap_key))
         if self._trap_key:
             self._trap_key = False
-            logging.info('CropObjectListView: trapped key event {0}'
-                         ''.format(args))
+            logging.debug('CropObjectListView: trapped key event {0}'
+                          ''.format(args))
             return True
         return False
 
     def set_key_trap(self, *largs):
-        logging.info('CropObjectListView.set_key_trap(): Got args {0}'
-                     ''.format(largs))
+        logging.debug('CropObjectListView.set_key_trap(): Got args {0}'
+                      ''.format(largs))
         self._trap_key = True
 
     def on_key_down(self, window, key, scancode, codepoint, modifier):
-        logging.info('CropObjectListView.on_key_down(): trap {0}'
-                     ''.format(self._trap_key))
+        logging.debug('CropObjectListView.on_key_down(): trap {0}'
+                      ''.format(self._trap_key))
         if self.handle_key_trap(window, key, scancode, codepoint, modifier):
-            logging.info('CropObjectListView: NOT propagating keypress')
+            logging.debug('CropObjectListView: NOT propagating keypress')
             return True
 
         dispatch_key = keypress_to_dispatch_key(key, scancode, codepoint, modifier)
@@ -420,10 +422,10 @@ class CropObjectListView(ListView):
         return True
 
     def on_key_up(self, window, key, scancode, *args, **kwargs):
-        logging.info('CropObjectListView.on_key_up(): trap {0}'
+        logging.debug('CropObjectListView.on_key_up(): trap {0}'
                      ''.format(self._trap_key))
         if self.handle_key_trap(window, key, scancode):
-            logging.info('CropObjectListView: NOT propagating keypress')
+            logging.debug('CropObjectListView: NOT propagating keypress')
             return True
 
     ##########################################################################

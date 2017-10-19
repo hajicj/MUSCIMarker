@@ -576,8 +576,8 @@ class CropObjectAnnotatorModel(Widget):
         :param cropobjects: A list of CropObjects which should be synced.
             If left to ``None``, will sync everything.
         """
-        logging.info('Model: Syncing {0} attachments to CropObjects.'
-                     ''.format(len(self.graph.edges)))
+        logging.debug('Model: Syncing {0} attachments to CropObjects.'
+                       ''.format(len(self.graph.edges)))
 
         if cropobjects is None:
             cropobjects = self.cropobjects.values()
@@ -795,6 +795,7 @@ class CropObjectAnnotatorModel(Widget):
         return v
 
     def find_wrong_edges(self, provide_reasons=False):
+        v, i, o, r_v, r_i, r_o = self.find_grammar_errors()
         incoherent_beam_pairs = find_beams_incoherent_with_stems(self.cropobjects.values())
         misdirected_ledger_lines = find_misdirected_ledger_line_edges(self.cropobjects.values())
 

@@ -1094,7 +1094,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
         if self._active_selection_slow_mode:
             if self._active_selection_slow_mode_counter % self._active_selection_slow_mode_modulo == 0:
                 # Let's try running "experimental selection"
-                logging.info('Active selection: checking in slow mode')
+                # logging.info('Active selection: checking in slow mode')
                 _t_start = time.clock()
                 self.provisional_select_applicable_objects(instance=None,
                                                            points=touch.ud['line'].points)
@@ -1104,13 +1104,13 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
                 # Later on, this may cause noticeable lag in the selection, but
                 # hopefully not so much in the lasso.
                 self._active_selection_slow_mode_modulo = max(1, min(int(time_taken / self._active_selection_target_time_per_event), 30))
-                logging.info('Active selection: time take: {0}, setting modulo to {1}'
+                logging.debug('Active selection: time take: {0}, setting modulo to {1}'
                              ''.format(time_taken, self._active_selection_slow_mode_modulo))
                 self._active_selection_slow_mode_counter = 1
             else:
                 self._active_selection_slow_mode_counter += 1
         else:
-            logging.info('Active selection: checking in normal mode')
+            logging.debug('Active selection: checking in normal mode')
             self.provisional_select_applicable_objects(instance=None,
                                                        points=touch.ud['line'].points)
 
@@ -1130,7 +1130,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
         #    is_slow = False
 
         if self._active_selection_slow_mode != is_slow:
-            logging.info('Active selection: slow mode: changing to {0}'.format(is_slow))
+            logging.debug('Active selection: slow mode: changing to {0}'.format(is_slow))
             self._active_selection_slow_mode_counter = 1
 
         self._active_selection_slow_mode = is_slow
