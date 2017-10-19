@@ -955,5 +955,11 @@
 			<GroupName>staff/staff_space</GroupName>
 			<Color>#191126</Color>
 			</CropObjectClass>
+		<CropObjectClass>
+			<Id>159</Id>
+			<Name>repeat_unit</Name>
+			<GroupName>note-primitive/repeat_unit</GroupName>
+			<Color>#66FF92</Color>
+			</CropObjectClass>
 	</CropObjectClasses>
 </CropObjectClassList>

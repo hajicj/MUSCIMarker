@@ -80,6 +80,7 @@ key_signature | sharp flat double_sharp double_flat natural
 key_signature{1,} |
 
 time_signature | whole-time_mark alla_breve other_time_signature numeral_*
+time_signature | letter_other
 time_signature{1,} |
 | whole-time_mark{1,} alla_breve{1,} other_time_signature{1,}
 
