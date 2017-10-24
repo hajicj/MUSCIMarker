@@ -1075,8 +1075,9 @@ class CropObjectAnnotatorModel(Widget):
         add staffspaces, and add the various obligatory relationships of other
         objects to the staff objects. Required before attempting to export MIDI."""
         if len([c for c in self.cropobjects.values() if c.clsname == 'staff']) > 0:
-            logging.warn('Stafflines have already been processed, cannot reprocess.')
-            return
+            logging.warn('Some stafflines have already been processed. Reprocessing'
+                         ' is not certain to work.')
+            # return
 
         try:
             new_cropobjects = muscima.stafflines.merge_staffline_segments(self.cropobjects.values())
