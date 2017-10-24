@@ -1074,16 +1074,31 @@ class CropObjectAnnotatorModel(Widget):
                          '{0}'.format(e.message))
             return
 
-        if build_staffs:
-            staffs = muscima.stafflines.build_staff_cropobjects(new_cropobjects)
-            new_cropobjects = new_cropobjects + staffs
+        try:
+            if build_staffs:
+                staffs = muscima.stafflines.build_staff_cropobjects(new_cropobjects)
+                new_cropobjects = new_cropobjects + staffs
+        except Exception as e:
+            logging.warn('Building staffline cropobjects from merged segments failed:'
+                         ' {0}'.format(e.message))
+            return
 
-        if build_staffspaces:
-            staffspaces = muscima.stafflines.build_staffspace_cropobjects(new_cropobjects)
-            new_cropobjects = new_cropobjects + staffspaces
+        try:
+            if build_staffspaces:
+                staffspaces = muscima.stafflines.build_staffspace_cropobjects(new_cropobjects)
+                new_cropobjects = new_cropobjects + staffspaces
+        except Exception as e:
+            logging.warn('Building staffspace cropobjects from stafflines failed:'
+                         ' {0}'.format(e.message))
+            return
 
-        if add_staff_relationships:
-            new_cropobjects = muscima.stafflines.add_staff_relationships(new_cropobjects)
+        try:
+            if add_staff_relationships:
+                new_cropobjects = muscima.stafflines.add_staff_relationships(new_cropobjects)
+        except Exception as e:
+            logging.warn('Adding staff relationships failed:'
+                         ' {0}'.format(e.message))
+            return
 
         self.import_cropobjects(new_cropobjects)
 
