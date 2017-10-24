@@ -1812,6 +1812,15 @@ class MUSCIMarkerApp(App):
             self.annot_model.clear_cropobjects()
             confirmation.unbind(on_ok=self.do_clear_cropobjects)
 
+    def do_clear_precedence(self, ask=False):
+        confirmation = ConfirmationDialog(text='Do you really want to clear'
+                                               ' all current Precedence relationships?')
+        confirmation.bind(on_ok=self.do_clear_precedence)
+        if ask is True:
+            confirmation.open()
+        else:
+            self.annot_model.clear_relationships(label='Precedence')
+            confirmation.unbind(on_ok=self.do_clear_precedence)
 
     @tr.Tracker(track_names=[],
                 tracker_name='commands')

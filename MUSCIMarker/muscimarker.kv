@@ -545,6 +545,12 @@
         text: 'Show Precedence'
         on_release: app.graph_renderer.unmask_all(label='Precedence')
 
+    Button:
+        id: precedence_clear_button
+        size_hint: 1.0, 0.1
+        text: 'Clear Precedence'
+        on_release: app.do_clear_precedence(ask=True)
+
 
     Label:
         size_hint: 1.0, 0.1
