@@ -372,6 +372,21 @@ class EdgeView(SelectableView, ToggleButton):
         #              ''.format(self.edge))
         self.render()
 
+    ##########################################################################
+    # Touch processing
+    def on_touch_down(self, touch):
+        """Double-tap selects all edges with the given label.
+        This is really slow for Attachments, because there are so many.
+        """
+
+        if touch.is_double_tap:
+            if self.collide_point(*touch.pos):
+                renderer = App.get_running_app().graph_renderer
+                renderer.view.select_label(self.label)
+                return True
+
+        return super(EdgeView, self).on_touch_down(touch)
+
 
 class ObjectGraphRenderer(FloatLayout):
 
@@ -745,3 +760,13 @@ class EdgeListView(ListView):
             if (e_f, e_t) == (from_objid, to_objid):
                 return ev
         return None
+
+    def select_label(self, label):
+        """Select all EdgeViews of the given label."""
+        for c in self.container.children[:]:
+            if c.label == label:
+                if c.is_selected is False:
+                    c.dispatch('on_release')
+            else:
+                if c.is_selected is True:
+                    c.dispatch('on_release')
