@@ -957,15 +957,15 @@ class MUSCIMarkerApp(App):
 
     def _save_app_state(self):
         recovery_path = self._get_recovery_path()
-        logging.info('App.recover: Saving recovery file {0}'.format(recovery_path))
+        logging.debug('App.recover: Saving recovery file {0}'.format(recovery_path))
 
         state = self._get_app_state()
 
         # Cautious behavior: let's try not to destroy the previous
         # backup until we are sure the backup has been made correctly.
         rec_temp_name = recovery_path + '.temp'
-        logging.info('App.save_app_state: Saving to recovery file {0}'
-                     ''.format(recovery_path))
+        logging.debug('App.save_app_state: Saving to recovery file {0}'
+                      ''.format(recovery_path))
         try:
             with open(rec_temp_name, 'wb') as hdl:
                 cPickle.dump(state, hdl, protocol=cPickle.HIGHEST_PROTOCOL)
@@ -1015,12 +1015,13 @@ class MUSCIMarkerApp(App):
     def do_recovery_user(self):
         """Link user-requested recovery to this method. Separate from
         ``do_recovery()`` because of tracking."""
+        logging.info('App: user requested recovery dump.')
         self.do_recovery()
 
     def do_save_app_state_clock_event(self, *args):
         logging.info('App: making scheduled recovery dump.')
         self.do_save_app_state()
-        logging.info('App: scheduled recovery dump done.')
+        logging.debug('App: scheduled recovery dump done.')
 
     ##########################################################################
     # Keyboard control
