@@ -694,6 +694,23 @@ class CropObjectListView(ListView):
 
         self._model.ensure_add_edges(edges, label='Precedence')
 
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [
+                    lambda v: ('objids', [c.objid for c in v.selected_views]),
+                    lambda v: ('mlclass_names', [c._model_counterpart.clsname
+                                                 for c in v.selected_views])
+                ]
+                },
+                fn_name='CropObjectListView.infer_simultaneity_for_current_selection',
+                tracker_name='model')
+    def infer_simultaneity_for_current_selection(self,
+                                                 unselect_at_end=True):
+        cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        if len(cropobjects) == 0:
+            cropobjects = self._model.cropobjects.values()
+
+
+
     def get_cropobject_view(self, objid):
         """Retrieves the CropObjectView based on the objid. Useful e.g.
         for programmatic selection/deselection of individual objects.

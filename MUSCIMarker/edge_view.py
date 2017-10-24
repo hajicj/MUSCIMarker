@@ -202,6 +202,10 @@ class EdgeView(SelectableView, ToggleButton):
             rgb = (0.4, 1.0, 0.0)
             alpha = 0.3
 
+        elif edge_label == 'Simultaneity':
+            rgb = (0.0, 1.0, 1.0)
+            alpha = 0.3
+
         return rgb, alpha
 
     def create_bindings(self):
