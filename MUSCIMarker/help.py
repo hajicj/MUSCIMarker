@@ -57,8 +57,6 @@ help_kv = '''
 '''
 
 Builder.load_string(help_kv)
-
-
 MUSCIMARKER_AVAILABLE_KEYBOARD_SHORTCUTS = [
     ('Tools', {
         '1, 2, 3, ...': 'Select the 1st (2nd, 3rd...) tool.',
@@ -75,18 +73,21 @@ MUSCIMARKER_AVAILABLE_KEYBOARD_SHORTCUTS = [
         'i': 'Open object inspection window.',
         'c': 'Open class change spinner(s). [Not recommended.]',
         'Alt+c': 'Open class change dialog.',
+        'Alt+h': 'Hide/Show the selected objects\' relationships.',
         'a': 'Add relationship from first to second selected object. [Not recommended.]',
         'd': 'Remove relationship from first to second selected object. [Not recommended.]',
         'p': 'Automatically add all possible relationships among selected objects.',
         'Shift+p': 'Infer relationships among selected objects with a probabilistic parser.',
-        'n': 'Automatically add precedence relationships within a single-voice selection.',
-        'Alt+h': 'Hide/Show the selected objects\' relationships.',
+        'n': 'Automatically add precedence relationships, factored per (monophonic only) staff.',
+        'Shift+n': 'Automatically add precedence relationships among all selected objects (monophonic only!).',
+        'Alt+Shift+n': 'Add simultaneity relationships between objects that have the same onset.',
+        'Alt+Ctrl+Shift+n': 'Remove simultaneity relationships.',
     }),
     ('Without selection', {
         'c': 'Open object class selection dialog.',
         'o': 'Open dialog for selecting objects by their objids.',
         'Alt+h': 'Hide/Show all relationships.',
-        'Shift+s': 'Process staffs from individual staffline fragments. (Only once!)',
+        'Shift+s': 'Process staffs from individual staffline fragments.',
     }),
     ('Validation', {
         'v': 'Check notation graph against syntactic constraints.',
@@ -102,6 +103,8 @@ MUSCIMARKER_AVAILABLE_KEYBOARD_SHORTCUTS = [
         'Alt+Shift+b': 'Add \'measure_separator\' objects from barlines.',
     }),
 ]
+
+
 
 class HelpKey(Label):
     pass

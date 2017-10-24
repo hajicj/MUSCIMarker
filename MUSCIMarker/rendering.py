@@ -398,13 +398,20 @@ class CropObjectListView(ListView):
                          'IS factored by staff')
             self.infer_precedence_for_current_selection(unselect_at_end=True,
                                                         factor_by_staff=True)
-        # N for precedence edge inference
+        # Shift+N for precedence edge inference
         if dispatch_key == '110+shift':
             logging.info('CropObjectListView: handling precedence parse, '
                          'NOT factored by staff')
             self.infer_precedence_for_current_selection(unselect_at_end=True,
                                                         factor_by_staff=False)
-
+        # Alt+Shift+N for simultaneity edge inference (relies on MIDI being built)
+        if dispatch_key == '110+alt,shift':
+            logging.info('CropObjectListView: handling simultaneity parse')
+            self.infer_simultaneity_for_current_selection(unselect_at_end=True)
+        # Ctrl+Alt+Shift+N for simultaneity edge inference (relies on MIDI being built)
+        if dispatch_key == '110+alt,ctrl,shift':
+            logging.info('CropObjectListView: handling simultaneity parse')
+            self.remove_simultaneity_for_current_selection(unselect_at_end=True)
 
         # S for merging all stafflines
         if dispatch_key == '115+shift':
@@ -705,11 +712,40 @@ class CropObjectListView(ListView):
                 tracker_name='model')
     def infer_simultaneity_for_current_selection(self,
                                                  unselect_at_end=True):
+        """Adds simultaneity edges between objects that have the same onset.
+        For readability, does not add the complete graph, but just links
+        the objects top-down. (Simultaneity is non-oriented, but this is the
+        way it works for now.)"""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
         if len(cropobjects) == 0:
             cropobjects = self._model.cropobjects.values()
 
+        objects_with_onset = [c for c in cropobjects
+                              if (c.data is not None) and ('onset_beats' in c.data)]
+        onsets_dict = collections.defaultdict(list)
+        for c in objects_with_onset:
+            onsets_dict[c.data['onset_beats']].append(c)
 
+        edges = []
+        for o in onsets_dict:
+            cgroup = sorted(onsets_dict[o], key=lambda x: (x.top + x.bottom) / 2.)
+            if len(cgroup) > 1:
+                for f, t in zip(cgroup[:-1], cgroup[1:]):
+                    edges.append((f.objid, t.objid))
+
+        self._model.ensure_add_edges(edges, label='Simultaneity')
+
+    def remove_simultaneity_for_current_selection(self,
+                                                  unselect_at_end=True):
+        """Remove simultaneity edges from selection (or all,
+        if nothing is selected).
+        """
+        cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        if len(cropobjects) == 0:
+            cropobjects = self._model.cropobjects.values()
+
+        self._model.clear_relationships(label='Simultaneity',
+                                        cropobjects=cropobjects)
 
     def get_cropobject_view(self, objid):
         """Retrieves the CropObjectView based on the objid. Useful e.g.

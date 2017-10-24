@@ -534,14 +534,20 @@ class CropObjectAnnotatorModel(Widget):
         self.cropobjects = {}
         self.sync_cropobjects_to_graph()
 
-    def clear_relationships(self, label=None):
+    def clear_relationships(self, label=None, cropobjects=None):
         """Removes all relationships with the given label. If no label is given
         (default), removes all relationships."""
+        if cropobjects is None:
+            objids = [objid for objid in self.cropobjects]
+        else:
+            objids = [c.objid for c in cropobjects]
+
         if label is None:
             edges = self.graph.edges.keys()
         else:
             edges = [(from_objid, to_objid) for from_objid, to_objid in self.graph.edges
-                     if self.graph.edges[(from_objid, to_objid)] == label]
+                     if (self.graph.edges[(from_objid, to_objid)] == label) and
+                        ((from_objid in objids) or (to_objid in objids))]
         self.ensure_remove_edges(edges)
 
 
