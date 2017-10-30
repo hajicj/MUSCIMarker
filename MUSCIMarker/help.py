@@ -42,7 +42,7 @@ help_kv = '''
 
 <Help@Popup>
     size_hint_x: None
-    width: app.root.size[0] * 0.4
+    width: app.root.size[0] * 0.7
     size_hint_y: None
     height: app.root.size[1] * 0.85
     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
@@ -88,6 +88,8 @@ MUSCIMARKER_AVAILABLE_KEYBOARD_SHORTCUTS = [
         'o': 'Open dialog for selecting objects by their objids.',
         'Alt+h': 'Hide/Show all relationships.',
         'Shift+s': 'Process staffs from individual staffline fragments.',
+        'f': 'Infer pitches, durations and onsets.',
+        'Shift+f': 'Like q, but also play the result.',
     }),
     ('Validation', {
         'v': 'Check notation graph against syntactic constraints.',

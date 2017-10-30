@@ -1201,7 +1201,7 @@ class CropObjectAnnotatorModel(Widget):
 
         return mf
 
-    def play(self, cropobjects=None):
+    def infer_midi(self, cropobjects=None, play=True):
         """Attempts to play the midi file."""
         if not cropobjects:
             cropobjects = self.cropobjects.values()
@@ -1209,9 +1209,25 @@ class CropObjectAnnotatorModel(Widget):
         soundfont = App.get_running_app().config.get('midi', 'soundfont')
 
         midi = self.build_midi(selected_cropobjects=cropobjects)
-        if midi is not None:
+        if play and (midi is not None):
             play_midi(midi=midi,
                       tmp_dir=App.get_running_app().tmp_dir,
                       soundfont=soundfont)
         else:
             logging.warning('Exporting MIDI failed, nothing to play!')
+
+    def clear_midi_information(self):
+        """Removes all the information from all CropObjects."""
+        for c in self.cropobjects.values():
+            if c.data is None:
+                continue
+            if 'midi_pitch_code' in c.data:
+                del c.data['midi_pitch_code']
+            if 'normalized_pitch_step' in c.data:
+                del c.data['normalized_pitch_step']
+            if 'pitch_octave' in c.data:
+                del c.data['pitch_octave']
+            if 'duration_beats' in c.data:
+                del c.data['duration_beats']
+            if 'onset_beats' in c.data:
+                del c.data['onset_beats']

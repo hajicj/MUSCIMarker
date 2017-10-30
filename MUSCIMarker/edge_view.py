@@ -283,7 +283,7 @@ class EdgeView(SelectableView, ToggleButton):
         # Should sync this to model...
 
     def select(self, *args):
-        logging.info('EdgeView\t{0}: called selection!'.format(self.edge))
+        logging.debug('EdgeView\t{0}: called selection!'.format(self.edge))
         self.background_color = self.selected_color
         if isinstance(self.parent, CompositeListItem):
             self.parent.select_from_child(self, *args)
@@ -291,7 +291,7 @@ class EdgeView(SelectableView, ToggleButton):
         self.do_render()
 
     def deselect(self, *args):
-        logging.info('EdgeView\t{0}: called deselection!'.format(self.edge))
+        logging.debug('EdgeView\t{0}: called deselection!'.format(self.edge))
         self.background_color = self.deselected_color
         if isinstance(self.parent, CompositeListItem):
             self.parent.deselect_from_child(self, *args)
@@ -459,7 +459,7 @@ class ObjectGraphRenderer(FloatLayout):
 
         for e, e_class in edges.iteritems():
             if (e in self.views_mask) and (self.views_mask[e] is False):
-                logging.info('ObjGraphRenderer: edge {0} masked out.'
+                logging.debug('ObjGraphRenderer: edge {0} masked out.'
                              ''.format(e))
                 continue
             # The adapter creates its Views from the *values* of
@@ -495,7 +495,7 @@ class ObjectGraphRenderer(FloatLayout):
     def do_redraw(self, *args, **kwargs):
         # Args and kwargs given so that it can be fired by an on_edges
         # event from the graph.
-        logging.info('ObjGraphRenderer: requested do_redraw, renderer'
+        logging.debug('ObjGraphRenderer: requested do_redraw, renderer'
                      ' size: {0}'
                      ''.format(self.redraw, self.size))
         self.view.populate()
@@ -557,11 +557,11 @@ class ObjectGraphRenderer(FloatLayout):
 
     def _update_size(self, instance, size):
         self.size = size
-        logging.info('ObjectGraphRenderer: setting size to {0}'.format(self.size))
+        logging.debug('ObjectGraphRenderer: setting size to {0}'.format(self.size))
 
     def _update_pos(self, instance, pos):
         self.pos = pos
-        logging.info('ObjectGraphRenderer: setting pos to {0}'.format(self.pos))
+        logging.debug('ObjectGraphRenderer: setting pos to {0}'.format(self.pos))
 
     def mask_all(self, label=None):
         if label is None:
@@ -619,7 +619,7 @@ class ObjectGraphRenderer(FloatLayout):
 
         masked = [e for e in edges
                   if ((e in self.views_mask) and (self.views_mask[e] is False))]
-        logging.info('GraphRenderer: {0} masked, {1} total in mask'
+        logging.debug('GraphRenderer: {0} masked, {1} total in mask'
                      ''.format(len(masked), len(self.views_mask)))
         output = (len(masked) == len(edges))
         return output
@@ -663,7 +663,7 @@ class EdgeListView(ListView):
         #              ' self.size = {2}'.format(self.pos, self.to_window(*self.pos),
         #                                        self.size))
         for e in self.rendered_views:
-            logging.info('EdgeListView.log_rendered_edges: edge {0} with'
+            logging.debug('EdgeListView.log_rendered_edges: edge {0} with'
                          ' pos {1}, wpos {2}, size {3}'.format(e.edge,
                                                                e.pos,
                                                                e.to_window(*e.pos),
@@ -747,12 +747,12 @@ class EdgeListView(ListView):
         return None
 
     def on_key_down(self, window, key, scancode, codepoint, modifier):
-        logging.info('EdgeListView.on_key_down(): got keypress {0}'
-                     ''.format(key))
+        logging.debug('EdgeListView.on_key_down(): got keypress {0}'
+                      ''.format(key))
 
     def on_key_up(self, window, key, scancode, *args, **kwargs):
-        logging.info('EdgeListView.on_key_up(): got keypress {0}'
-                     ''.format(key))
+        logging.debug('EdgeListView.on_key_up(): got keypress {0}'
+                      ''.format(key))
 
     def get_edge_view(self, from_objid, to_objid):
         for ev in self.rendered_views:

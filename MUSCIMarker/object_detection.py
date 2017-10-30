@@ -174,7 +174,7 @@ class ObjectDetectionOMRAppClient(object):
         self.request_file = request_file
         self.response_file = response_file
 
-        self.BUFFER_SIZE = 1024
+        self.BUFFER_SIZE = 256
 
     def call(self):
         logging.info('ObjectDetectionOMRAppClient.run(): starting')
@@ -191,24 +191,34 @@ class ObjectDetectionOMRAppClient(object):
 
         with open(self.request_file, 'rb') as fh:
             data = fh.read(self.BUFFER_SIZE)
+            _n_data_packets_sent = 0
             while data:
+                logging.info('ObjectDetectionOMRAppClient.run(): sending data,'
+                             'iteration {0}'.format(_n_data_packets_sent))
                 s.send(data)
                 data = fh.read(self.BUFFER_SIZE)
+                _n_data_packets_sent += 1
 
         # s.send(b"Hello server!")
         s.shutdown(socket.SHUT_WR)
 
+        logging.info('Finished sending, waiting to receive.')
         # Server does its thing now. We wait at s.recv()
 
         # TODO: Change this to StringIO...
         with open(self.response_file, 'wb') as f:
+            _n_data_packets_received = 0
             logging.info('file opened: {0}'.format(self.response_file))
             while True:
+                logging.info('ObjectDetectionOMRAppClient.run(): receiving data,'
+                             'iteration {0}'.format(_n_data_packets_received))
                 data = s.recv(self.BUFFER_SIZE)
 
                 if not data:
                     break
                 f.write(data)
+
+                _n_data_packets_received += 1
         f.close()
 
         logging.info('Successfully got the file')

@@ -1031,12 +1031,12 @@ class MUSCIMarkerApp(App):
         self._keyboard = None
 
     def on_key_down(self, window, key, scancode, codepoint, modifier):
-        logging.info('App: Keyboard: Down {0}'.format((key, scancode, codepoint, modifier)))
+        logging.debug('App: Keyboard: Down {0}'.format((key, scancode, codepoint, modifier)))
 
         dispatch_key = keypress_to_dispatch_key(key, scancode, codepoint, modifier)
 
-        logging.info('App: processing on_key_down(), dispatch_key: {0}'
-                     ''.format(dispatch_key))
+        logging.debug('App: processing on_key_down(), dispatch_key: {0}'
+                      ''.format(dispatch_key))
         is_handled = self.handle_dispatch_key(dispatch_key)
         return is_handled
 
@@ -1096,6 +1096,20 @@ class MUSCIMarkerApp(App):
         elif dispatch_key == '113+alt,shift':  # "alt+shift+q" -- suspiciously small
             self.find_suspiciously_small_objects()
 
+        # f to infer MIDI
+        elif dispatch_key == '102':
+            logging.info('App: Inferring MIDI without playing.')
+            self.infer_midi(play=False)
+        # shift+f to infer MIDI and play it
+        elif dispatch_key == '102+shift':
+            logging.info('App: Inferring MIDI and playing.')
+            self.infer_midi(play=True)
+        # ctrl+alt+shift+f: clear all the inferred pitch/duration/onset info
+        elif dispatch_key == '102+alt,ctrl,shift':
+            logging.info('App: Removing inferred MIDI information.')
+            self.annot_model.clear_midi_information()
+
+
         # logging.info('App: Checking keyboard dispatch, {0}'
         #              ''.format(self.keyboard_dispatch.keys()))
         elif dispatch_key in self.keyboard_dispatch:
@@ -1109,7 +1123,7 @@ class MUSCIMarkerApp(App):
         return True   # Stop bubbling
 
     def on_key_up(self, window, key, scancode, *args, **kwargs):
-        logging.info('App: Keyboard: Up {0}'.format((key, scancode)))
+        logging.debug('App: Keyboard: Up {0}'.format((key, scancode)))
 
     ##########################################################################
     # Importing methods: interfacing the raw data to the model
@@ -2299,8 +2313,8 @@ class MUSCIMarkerApp(App):
 
     ##########################################################################
     # Playback
-    def play(self):
+    def infer_midi(self, play=True):
         """Plays the current selection as MIDI."""
         selection = [v._model_counterpart
                      for v in self.cropobject_list_renderer.view.selected_views]
-        self.annot_model.play(selection)
+        self.annot_model.infer_midi(selection, play=play)
