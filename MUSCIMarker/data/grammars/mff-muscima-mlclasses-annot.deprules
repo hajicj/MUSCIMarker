@@ -90,7 +90,7 @@ time_signature{1,} |
 
 # The multi-staff brace is there because of repeats that act like measure
 # separators and use the brace.
-measure_separator | *_barline multi-staf_brace
+measure_separator | *_barline multi-staff_brace
 measure_separator{1,} |
 
 repeat | repeat-dot thin_barline thick_barline multi-staff_brace
