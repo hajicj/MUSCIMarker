@@ -170,13 +170,19 @@ class ObjectGraph(Widget):
 
     def remove_edge(self, a1, a2):
         """Object a1 will no longer point at object a2."""
-        if a1 not in self._inlinks[a2]:
+        if a2 not in self._inlinks:
+            logging.warn('Edge {0} --> {1}: {1} not in self._inlinks!'
+                         ''.format(a1, a2))
+        elif a1 not in self._inlinks[a2]:
             logging.warn('Edge {0} --> {1}: not found in inlinks of {1}'
                          ''.format(a1, a2))
         else:
             self._inlinks[a2].remove(a1)
 
-        if a2 not in self._outlinks[a1]:
+        if a1 not in self._outlinks:
+            logging.warn('Edge {0} --> {1}: {0} not in self._outlinks!!'
+                         ''.format(a1, a2))
+        elif a2 not in self._outlinks[a1]:
             logging.warn('Edge {0} --> {1}: not found in outlinks of {0}'
                          ''.format(a1, a2))
         else:
@@ -696,9 +702,13 @@ class CropObjectAnnotatorModel(Widget):
     def ensure_no_loops(self):
         """Makes sure that there are no loops in the graph.
         This is especially important for precedence edges."""
+        to_remove = []
         for a1, a2 in self.graph.edges:
             if a1 == a2:
-                self.graph.ensure_remove_edge(a1, a2)
+                if (a2, a1) not in to_remove:
+                    to_remove.append((a1, a2))
+        for a1, a2 in to_remove:
+            self.graph.ensure_remove_edge(a1, a2)
         self.sync_graph_to_cropobjects()
 
     def ensure_remove_edge(self, from_objid, to_objid):
