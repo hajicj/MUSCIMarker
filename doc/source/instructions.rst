@@ -754,6 +754,14 @@ Use the "a" keyboard shortcut to do this.
 .. image:: images/guidelines/clef_to_staffline.png
 
 
+Time signatures
+^^^^^^^^^^^^^^^
+
+If the time signature includes some kind of separator between the upper
+and lower (or left/right) numbers in the signature, denote it as ``letter_other``
+and add a relationship from ``time_signature`` to this ``letter_other``.
+
+
 Text
 ----
 
