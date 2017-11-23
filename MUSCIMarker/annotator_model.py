@@ -22,8 +22,10 @@ from muscima.io import export_cropobject_list
 import muscima.stafflines
 from muscima.inference import PitchInferenceEngine, OnsetsInferenceEngine, MIDIBuilder, play_midi
 from muscima.inference_engine_constants import InferenceEngineConstants as _CONST
-from muscima.graph import find_beams_incoherent_with_stems, find_misdirected_ledger_line_edges
-
+from muscima.graph import \
+    find_beams_incoherent_with_stems, \
+    find_misdirected_ledger_line_edges, \
+    find_related_staffs
 from object_detection import ObjectDetectionHandler
 from syntax.dependency_parsers import SimpleDeterministicDependencyParser, PairwiseClassificationParser, \
     PairwiseClfFeatureExtractor
@@ -829,6 +831,21 @@ class CropObjectAnnotatorModel(Widget):
         wrong_edges = [(n.objid, b.objid)
                        for n, b in incoherent_beam_pairs + misdirected_ledger_lines]
         return wrong_edges
+
+    def find_related_staffs(self, cropobjects, with_stafflines=True):
+        """Find all staffs that are related to any of the cropobjects
+        in question. Ignores whether these staffs are already within
+        the list of ``cropobjects`` passed to the function.
+
+        Wraps the ``muscima.graph.find_related_staffs()`` function.
+
+        :param with_stafflines: If set, will also return all stafflines
+            and staffspaces related to the discovered staffs.
+        """
+        related_staffs = find_related_staffs(cropobjects,
+                                             self.cropobjects.values(),
+                                             with_stafflines=with_stafflines)
+        return related_staffs
 
     ##########################################################################
     # Keeping the model in a consistent state

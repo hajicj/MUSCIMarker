@@ -629,6 +629,19 @@ class CropObjectListView(ListView):
         if len(cropobjects) == 0:
             cropobjects = self._model.cropobjects.values()
 
+        # Find staffs also as children of selected objects!
+        # Their staff might be ignored in the selection.
+        related_staffs = self._model.find_related_staffs(cropobjects)
+        _cdict = {c.objid: c for c in cropobjects}
+        new_related_staffs = [s for s in related_staffs if s.objid not in _cdict]
+        logging.info('Infer_precedence_for_current_selection(): found'
+                     ' {0} related staff objects, of which {1} are not in selection.'
+                     ''.format(len(related_staffs), len(new_related_staffs)))
+        cropobjects = cropobjects + new_related_staffs
+        logging.info('Infer_precedence_for_current_selection(): had {0}'
+                     ' objects, with related stafflines: {1} objects'
+                     ''.format(len(_cdict), len(cropobjects)))
+
         self._infer_precedence(cropobjects, factor_by_staff=factor_by_staff)
 
         if unselect_at_end:
@@ -640,12 +653,15 @@ class CropObjectListView(ListView):
                                  + list(InferenceEngineConstants.REST_CLSNAMES))
         prec_cropobjects = [c for c in cropobjects
                             if c.clsname in _relevant_clsnames]
+        logging.info('_infer_precedence: {0} total prec. cropobjects'
+                     ''.format(len(prec_cropobjects)))
 
         # Group the objects according to the staff they are related to
         # and infer precedence on these subgroups.
         if factor_by_staff:
             staffs = [c for c in cropobjects
                       if c.clsname == InferenceEngineConstants.STAFF_CLSNAME]
+            logging.info('_infer_precedence: got {0} staffs'.format(len(staffs)))
             staff_objids = {c.objid: i for i, c in enumerate(staffs)}
             prec_cropobjects_per_staff = [[] for _ in staffs]
             # All CropObjects relevant for precedence have a relationship
@@ -655,6 +671,8 @@ class CropObjectListView(ListView):
                     if o in staff_objids:
                         prec_cropobjects_per_staff[staff_objids[o]].append(c)
 
+            logging.info('Precedence groups: {0}'
+                         ''.format(prec_cropobjects_per_staff))
             for prec_cropobjects_group in prec_cropobjects_per_staff:
                 self._infer_precedence(prec_cropobjects_group,
                                        factor_by_staff=False)
