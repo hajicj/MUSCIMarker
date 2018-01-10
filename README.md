@@ -2,7 +2,8 @@
 
 Tool for annotating objects in musical scores.
 
-[![Documentation Status](https://readthedocs.org/projects/muscimarker/badge/?version=latest)](http://muscimarker.readthedocs.io/en/latest/)
+[![Documentation Status](https://readthedocs.org/projects/muscimarker/badge/?version=latest)](https://muscimarker.readthedocs.io/en/latest/index.html)
+[![Build Status](https://travis-ci.org/apacha/MUSCIMarker.svg?branch=develop)](https://travis-ci.org/apacha/MUSCIMarker)
 
 ## Tutorial
 
