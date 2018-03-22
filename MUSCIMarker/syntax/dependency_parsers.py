@@ -1,10 +1,12 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
 
+import collections
 import logging
 
 import numpy
 from muscima.cropobject import cropobject_distance
+from muscima.inference_engine_constants import _CONST
 from sklearn.feature_extraction import DictVectorizer
 
 __version__ = "0.0.1"
@@ -81,6 +83,42 @@ class PairwiseClassificationParser(object):
         for idx, (c_from, c_to) in enumerate(pairs):
             if preds[idx] != 0:
                 edges.append((c_from.objid, c_to.objid))
+
+        edges = self._apply_trivial_fixes(cropobjects, edges)
+        return edges
+
+    def _apply_trivial_fixes(self, cropobjects, edges):
+        edges = self._only_one_stem_per_notehead(cropobjects, edges)
+        return edges
+
+    def _only_one_stem_per_notehead(self, cropobjects, edges):
+        _cdict = {c.objid: c for c in cropobjects}
+
+        # Collect stems per notehead
+        stems_per_notehead = collections.defaultdict(list)
+        stem_objids = set()
+        for f_objid, t_objid in edges:
+            f = _cdict[f_objid]
+            t = _cdict[t_objid]
+            if (f.clsname in _CONST.NOTEHEAD_CLSNAMES) and \
+                (t.clsname == 'stem'):
+                stems_per_notehead[f_objid].append(t_objid)
+                stem_objids.add(t_objid)
+
+        # Pick the closest one (by minimum distance)
+        closest_stems_per_notehead = dict()
+        for n_objid in stems_per_notehead:
+            n = _cdict[n_objid]
+            stems = [_cdict[objid] for objid in stems_per_notehead[n_objid]]
+            closest_stem = min(stems, key=lambda s: cropobject_distance(n, s))
+            closest_stems_per_notehead[n_objid] = closest_stem.objid
+
+        # Filter the edges
+        edges = [(f_objid, t_objid) for f_objid, t_objid in edges
+                 if (f_objid not in closest_stems_per_notehead) or
+                    (t_objid not in stem_objids) or
+                    (closest_stems_per_notehead[f_objid] == t_objid)]
+
         return edges
 
     def extract_all_pairs(self, cropobjects):

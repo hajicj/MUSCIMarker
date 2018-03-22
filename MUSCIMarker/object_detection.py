@@ -64,7 +64,12 @@ class ObjectDetectionHandler(Widget):
 
     def on_input(self, instance, pos):
         if pos is not None:
-            self.call(pos)
+            try:
+                self.call(pos)
+            except Exception as e:
+                logging.warning('ObjectDetectionHandler: encountered error in call.'
+                                ' Error message: {0}'.format(e))
+                self.response_cropobjects = []
 
     def call(self, request):
 
