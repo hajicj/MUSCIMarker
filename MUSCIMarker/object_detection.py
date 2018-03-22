@@ -200,6 +200,7 @@ class ObjectDetectionOMRAppClient(object):
                 _n_data_packets_sent += 1
 
         # s.send(b"Hello server!")
+        logging.info('Shutting down socket for writing...')
         s.shutdown(socket.SHUT_WR)
 
         logging.info('Finished sending, waiting to receive.')

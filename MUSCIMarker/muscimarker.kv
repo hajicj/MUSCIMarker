@@ -344,28 +344,35 @@
     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 
 
-    ScatterLayout:
-        id: scatter
+    BoxLayout:
+        id: content
 
-        size: root.size
-        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-        do_rotation: False
-        #scale: 10.0
+        ScatterLayout:
+            id: scatter
 
-        # canvas.before:
-        #    Color:
-        #        # rgba: 0.2, 0.1, 0.1, 1   ### Debugging color
-        #        rgba: 0.1, 0.1, 0.1, 1     ### Production color
-        #    Rectangle:
-        #        self here refers to the widget i.e BoxLayout pos: self.pos
-        #        size: self.size
+            size: root.size
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            do_rotation: False
+            #scale: 10.0
+
+            # canvas.before:
+            #    Color:
+            #        # rgba: 0.2, 0.1, 0.1, 1   ### Debugging color
+            #        rgba: 0.1, 0.1, 0.1, 1     ### Production color
+            #    Rectangle:
+            #        self here refers to the widget i.e BoxLayout pos: self.pos
+            #        size: self.size
 
 
-        Image:
-            id: inspected_image
-            allow_stretch: True
+            Image:
+                id: inspected_image
+                allow_stretch: True
 
-            source: root.source
+                source: root.source
+
+        # Label:
+        #     id: data_label
+        #     text: root.data_text
 
 ##############################################################################
 
