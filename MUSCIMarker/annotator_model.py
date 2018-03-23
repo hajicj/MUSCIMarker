@@ -826,7 +826,8 @@ class CropObjectAnnotatorModel(Widget):
     def find_wrong_edges(self, provide_reasons=False):
         v, i, o, r_v, r_i, r_o = self.find_grammar_errors()
         incoherent_beam_pairs = find_beams_incoherent_with_stems(self.cropobjects.values())
-        misdirected_ledger_lines = find_misdirected_ledger_line_edges(self.cropobjects.values())
+        # Switched off misdirected ledger lines: there is something wrong with them
+        misdirected_ledger_lines = [] # find_misdirected_ledger_line_edges(self.cropobjects.values())
 
         wrong_edges = [(n.objid, b.objid)
                        for n, b in incoherent_beam_pairs + misdirected_ledger_lines]
@@ -996,6 +997,7 @@ class CropObjectAnnotatorModel(Widget):
                      ''.format(len(result_cropobjects)))
 
         processed_cropobjects = self._detection_filter_tiny(result_cropobjects)
+        processed_cropobjects = self._detection_filter_contained(result_cropobjects)
         processed_cropobjects = self._detection_apply_objids(processed_cropobjects)
         processed_cropobjects = self._detection_apply_shift(processed_cropobjects)
         processed_cropobjects = self._detection_apply_margin(processed_cropobjects,
@@ -1097,6 +1099,17 @@ class CropObjectAnnotatorModel(Widget):
                     and (min(c.width, c.height) >= min_size)]
 
         return output + output_stafflines + duration_dots
+
+    def _detection_filter_contained(self, cropobjects):
+        """Filters out cropobjects that are fully within another object's bounding
+        box, have a Dice of at least 0.95 with the containing object, and are
+        smaller than 0.9 of the container object area.
+
+        Does *not* consider key signatures, time signatures, measure separators.
+        """
+        _cdict = {c.objid: c for c in cropobjects}
+
+        return cropobjects
 
     ##########################################################################
     # Staffline building

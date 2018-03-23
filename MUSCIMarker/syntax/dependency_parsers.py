@@ -6,6 +6,7 @@ import logging
 
 import numpy
 from muscima.cropobject import cropobject_distance
+from muscima.graph import find_beams_incoherent_with_stems
 from muscima.inference_engine_constants import _CONST
 from sklearn.feature_extraction import DictVectorizer
 
@@ -73,6 +74,14 @@ class PairwiseClassificationParser(object):
         self.extractor = cropobject_feature_extractor
 
     def parse(self, cropobjects):
+
+        # Ensure the same docname for all cropobjects,
+        # since we later compute their distances.
+        # The correct docname gets set on export anyway.
+        default_doc = cropobjects[0].doc
+        for c in cropobjects:
+            c.set_doc(default_doc)
+
         pairs, features = self.extract_all_pairs(cropobjects)
 
         logging.info('Clf.Parse: {0} object pairs from {1} objects'.format(len(pairs), len(cropobjects)))
@@ -89,6 +98,8 @@ class PairwiseClassificationParser(object):
 
     def _apply_trivial_fixes(self, cropobjects, edges):
         edges = self._only_one_stem_per_notehead(cropobjects, edges)
+        edges = self._every_full_notehead_has_a_stem(cropobjects, edges)
+
         return edges
 
     def _only_one_stem_per_notehead(self, cropobjects, edges):
@@ -120,6 +131,44 @@ class PairwiseClassificationParser(object):
                     (closest_stems_per_notehead[f_objid] == t_objid)]
 
         return edges
+
+    def _every_full_notehead_has_a_stem(self, cropobjects, edges):
+        _cdict = {c.objid: c for c in cropobjects}
+
+        # Collect stems per notehead
+        notehead_objids = set([c.objid for c in cropobjects if c.clsname == 'notehead-full'])
+        stem_objids = set([c.objid for c in cropobjects if c.clsname == 'stem'])
+
+        noteheads_with_stem_objids = set()
+        stems_with_notehead_objids = set()
+        for f, t in edges:
+            if _cdict[f].clsname == 'notehead-full':
+                if _cdict[t].clsname == 'stem':
+                    noteheads_with_stem_objids.add(f)
+                    stems_with_notehead_objids.add(t)
+
+        noteheads_without_stems = {n: _cdict[n] for n in notehead_objids
+                                      if n not in noteheads_with_stem_objids}
+        stems_without_noteheads = {n: _cdict[n] for n in stem_objids
+                                      if n not in stems_with_notehead_objids}
+
+        # To each notehead, assign the closest stem that is not yet taken.
+        closest_stem_per_notehead = {objid: min(stems_without_noteheads,
+                                            key=lambda x: cropobject_distance(_cdict[x], n))
+                                     for objid, n in noteheads_without_stems.items()}
+
+        # Filter edges that are too long
+        _n_before_filter = len(closest_stem_per_notehead)
+        closest_stem_threshold_distance = 80
+        closest_stem_per_notehead = {n_objid: s_objid
+                                     for n_objid, s_objid in closest_stem_per_notehead.items()
+                                     if cropobject_distance(_cdict[n_objid],
+                                                            _cdict[s_objid])
+                                         < closest_stem_threshold_distance
+                                     }
+
+
+        return edges + list(closest_stem_per_notehead.items())
 
     def extract_all_pairs(self, cropobjects):
         pairs = []
