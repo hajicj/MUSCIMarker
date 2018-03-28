@@ -2309,7 +2309,17 @@ class MUSCIMarkerApp(App):
         c_l_view.ensure_selected_objids(_objids_duplicate)
 
     def find_suspiciously_small_objects(self):
-        raise NotImplementedError()
+        c_l_view = self.cropobject_list_renderer.view
+        cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
+        if len(cropobjects) == 0:
+            cropobjects = self.annot_model.cropobjects.values()
+
+        small_object_objids = self.annot_model.find_very_small_objects(bbox_threshold=40,
+                                                                       mask_threshold=35)
+
+        logging.info('Suspiciously small objects found: {0}'.format(len(small_object_objids)))
+        c_l_view.unselect_all()
+        c_l_view.ensure_selected_objids(small_object_objids)
 
     ##########################################################################
     # Playback

@@ -576,8 +576,10 @@ class CropObjectListView(ListView):
                 tracker_name='model')
     def parse_current_selection(self, unselect_at_end=True, backup=True):
         """Adds edges among the current selection according to the model's
-        grammar and parser."""
+        grammar and parser. If nothing is selected, parses everything."""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        if len(cropobjects) == 0:
+            cropobjects = [s._model_counterpart for s in self.container.children]
         self._parse_cropobjects(cropobjects, backup=backup)
 
         if unselect_at_end:

@@ -824,13 +824,21 @@ class CropObjectAnnotatorModel(Widget):
         return v
 
     def find_wrong_edges(self, provide_reasons=False):
+        edges = [e for e in self.graph.edges.keys()
+                 if self.graph.edges[e] == 'Attachment']
+
         v, i, o, r_v, r_i, r_o = self.find_grammar_errors()
         incoherent_beam_pairs = find_beams_incoherent_with_stems(self.cropobjects.values())
-        # Switched off misdirected ledger lines: there is something wrong with them
-        misdirected_ledger_lines = [] # find_misdirected_ledger_line_edges(self.cropobjects.values())
+        # Switching off misdirected ledger lines: there is something wrong with them
+        misdirected_ledger_lines = find_misdirected_ledger_line_edges(self.cropobjects.values())
 
         wrong_edges = [(n.objid, b.objid)
                        for n, b in incoherent_beam_pairs + misdirected_ledger_lines]
+
+        disallowed_symbol_class_pairs = [(f, t) for f, t in edges
+                                         if not self.grammar.validate_edge(self.cropobjects[f].clsname,
+                                                                           self.cropobjects[t].clsname)]
+        wrong_edges += disallowed_symbol_class_pairs
         return wrong_edges
 
     def find_related_staffs(self, cropobjects, with_stafflines=True):
