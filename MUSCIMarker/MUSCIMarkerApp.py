@@ -192,71 +192,51 @@ the tracking event. Then, it hands the event off to the handler object,
 which is responsible for writing the event data into the tracking file.
 
 """
-from __future__ import print_function, unicode_literals
 from __future__ import division
+from __future__ import print_function, unicode_literals
+
 from future import standard_library
+
 standard_library.install_aliases()
 from builtins import zip
 from builtins import str
 from past.utils import old_div
-import argparse
-import codecs
 import copy
 import logging
 import os
 import pprint
 import time
-# from random import random
-# from math import sqrt
-
-from functools import partial
 
 import pickle
-# import cv2  # -- trying to remove troublesome OpenCV dependency
-#import skimage
-#from skimage.io import find_available_plugins, imread
-# Importing skimage.io causes strange behavior on loading. Maybe bad interaction with some libraries?
-# skimage by itself is fine.
 import datetime
 
 import numpy
-import scipy.misc   # This worked!
+import scipy.misc
 
-from kivy._event import EventDispatcher
 from kivy.app import App
 from kivy.config import Config
-from kivy.core.image import ImageData
 from kivy.properties import ObjectProperty, StringProperty, ListProperty, NumericProperty, DictProperty, AliasProperty
 from kivy.core.window import Window
 from kivy.clock import Clock
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.image import Image
-from kivy.uix.relativelayout import RelativeLayout
-from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.togglebutton import ToggleButton
-from kivy.uix.widget import Widget
 
 from muscima.io import parse_cropobject_list, parse_cropobject_class_list
 from muscima.cropobject import CropObject
-#import muscimarker_io
 from image_processing import ImageProcessing
 from help import Help
 from objid_selection import ObjidSelectionDialog
 from mlclass_selection import MLClassSelectionDialog
 from syntax.dependency_grammar import DependencyGrammar
-from syntax.dependency_parsers import SimpleDeterministicDependencyParser
 from edge_view import ObjectGraphRenderer
-from editor import BoundingBoxTracer
 from rendering import CropObjectRenderer
-from utils import FileNameLoader, FileSaver, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key, \
+from utils import FileNameLoader, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key, \
     MessageDialog, OnBindFileSaver, compute_connected_components, filename2docname
 from annotator_model import CropObjectAnnotatorModel
 import toolkit
 import tracker as tr
 
 import kivy
-
 
 kivy.require('1.9.1')
 
