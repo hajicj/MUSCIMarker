@@ -1,26 +1,12 @@
-lxml
-scikit-image
-scikit-learn
+# Install these requirements using conda install ...
+numpy
 scipy
 matplotlib
-numpy
-opencv-python
+scikit-image
+cython
+lxml
+
+# Python requirements for Windows and Linux
 docutils
 pygments
-kivy
-future
 muscima
-
-pytest
-pytest-cov
-future
-
-# Libraries to integrating code-coverage reporting
-python-coveralls
-codecov
-
-# Only Windows
-# kivy.deps.sdl2
-# pypiwin32
-# kivy.deps.glew
-# kivy.deps.angle

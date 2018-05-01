@@ -153,5 +153,8 @@ pip --version
 conda install $QUIET -n test pytest pip numpy scipy matplotlib pytest h5py scikit-image
 checkLastExitCode
 
+python -m pip install --upgrade pip wheel setuptools
+pip --version
+
 pip install -r requirements.txt
 pip install -r requirements_windows.txt
