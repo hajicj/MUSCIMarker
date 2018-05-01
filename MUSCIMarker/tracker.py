@@ -277,6 +277,8 @@ class Tracker(object):
             retval = the_fn(*args, **kwargs)
             return retval
 
-        return _tracking_wrapper
+        output_fn = _tracking_wrapper
+        output_fn.__name__ = the_fn.__name__
+        return output_fn
 
 
