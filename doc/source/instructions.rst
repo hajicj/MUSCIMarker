@@ -55,6 +55,8 @@ The instructions are organized loosely around the categories of symbols:
 notes themselves, notation, staff defaults (clefs, key signatures, etc.),
 layout-related symbols, text, and other stuff that may come up.
 
+Do not forget to read the section on Precedence Edges below all
+the symbol-specific sections!
 
 
 Guiding principles
@@ -306,6 +308,7 @@ In the section dedicated to notes themselves, we have also illustrated
 some basic principles of how to attach objects to each other. We will
 now define some more notational situations around notes:
 
+* tuples
 * accents and articulation
 * arpeggios and glissandi
 * caesurae, breath marks
@@ -325,6 +328,25 @@ tremolos, arpeggios & glissandi should be clear:
 mark the symbol and connect it to the noteheads which are affected
 by the marking. Caesura/breath mark,
 segno and coda signs do not connect to anything.
+
+
+Tuples
+^^^^^^
+
+Mark the tuple numeral as any other numeral. If there is a bracket or
+a line that denotes the extent of the tuple, mark it as ``tuple_bracket/line``.
+Then, add a ``tuple`` symbol as an overlay of the numeral(s) and the tuple
+bracket/line symbol. The ``tuple`` has outgoing relationships to the ``numeral_X``
+symbol(s) and the ``tuple_bracket/line``.
+
+Next, connect all the noteheads participating in the tuple to the ``tuple`` symbol.
+
+The result will look like this (highlighting the relationship of ``tuple``
+to ``numeral_3`` and ``tuple_bracket/line``, and the three participating
+noteheads that have a relationship to the ``tuple``):
+
+.. image:: images/guidelines/tuple.png
+
 
 Ties and slurs
 ^^^^^^^^^^^^^^
@@ -711,6 +733,34 @@ a ``whole-time_mark``):
 .. image:: images/guidelines/part_defaults.png
 
 
+Clefs
+^^^^^
+
+Clefs in non-standard positions should be connected to the corresponding
+staffline.
+
+To elaborate: a G-clef is in the standard position if its "swirl"
+is centered around the 2nd staffline from the bottom; the F-clef similarly
+is by default positioned on the 2nd staffline from the top, and the C-clef
+is by default found on the middle staffline. However, especially the C-clef
+can move around quite a lot: it can be positioned at any of the five stafflines.
+This is often done in cello, horn, or trombone parts, and is very prevalent
+also in choral parts in earlier music.
+
+If this is the case, the clef should
+be explicitly connected to the staffline it is centered on (if anntoated).
+Use the "a" keyboard shortcut to do this.
+
+.. image:: images/guidelines/clef_to_staffline.png
+
+
+Time signatures
+^^^^^^^^^^^^^^^
+
+If the time signature includes some kind of separator between the upper
+and lower (or left/right) numbers in the signature, denote it as ``letter_other``
+and add a relationship from ``time_signature`` to this ``letter_other``.
+
 
 Text
 ----
@@ -867,6 +917,70 @@ Staff grouping to staff
 Staff grouping has outlinks to the staffs it groups together.
 Although staff groupings can be recursive, each grouping has outlinks
 to all the staffs it groups, regardless of sub-groups.
+
+
+
+Precedence Relationships
+------------------------
+
+The relationships we have described so far have all dealt with *syntactic*
+attachment: a certain symbol (like a notehead) needs to be interpreted
+together with the other symbol (like a beam) in order for the musician
+to read the music correctly. However, there is another kind of relationship
+we need to record: **precedence**, or how the notes follow each other.
+
+This is necessary in order to correctly interpret *when* to play a given
+note. You read music left to right, and you play the next note once you
+have finished playing its predecessor (in case of polyphonic music, its
+predecessor within the given voice). Therefore, in order to determine when
+to play a note, we need to know which note comes immediately before.
+
+This is encoded by precedence edges, which are drawn between noteheads
+and rests that follow each other.
+
+.. image:: images/guidelines/precedence_basic.png
+
+In monophonic music, this is trivial. In homophonic music (single logical
+voice, but there may be chords within that voice), this is also straightforward:
+
+.. image:: images/guidelines/precedence_homophony.png
+
+We encourage this type of "plank fence" structures, because they help check
+that all the notes in the chords have the correct durations (e.g., none of
+the noteheads in the beamed group is missing a relationship to a beam).
+
+In polyphonic music, however, we have to start thinking about this. The key
+to getting precedence in polyphonic music right is to stick with the purely
+technical interpretation of precedence: play the note (or rest) at the
+right side of the relationship precisely when you finish playing the note
+on the left side of the precedence relationship. Do not think about the actual
+logical voices; simply think about when each note is supposed to be played.
+
+Therefore, this is correct:
+
+.. image:: images/guidelines/precedence_polyphony_1.png
+
+But this is correct as well (additional cross-voice precedence
+relationships highlighted):
+
+.. image:: images/guidelines/precedence_polyphony_2.png
+
+And this is also technically correct, although very ugly and not encouraged:
+
+.. image:: images/guidelines/precedence_polyphony_3.png
+
+Returning to the homophony example, this is therefore also correct:
+
+.. image:: images/guidelines/precedence_homophony_sparse.png
+
+Out of all such technically correct alternatives, we prefer
+those that are intuitively appealing, which in this case would be
+the first option:
+
+* all valid precedence relationships within a voice,
+* no edges across voices.
+
+
 
 
 Changes in 0.9
