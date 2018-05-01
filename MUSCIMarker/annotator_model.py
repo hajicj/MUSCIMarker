@@ -1,6 +1,7 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
 
+from builtins import str
 import codecs
 import itertools
 import logging
@@ -523,7 +524,7 @@ class CropObjectAnnotatorModel(Widget):
              tracker_name='model')
     def export_cropobjects_string(self, **kwargs):
         self.sync_graph_to_cropobjects()
-        return export_cropobject_list(self.cropobjects.values(), **kwargs)
+        return export_cropobject_list(list(self.cropobjects.values()), **kwargs)
 
     @Tracker(track_names=['output'],
              fn_name='model.export_cropobjects',
@@ -551,7 +552,7 @@ class CropObjectAnnotatorModel(Widget):
             objids = [c.objid for c in cropobjects]
 
         if label is None:
-            edges = self.graph.edges.keys()
+            edges = list(self.graph.edges.keys())
         else:
             edges = [(from_objid, to_objid) for from_objid, to_objid in self.graph.edges
                      if (self.graph.edges[(from_objid, to_objid)] == label) and
@@ -605,7 +606,7 @@ class CropObjectAnnotatorModel(Widget):
                        ''.format(len(self.graph.edges)))
 
         if cropobjects is None:
-            cropobjects = self.cropobjects.values()
+            cropobjects = list(self.cropobjects.values())
 
         for c in cropobjects:
 
@@ -649,7 +650,7 @@ class CropObjectAnnotatorModel(Widget):
             If left to ``None``, will sync everything.
         """
         if cropobjects is None:
-            cropobjects = self.cropobjects.values()
+            cropobjects = list(self.cropobjects.values())
             self.graph.clear()
         else:
             for c in cropobjects:
@@ -691,7 +692,7 @@ class CropObjectAnnotatorModel(Widget):
         updates.
         """
         if cropobjects is None:
-            cropobjects = self.cropobjects.values()
+            cropobjects = list(self.cropobjects.values())
         for c in cropobjects:
             dataset, doc, num = c._parse_uid(c.uid)
             if c.objid != num:
@@ -755,7 +756,7 @@ class CropObjectAnnotatorModel(Widget):
 
         invalid_clsname_objs = []
         oversized_objs = []
-        for c in self.cropobjects.values():
+        for c in list(self.cropobjects.values()):
             clsname = c.clsname
             if clsname not in self.mlclasses_by_name:
                 invalid_clsname_objs.append(c)
@@ -772,7 +773,7 @@ class CropObjectAnnotatorModel(Widget):
 
     def find_grammar_errors(self):
         vertices = {v: self.cropobjects[v].clsname for v in self.graph.vertices}
-        edges = [e for e in self.graph.edges.keys()
+        edges = [e for e in list(self.graph.edges.keys())
                  if self.graph.edges[e] == 'Attachment']
         v, i, o, r_v, r_i, r_o = self.grammar.find_invalid_in_graph(vertices, edges,
                                                                     provide_reasons=True)
@@ -786,7 +787,7 @@ class CropObjectAnnotatorModel(Widget):
         than ``mask_threshold`` pixels."""
         very_small_cropobjects = []
 
-        for c in self.cropobjects.values():
+        for c in list(self.cropobjects.values()):
             total_masked_area = c.mask.sum()
             total_bbox_area = c.width * c.height
             if total_bbox_area < bbox_threshold:
@@ -824,13 +825,13 @@ class CropObjectAnnotatorModel(Widget):
         return v
 
     def find_wrong_edges(self, provide_reasons=False):
-        edges = [e for e in self.graph.edges.keys()
+        edges = [e for e in list(self.graph.edges.keys())
                  if self.graph.edges[e] == 'Attachment']
 
         v, i, o, r_v, r_i, r_o = self.find_grammar_errors()
-        incoherent_beam_pairs = find_beams_incoherent_with_stems(self.cropobjects.values())
+        incoherent_beam_pairs = find_beams_incoherent_with_stems(list(self.cropobjects.values()))
         # Switching off misdirected ledger lines: there is something wrong with them
-        misdirected_ledger_lines = find_misdirected_ledger_line_edges(self.cropobjects.values())
+        misdirected_ledger_lines = find_misdirected_ledger_line_edges(list(self.cropobjects.values()))
 
         wrong_edges = [(n.objid, b.objid)
                        for n, b in incoherent_beam_pairs + misdirected_ledger_lines]
@@ -852,7 +853,7 @@ class CropObjectAnnotatorModel(Widget):
             and staffspaces related to the discovered staffs.
         """
         related_staffs = find_related_staffs(cropobjects,
-                                             self.cropobjects.values(),
+                                             list(self.cropobjects.values()),
                                              with_stafflines=with_stafflines)
         return related_staffs
 
@@ -1128,13 +1129,13 @@ class CropObjectAnnotatorModel(Widget):
         """Merges staffline fragments into stafflines. Can group them into staffs,
         add staffspaces, and add the various obligatory relationships of other
         objects to the staff objects. Required before attempting to export MIDI."""
-        if len([c for c in self.cropobjects.values() if c.clsname == 'staff']) > 0:
+        if len([c for c in list(self.cropobjects.values()) if c.clsname == 'staff']) > 0:
             logging.warn('Some stafflines have already been processed. Reprocessing'
                          ' is not certain to work.')
             # return
 
         try:
-            new_cropobjects = muscima.stafflines.merge_staffline_segments(self.cropobjects.values())
+            new_cropobjects = muscima.stafflines.merge_staffline_segments(list(self.cropobjects.values()))
         except ValueError as e:
             logging.warn('Model: Staffline merge failed:\n\t\t'
                          '{0}'.format(e.message))
@@ -1187,11 +1188,11 @@ class CropObjectAnnotatorModel(Widget):
         :returns: A single-track ``midiutil.MidiFile.MIDIFile`` object. It can be
             written to a stream using its ``mf.writeFile()`` method."""
         pitch_inference_engine = PitchInferenceEngine()
-        time_inference_engine = OnsetsInferenceEngine(cropobjects=self.cropobjects.values())
+        time_inference_engine = OnsetsInferenceEngine(cropobjects=list(self.cropobjects.values()))
 
         try:
             logging.info('Running pitch inference.')
-            pitches, pitch_names = pitch_inference_engine.infer_pitches(self.cropobjects.values(),
+            pitches, pitch_names = pitch_inference_engine.infer_pitches(list(self.cropobjects.values()),
                                                                         with_names=True)
         except Exception as e:
             logging.warning('Model: Pitch inference failed!')
@@ -1208,7 +1209,7 @@ class CropObjectAnnotatorModel(Widget):
 
         try:
             logging.info('Running durations inference.')
-            durations = time_inference_engine.durations(self.cropobjects.values())
+            durations = time_inference_engine.durations(list(self.cropobjects.values()))
         except Exception as e:
             logging.warning('Model: Duration inference failed!')
             logging.exception(traceback.format_exc(e))
@@ -1221,7 +1222,7 @@ class CropObjectAnnotatorModel(Widget):
 
         try:
             logging.info('Running onsets inference.')
-            onsets = time_inference_engine.onsets(self.cropobjects.values())
+            onsets = time_inference_engine.onsets(list(self.cropobjects.values()))
         except Exception as e:
             logging.warning('Model: Onset inference failed!')
             logging.exception(traceback.format_exc(e))
@@ -1233,13 +1234,13 @@ class CropObjectAnnotatorModel(Widget):
                 c.data['onset_beats'] = onsets[objid]
 
         # Process ties
-        durations, onsets = time_inference_engine.process_ties(self.cropobjects.values(),
+        durations, onsets = time_inference_engine.process_ties(list(self.cropobjects.values()),
                                                                durations, onsets)
 
         tempo = int(App.get_running_app().config.get('midi', 'default_tempo'))
 
         if selected_cropobjects is None:
-            selected_cropobjects = self.cropobjects.values()
+            selected_cropobjects = list(self.cropobjects.values())
         selection_objids = [c.objid for c in selected_cropobjects]
 
         midi_builder = MIDIBuilder()
@@ -1252,7 +1253,7 @@ class CropObjectAnnotatorModel(Widget):
     def infer_midi(self, cropobjects=None, play=True):
         """Attempts to play the midi file."""
         if not cropobjects:
-            cropobjects = self.cropobjects.values()
+            cropobjects = list(self.cropobjects.values())
 
         soundfont = App.get_running_app().config.get('midi', 'soundfont')
 
@@ -1266,7 +1267,7 @@ class CropObjectAnnotatorModel(Widget):
 
     def clear_midi_information(self):
         """Removes all the information from all CropObjects."""
-        for c in self.cropobjects.values():
+        for c in list(self.cropobjects.values()):
             if c.data is None:
                 continue
             if 'midi_pitch_code' in c.data:

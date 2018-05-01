@@ -1,6 +1,8 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
 
+from builtins import str
+from builtins import object
 import logging
 import os
 import pickle

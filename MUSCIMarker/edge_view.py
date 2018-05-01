@@ -1,6 +1,8 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
+from __future__ import division
 
+from past.utils import old_div
 import copy
 import logging
 import pprint
@@ -155,20 +157,20 @@ class EdgeView(SelectableView, ToggleButton):
     def _generate_start_and_end_points(self, cropobject_from, cropobject_to):
         # Another shitty, shitty x/y switch. Why can't people use
         # (top, left, bottom, right) names???
-        self.vert_start = cropobject_from.x + (cropobject_from.height / 2)
-        self.horz_start = cropobject_from.y + (cropobject_from.width / 2)
+        self.vert_start = cropobject_from.x + (old_div(cropobject_from.height, 2))
+        self.horz_start = cropobject_from.y + (old_div(cropobject_from.width, 2))
 
-        self.vert_end = cropobject_to.x + (cropobject_to.height / 2)
+        self.vert_end = cropobject_to.x + (old_div(cropobject_to.height, 2))
 
         # Edges that lead from non-staff to staff objects
         # only point a bit to the right.
         if cropobject_to.clsname in muscima.STAFF_CROPOBJECT_CLASSES:
             if cropobject_from.clsname in muscima.STAFF_CROPOBJECT_CLASSES:
-                self.horz_end = cropobject_to.y + (cropobject_to.width / 2)
+                self.horz_end = cropobject_to.y + (old_div(cropobject_to.width, 2))
             else:
                 self.horz_end = cropobject_from.y + 20
         else:
-            self.horz_end = cropobject_to.y + (cropobject_to.width / 2)
+            self.horz_end = cropobject_to.y + (old_div(cropobject_to.width, 2))
 
         if self._start_and_end_invisibly_close():
             self._adjust_for_invisible_end()
@@ -324,7 +326,7 @@ class EdgeView(SelectableView, ToggleButton):
             # We are within _cthr
             output = True
         else:
-            d_square = (((hA - hB) * (vB - v) - (hB - h) * (vA - vB)) ** 2) / norm
+            d_square = old_div((((hA - hB) * (vB - v) - (hB - h) * (vA - vB)) ** 2), norm)
             # logging.warning('EdgeView\t{0}: collision delta_square {1}'.format(self.edge, d_square))
             output = d_square < (_cthr ** 2)
 
@@ -354,7 +356,7 @@ class EdgeView(SelectableView, ToggleButton):
             # Draw a little square node at the starting point.
             # This one is always red.
             _sns = self._start_node_size
-            _delta_start = _sns / 2.0
+            _delta_start = old_div(_sns, 2.0)
             Color(1, 0, 0)
             Rectangle(pos=(self.horz_start - _delta_start,
                            self.vert_start - _delta_start),
@@ -457,7 +459,7 @@ class ObjectGraphRenderer(FloatLayout):
         self.edge_adapter.cached_views = dict()
         new_data = {}
 
-        for e, e_class in edges.iteritems():
+        for e, e_class in edges.items():
             if (e in self.views_mask) and (self.views_mask[e] is False):
                 logging.debug('ObjGraphRenderer: edge {0} masked out.'
                              ''.format(e))
@@ -482,7 +484,7 @@ class ObjectGraphRenderer(FloatLayout):
         All edges that were already in the mask have their status unchanged.
         """
         new_mask = dict()
-        for e, e_class in edges.iteritems():
+        for e, e_class in edges.items():
             if e in self.views_mask:
                 new_mask[e] = self.views_mask[e]
             else:
@@ -568,7 +570,7 @@ class ObjectGraphRenderer(FloatLayout):
             new_mask = {e: False for e in self.graph.edges}
         else:
             new_mask = {}
-            for e, l in self.graph.edges.items():
+            for e, l in list(self.graph.edges.items()):
                 if l == label:
                     new_mask[e] = False
                 else:
@@ -593,7 +595,7 @@ class ObjectGraphRenderer(FloatLayout):
             new_mask = {e: True for e in self.graph.edges}
         else:
             new_mask = {}
-            for e, l in self.graph.edges.items():
+            for e, l in list(self.graph.edges.items()):
                 if l == label:
                     new_mask[e] = True
                 else:
@@ -714,7 +716,7 @@ class EdgeListView(ListView):
         # Adapter keys are (from, to), values are True (will be
         # edge classes) -- the adapter is bound to the graph.edges
         # dict.
-        for e_key, e in self.adapter.data.iteritems():
+        for e_key, e in self.adapter.data.items():
             edge, e_label = e  # The adapter has items ((from, to), label)
             if edge in rendered_edges:
                 continue

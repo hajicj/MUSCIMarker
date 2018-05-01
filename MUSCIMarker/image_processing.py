@@ -2,6 +2,9 @@
 in order to make annotation more efficient."""
 from __future__ import print_function, unicode_literals, division
 
+from builtins import zip
+from builtins import range
+from builtins import object
 import logging
 
 import numpy
@@ -143,7 +146,7 @@ def _binarize_and_apply_background(image):
 
 
 
-class PerspectiveRegistrationProcessor():
+class PerspectiveRegistrationProcessor(object):
     """Computes Perspective Projection rectangular sheet image space.
 
     By:
@@ -280,7 +283,7 @@ class PerspectiveRegistrationProcessor():
         from scipy.spatial.distance import cdist
         distances = cdist(numpy.asarray(shape)[numpy.newaxis], polygon)
         closest_idx = numpy.argmin(distances)
-        new_order = [numpy.mod(closest_idx + i, len(polygon)) for i in xrange(len(polygon))]
+        new_order = [numpy.mod(closest_idx + i, len(polygon)) for i in range(len(polygon))]
         polygon = polygon[new_order]
         return polygon
 

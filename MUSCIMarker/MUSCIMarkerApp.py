@@ -193,6 +193,12 @@ which is responsible for writing the event data into the tracking file.
 
 """
 from __future__ import print_function, unicode_literals
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
+from past.utils import old_div
 import argparse
 import codecs
 import copy
@@ -205,7 +211,7 @@ import time
 
 from functools import partial
 
-import cPickle
+import pickle
 # import cv2  # -- trying to remove troublesome OpenCV dependency
 #import skimage
 #from skimage.io import find_available_plugins, imread
@@ -831,7 +837,7 @@ class MUSCIMarkerApp(App):
             # The cropobjects member of annot_model is a kivy Property,
             # so it fails on pickle -- we must get the data itself
             # by different means.
-            'cropobjects': self.annot_model.cropobjects.values(),
+            'cropobjects': list(self.annot_model.cropobjects.values()),
             # We also want to save the state of the image, as it may have been
             # manually binarized and we do not want to lose that work.
             'image_state': self.annot_model.image.tostring(),
@@ -968,7 +974,7 @@ class MUSCIMarkerApp(App):
                       ''.format(recovery_path))
         try:
             with open(rec_temp_name, 'wb') as hdl:
-                cPickle.dump(state, hdl, protocol=cPickle.HIGHEST_PROTOCOL)
+                pickle.dump(state, hdl, protocol=pickle.HIGHEST_PROTOCOL)
         except:
             logging.warn('App.save_app_state: Saving to recovery file failed.')
             if os.path.isfile(rec_temp_name):
@@ -989,8 +995,8 @@ class MUSCIMarkerApp(App):
 
         try:
             with open(recovery_path, 'rb') as hdl:
-                state = cPickle.load(hdl)
-        except cPickle.PickleError:
+                state = pickle.load(hdl)
+        except pickle.PickleError:
             logging.warn('App.recover: Recovery failed! Resuming without recovery.')
             return
 
@@ -1142,7 +1148,7 @@ class MUSCIMarkerApp(App):
         self.mlclass_list_length = len(mlclass_list)
         self.annot_model.import_classes_definition(mlclass_list)
 
-        self.currently_selected_mlclass_name = self.annot_model.mlclasses.values()[0].name
+        self.currently_selected_mlclass_name = list(self.annot_model.mlclasses.values())[0].name
 
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('cropobjects_file', x)]},
@@ -1295,8 +1301,8 @@ class MUSCIMarkerApp(App):
         editor = self._get_editor_widget()
         editor_height = float(editor.height)
         editor_width = float(editor.width)
-        self.image_height_ratio_in = editor_height / self.current_image_height
-        self.image_width_ratio_in = editor_width / self.current_image_width
+        self.image_height_ratio_in = old_div(editor_height, self.current_image_height)
+        self.image_width_ratio_in = old_div(editor_width, self.current_image_width)
 
         self.image_scaler = ImageToModelScaler(self._get_editor_widget(),
                                                self.annot_model.image)
@@ -1435,7 +1441,7 @@ class MUSCIMarkerApp(App):
         # Determine the scale so that the image fits onto the screen
         scatter = self._get_editor_scatter_container_widget()
         _scatter_width = scatter.width
-        scale = float(padded_width) / float(_scatter_width)
+        scale = old_div(float(padded_width), float(_scatter_width))
 
         logging.info('App: Scaling image: root width = {0},'
                      'lmargin = {1}, rmargin = {2}, scatter = {3}'
@@ -1485,7 +1491,7 @@ class MUSCIMarkerApp(App):
         # for some reason.
         _r_margin_size = self.root.ids['command_sidebar'].width
         _l_margin_size = self.root.ids['tool_selection_sidebar'].width
-        _delta_x = ((_l_margin_size / 2.0) - (_r_margin_size / 2.0))
+        _delta_x = ((old_div(_l_margin_size, 2.0)) - (old_div(_r_margin_size, 2.0)))
 
         center_x = cached_pos[0] + _delta_x
         center_y = cached_pos[1]
@@ -1648,8 +1654,8 @@ class MUSCIMarkerApp(App):
     def window_resized(self, instance, width, height):
         logging.info('App: Window resize to: {0}'.format((width, height)))
         e = self._get_editor_widget()
-        self.image_height_ratio_in = float(e.height) / self.current_image_height
-        self.image_width_ratio_in = float(e.width) / self.current_image_width
+        self.image_height_ratio_in = old_div(float(e.height), self.current_image_height)
+        self.image_width_ratio_in = old_div(float(e.width), self.current_image_width)
 
         self.do_center_current_image()
 
@@ -1664,9 +1670,9 @@ class MUSCIMarkerApp(App):
         e_horizontal = float(editor_x)
 
         e_vertical_inverted = self._get_editor_widget().height - e_vertical
-        m_vertical = e_vertical_inverted / self.image_height_ratio_in
+        m_vertical = old_div(e_vertical_inverted, self.image_height_ratio_in)
 
-        m_horizontal = e_horizontal / self.image_width_ratio_in
+        m_horizontal = old_div(e_horizontal, self.image_width_ratio_in)
 
         return m_vertical, m_horizontal
 
@@ -1708,14 +1714,14 @@ class MUSCIMarkerApp(App):
         # first to the original ratios...
         x_unscaled = float(selection['top'])
         x_unscaled_inverted = self._get_editor_widget().height - x_unscaled
-        x_scaled_inverted = float(x_unscaled_inverted / self.image_height_ratio_in)
+        x_scaled_inverted = float(old_div(x_unscaled_inverted, self.image_height_ratio_in))
         y_unscaled = float(selection['left'])
-        y_scaled = float(y_unscaled / self.image_width_ratio_in)
+        y_scaled = float(old_div(y_unscaled, self.image_width_ratio_in))
 
         height_unscaled = float(selection['top'] - selection['bottom'])
-        height_scaled = float(height_unscaled / self.image_height_ratio_in)
+        height_scaled = float(old_div(height_unscaled, self.image_height_ratio_in))
         width_unscaled = float(selection['right'] - selection['left'])
-        width_scaled = float(width_unscaled / self.image_width_ratio_in)
+        width_scaled = float(old_div(width_unscaled, self.image_width_ratio_in))
 
         # Try scaler
         mT, mL, mB, mR = self.image_scaler.bbox_widget2model(selection['top'],
@@ -1869,7 +1875,7 @@ class MUSCIMarkerApp(App):
     def find_wrong_edges(self):
         cropobjects = [c for c in self.cropobject_list_renderer.view.selected_views]
         if len(cropobjects) == 0:
-            cropobjects = self.annot_model.cropobjects.values()
+            cropobjects = list(self.annot_model.cropobjects.values())
 
         edges = self.annot_model.find_wrong_edges()
         # TODO: Integrate on alt+V
@@ -1945,7 +1951,7 @@ class MUSCIMarkerApp(App):
         for i, (n, b) in enumerate(zip(self.available_tool_names,
                                        self.available_tool_buttons)):
             k = key_0 + i + 1    # Starting at 1
-            str_k = unicode(k)
+            str_k = str(k)
             action = lambda button=b: self.process_tool_selection(button)
             logging.info('App:\t Key {0}: tool {1} with action {2}'
                          ''.format(str_k, n, action))
@@ -2177,7 +2183,7 @@ class MUSCIMarkerApp(App):
         self.currently_selected_mlclass_name = MEASURE_SEPARATOR_CLSNAME
 
 
-        for c in self.annot_model.cropobjects.values():
+        for c in list(self.annot_model.cropobjects.values()):
             if (c.clsname in BARLINE_CLASSES) and (len(c.inlinks) == 0):
                 # Add a measure separator from this one:
                 #  - create the new CropObject
@@ -2214,7 +2220,7 @@ class MUSCIMarkerApp(App):
         c_l_view = self.cropobject_list_renderer.view
         cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
         if len(cropobjects) == 0:
-            cropobjects = self.annot_model.cropobjects.values()
+            cropobjects = list(self.annot_model.cropobjects.values())
 
         image = self.annot_model.image
 
@@ -2238,17 +2244,17 @@ class MUSCIMarkerApp(App):
         _objids_over_threshold = []
         for c in cropobjects:
             # Find proportion of bad pixels
-            n_fg = image[c.top:c.bottom, c.left:c.right].sum() / 255.0
+            n_fg = old_div(image[c.top:c.bottom, c.left:c.right].sum(), 255.0)
             n_mask = float(c.mask.sum())
             logging.info('App.automation: Object {0} has {1} masked pixels, {2} image fg pixels, proportion:'
-                         ' {3}'.format(c.objid, n_mask, n_fg, n_mask / n_fg))
+                         ' {3}'.format(c.objid, n_mask, n_fg, old_div(n_mask, n_fg)))
 
             if exclusive:
                 # FG pixels are only the "not a part of any object" pixels within
                 # the bounding box.
-                if (n_fg / (n_fg + n_mask)) > threshold:
+                if (old_div(n_fg, (n_fg + n_mask))) > threshold:
                     _objids_over_threshold.append(c.objid)
-            elif (1 - (n_mask / n_fg)) > threshold:
+            elif (1 - (old_div(n_mask, n_fg))) > threshold:
                 _objids_over_threshold.append(c.objid)
 
         logging.info('App.automation: Total objects over threshold: {0}'.format(len(_objids_over_threshold)))
@@ -2267,7 +2273,7 @@ class MUSCIMarkerApp(App):
         c_l_view = self.cropobject_list_renderer.view
         cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
         if len(cropobjects) == 0:
-            cropobjects = self.annot_model.cropobjects.values()
+            cropobjects = list(self.annot_model.cropobjects.values())
 
         _objids_disconnected = []
         for c in cropobjects:
@@ -2290,7 +2296,7 @@ class MUSCIMarkerApp(App):
         c_l_view = self.cropobject_list_renderer.view
         cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
         if len(cropobjects) == 0:
-            cropobjects = self.annot_model.cropobjects.values()
+            cropobjects = list(self.annot_model.cropobjects.values())
 
         _objids_duplicate = set()
         sorted_cropobjects = sorted(cropobjects, key=lambda c: c.bounding_box)
@@ -2312,7 +2318,7 @@ class MUSCIMarkerApp(App):
         c_l_view = self.cropobject_list_renderer.view
         cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
         if len(cropobjects) == 0:
-            cropobjects = self.annot_model.cropobjects.values()
+            cropobjects = list(self.annot_model.cropobjects.values())
 
         small_object_objids = self.annot_model.find_very_small_objects(bbox_threshold=40,
                                                                        mask_threshold=35)
