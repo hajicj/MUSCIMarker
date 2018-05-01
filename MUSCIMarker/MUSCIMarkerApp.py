@@ -219,6 +219,7 @@ import scipy.misc   # This worked!
 from kivy._event import EventDispatcher
 from kivy.app import App
 from kivy.config import Config
+from kivy.core.image import ImageData
 from kivy.properties import ObjectProperty, StringProperty, ListProperty, NumericProperty, DictProperty, AliasProperty
 from kivy.core.window import Window
 from kivy.clock import Clock
@@ -678,6 +679,8 @@ class MUSCIMarkerApp(App):
         # have widths
         #Clock.schedule_once(lambda *args, **kwargs: self.init_tool_selection_keyboard_dispatch)
 
+        self.annot_model.init_object_detection_handler()
+
     def build_config(self, config):
         config.setdefaults('kivy',
             {
@@ -717,12 +720,19 @@ class MUSCIMarkerApp(App):
                 'trimmed_lasso_helper_line': 1,
                 'trimmed_lasso_helper_line_length': 100,
                 'active_selection': 0,
+                'binarization_retain_foreground': 1,
+                'split_on_eraser': 1,
+                'selection_ignore_staff': 1,
+                'detection_classes': 'staff_line,notehead-full,notehead-empty,ledger_line,' + \
+                                     'sharp,flat,natural,stem,beam,duration-dot,' + \
+                                     'thin_barline,g-clef,f-clef,c-clef',
+                'detection_use_current_class': True,
             })
         config.setdefaults('tracking',
             {
                 'tracking_root_dir': self._get_default_tracking_root_dir(),
             })
-        config.setdefaults('interface', {'center_on_resize': True})
+        config.setdefaults('interface', {'center_on_resize': False})
         config.setdefaults('automation',
             {
                 'sparse_cropobject_threshold': 0.1,
@@ -733,10 +743,31 @@ class MUSCIMarkerApp(App):
                 'do_image_preprocessing': False,
                 'auto_invert': False,
                 'stretch_intensity': False,
+                'warp_registration': False,
                 # 'median_kernel_size': 10,
                 # 'do_background_thresholding': False,
                 # 'binarization_lightness_tolerance': 127,
             })
+        config.setdefaults('parsing',
+                           {
+                               'smart_parsing': False,
+                               'smart_parsing_model': os.path.join(os.path.dirname(__file__),
+                                                                   'data', 'parsing',
+                                                                   'MM++_OPs_delta-bbox-all200.classifier.pkl'),
+                               'smart_parsing_vectorizer': os.path.join(os.path.dirname(__file__),
+                                                                   'data', 'parsing',
+                                                                   'MM++_OPs_delta-bbox-all200.vectorizer.pkl'),
+                           })
+        config.setdefaults('symbol_detection_client',
+                           {
+                               'port': 33554,
+                               'hostname': '127.0.0.1',
+                           })
+        config.setdefaults('midi',
+                           {
+                               'soundfont': '~/.fluidsynth/FluidR3_GM.sf2',
+                               'default_tempo': 120,
+                           })
 
         Config.set('kivy', 'exit_on_escape', '0')
 
@@ -750,6 +781,18 @@ class MUSCIMarkerApp(App):
                                'muscimarker_image_preprocessing.json')) as hdl:
             jsondata = hdl.read()
         settings.add_json_panel('Image Processing',
+                                self.config, data=jsondata)
+
+        with open(os.path.join(os.path.dirname(__file__),
+                               'muscimarker_detection_client.json')) as hdl:
+            jsondata = hdl.read()
+        settings.add_json_panel('Symbol Detection Client',
+                                self.config, data=jsondata)
+
+        with open(os.path.join(os.path.dirname(__file__),
+                               'muscimarker_midi.json')) as hdl:
+            jsondata = hdl.read()
+        settings.add_json_panel('MIDI settings',
                                 self.config, data=jsondata)
 
 
@@ -914,15 +957,15 @@ class MUSCIMarkerApp(App):
 
     def _save_app_state(self):
         recovery_path = self._get_recovery_path()
-        logging.info('App.recover: Saving recovery file {0}'.format(recovery_path))
+        logging.debug('App.recover: Saving recovery file {0}'.format(recovery_path))
 
         state = self._get_app_state()
 
         # Cautious behavior: let's try not to destroy the previous
         # backup until we are sure the backup has been made correctly.
         rec_temp_name = recovery_path + '.temp'
-        logging.info('App.save_app_state: Saving to recovery file {0}'
-                     ''.format(recovery_path))
+        logging.debug('App.save_app_state: Saving to recovery file {0}'
+                      ''.format(recovery_path))
         try:
             with open(rec_temp_name, 'wb') as hdl:
                 cPickle.dump(state, hdl, protocol=cPickle.HIGHEST_PROTOCOL)
@@ -972,12 +1015,13 @@ class MUSCIMarkerApp(App):
     def do_recovery_user(self):
         """Link user-requested recovery to this method. Separate from
         ``do_recovery()`` because of tracking."""
+        logging.info('App: user requested recovery dump.')
         self.do_recovery()
 
     def do_save_app_state_clock_event(self, *args):
         logging.info('App: making scheduled recovery dump.')
         self.do_save_app_state()
-        logging.info('App: scheduled recovery dump done.')
+        logging.debug('App: scheduled recovery dump done.')
 
     ##########################################################################
     # Keyboard control
@@ -987,12 +1031,12 @@ class MUSCIMarkerApp(App):
         self._keyboard = None
 
     def on_key_down(self, window, key, scancode, codepoint, modifier):
-        logging.info('App: Keyboard: Down {0}'.format((key, scancode, codepoint, modifier)))
+        logging.debug('App: Keyboard: Down {0}'.format((key, scancode, codepoint, modifier)))
 
         dispatch_key = keypress_to_dispatch_key(key, scancode, codepoint, modifier)
 
-        logging.info('App: processing on_key_down(), dispatch_key: {0}'
-                     ''.format(dispatch_key))
+        logging.debug('App: processing on_key_down(), dispatch_key: {0}'
+                      ''.format(dispatch_key))
         is_handled = self.handle_dispatch_key(dispatch_key)
         return is_handled
 
@@ -1033,6 +1077,8 @@ class MUSCIMarkerApp(App):
 
         elif dispatch_key == '118':  # "v" -- validate
             self.find_cropobjects_with_errors()
+        elif dispatch_key == '118+alt':  # "alt+v" -- validate edges
+            self.find_wrong_edges()
 
         # alt+shift for automation commands
         elif dispatch_key == '98+alt,shift':   # "alt+shift+b" -- barlines automation
@@ -1045,8 +1091,24 @@ class MUSCIMarkerApp(App):
             self.find_objects_with_disconnected_masks(leaves_only=False)
         elif dispatch_key == '115+alt,shift':  # "alt+shift+s" -- disconnected cropobjects that have no outlinks,
             self.find_objects_with_disconnected_masks(leaves_only=True)
-        elif dispatch_key == '111+alt,shift':  # "alt+shift+d" -- disconnected cropobjects
+        elif dispatch_key == '111+alt,shift':  # "alt+shift+o" -- perfectly overlapping cropobjects,
             self.find_objects_with_identical_bounding_box()
+        elif dispatch_key == '113+alt,shift':  # "alt+shift+q" -- suspiciously small
+            self.find_suspiciously_small_objects()
+
+        # f to infer MIDI
+        elif dispatch_key == '102':
+            logging.info('App: Inferring MIDI without playing.')
+            self.infer_midi(play=False)
+        # shift+f to infer MIDI and play it
+        elif dispatch_key == '102+shift':
+            logging.info('App: Inferring MIDI and playing.')
+            self.infer_midi(play=True)
+        # ctrl+alt+shift+f: clear all the inferred pitch/duration/onset info
+        elif dispatch_key == '102+alt,ctrl,shift':
+            logging.info('App: Removing inferred MIDI information.')
+            self.annot_model.clear_midi_information()
+
 
         # logging.info('App: Checking keyboard dispatch, {0}'
         #              ''.format(self.keyboard_dispatch.keys()))
@@ -1061,7 +1123,7 @@ class MUSCIMarkerApp(App):
         return True   # Stop bubbling
 
     def on_key_up(self, window, key, scancode, *args, **kwargs):
-        logging.info('App: Keyboard: Up {0}'.format((key, scancode)))
+        logging.debug('App: Keyboard: Up {0}'.format((key, scancode)))
 
     ##########################################################################
     # Importing methods: interfacing the raw data to the model
@@ -1208,6 +1270,8 @@ class MUSCIMarkerApp(App):
                                                'auto_invert'),
             stretch_intensity=self.config.getboolean('image_preprocessing',
                                                      'stretch_intensity'),
+            warp_registration=self.config.getboolean('image_preprocessing',
+                                                     'warp_registration'),
         )
         logging.info('App.import_image(): Image preprocessing with auto_invert={0},'
                      ' stretch_intensity={1}'.format(image_processor.auto_invert,
@@ -1261,17 +1325,23 @@ class MUSCIMarkerApp(App):
         # Set docname for UIDs
         self.cropobject_current_docname = os.path.splitext(os.path.basename(pos))[0]
 
-    def update_image(self, image):
+    def update_image(self, image,
+                     # allow_size_change_without_cropobjects=False,
+                     do_preprocessing=False,
+                     update_temp=False):
         """Nondestructively swaps out underlying image in the model and displays
         it."""
         if image.shape != self.annot_model.image.shape:
+            #if allow_size_change_without_cropobjects and (len(self.annot_model.cropobjects) == 0):
+            #    pass
+            #else:
             raise ValueError('Trying to swap original image with shape {0} for a new'
                              ' image with a different shape {1}!'
                              ''.format(self.annot_model.image.shape, image.shape))
 
         self.annot_model.load_image(image,
-                                    do_preprocessing=False,
-                                    update_temp=False)
+                                    do_preprocessing=do_preprocessing,
+                                    update_temp=update_temp)
         # This function is used to update the image on the fly, so the preprocessing
         # applied when the image is first imported does not have to be done.
 
@@ -1295,13 +1365,33 @@ class MUSCIMarkerApp(App):
         only re-assigning to it. This does happen in model.load_image(),
         so calling model.load_image() will trigger the update.
         """
-        formatted_image = numpy.fliplr(numpy.swapaxes(
-                numpy.rot90(image),
-            0, 1))
+        # Reformatting image to conform to how Kivy displays textures
+        # formatted_image = numpy.fliplr(
+        #     numpy.swapaxes(
+        #         numpy.rot90(image),
+        #     0, 1)
+        # )   ...not necessary??
+        formatted_image = image #numpy.fliplr(image)
         image_data = formatted_image.tostring()
-        texture = self._get_editor_widget().texture
-        texture.blit_buffer(formatted_image.flatten(),
-                            colorfmt='luminance', bufferfmt='ubyte')
+        editor_widget = self._get_editor_widget()
+        texture = editor_widget.texture
+
+        logging.info('Original image shape: {0}'.format(image.shape))
+        logging.info('Formatted image shape: {0}'.format(formatted_image.shape))
+        logging.info('Texture size: {0}'.format(texture.size))
+
+        if (texture.height, texture.width) != formatted_image.shape:
+            texture.blit_buffer(formatted_image.flatten(),
+                                #size=(formatted_image.shape[1],
+                                #      formatted_image.shape[0]),
+                                colorfmt='luminance',
+                                bufferfmt='ubyte')
+            editor_widget.canvas.ask_update()
+        else:
+            texture.blit_buffer(formatted_image.flatten(),
+                                colorfmt='luminance',
+                                bufferfmt='ubyte')
+
 
     @tr.Tracker(track_names=['pos'],
                 transformations={'pos': [lambda x: ('grammar_file', x)]},
@@ -1422,6 +1512,26 @@ class MUSCIMarkerApp(App):
         """Second part of the bound trigger."""
         self.do_center_current_image()
         Window.unbind(on_draw=self._do_center_current_image_and_unenforce)
+
+    ##########################################################################
+    # Basic image manipulation
+    def rotate_image(self, clockwise=False):
+        logging.info('App: Rotating image, clockwise={0}')
+        n_rot = 1
+        deg_rot = 90
+        if clockwise:
+            n_rot = 3
+            deg_rot = 270
+        new_image = numpy.rot90(self.annot_model.image, k=n_rot)
+        self.annot_model.load_image(new_image,
+                                    do_preprocessing=False,
+                                    update_temp=True)
+        editor_container = self._get_editor_scatter_container_widget()
+        # self.update_image(new_image,
+        #                   # allow_size_change_without_cropobjects=True,
+        #                   do_preprocessing=False,
+        #                   update_temp=True)
+        editor_container.rotation += deg_rot
 
     ##########################################################################
     # Tracking image movement
@@ -1717,6 +1827,15 @@ class MUSCIMarkerApp(App):
             self.annot_model.clear_cropobjects()
             confirmation.unbind(on_ok=self.do_clear_cropobjects)
 
+    def do_clear_precedence(self, ask=False):
+        confirmation = ConfirmationDialog(text='Do you really want to clear'
+                                               ' all current Precedence relationships?')
+        confirmation.bind(on_ok=self.do_clear_precedence)
+        if ask is True:
+            confirmation.open()
+        else:
+            self.annot_model.clear_relationships(label='Precedence')
+            confirmation.unbind(on_ok=self.do_clear_precedence)
 
     @tr.Tracker(track_names=[],
                 tracker_name='commands')
@@ -1746,6 +1865,24 @@ class MUSCIMarkerApp(App):
                         c.dispatch('on_release')
                 else:
                     c.dispatch('on_release')
+
+    def find_wrong_edges(self):
+        cropobjects = [c for c in self.cropobject_list_renderer.view.selected_views]
+        if len(cropobjects) == 0:
+            cropobjects = self.annot_model.cropobjects.values()
+
+        edges = self.annot_model.find_wrong_edges()
+        # TODO: Integrate on alt+V
+
+        for objid_from, objid_to in edges:
+            ev = self.graph_renderer.view.get_edge_view(objid_from, objid_to)
+            if ev is not None:
+                if not ev.is_selected:
+                    ev.dispatch('on_release')
+            else:
+                logging.warn('Found wrong edge {0}, but it is not currently rendered,'
+                             ' so it cannot be selected. You should run edge validation'
+                             ' with all edges visible.')
 
     ##########################################################################
     # MLClass selection tracking
@@ -2170,3 +2307,24 @@ class MUSCIMarkerApp(App):
 
         c_l_view.unselect_all()
         c_l_view.ensure_selected_objids(_objids_duplicate)
+
+    def find_suspiciously_small_objects(self):
+        c_l_view = self.cropobject_list_renderer.view
+        cropobjects = [cv._model_counterpart for cv in c_l_view.selected_views]
+        if len(cropobjects) == 0:
+            cropobjects = self.annot_model.cropobjects.values()
+
+        small_object_objids = self.annot_model.find_very_small_objects(bbox_threshold=40,
+                                                                       mask_threshold=35)
+
+        logging.info('Suspiciously small objects found: {0}'.format(len(small_object_objids)))
+        c_l_view.unselect_all()
+        c_l_view.ensure_selected_objids(small_object_objids)
+
+    ##########################################################################
+    # Playback
+    def infer_midi(self, play=True):
+        """Plays the current selection as MIDI."""
+        selection = [v._model_counterpart
+                     for v in self.cropobject_list_renderer.view.selected_views]
+        self.annot_model.infer_midi(selection, play=play)

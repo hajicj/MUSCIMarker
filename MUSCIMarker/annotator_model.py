@@ -5,11 +5,13 @@ import codecs
 import itertools
 import logging
 import os
+import pickle
+import traceback
 import uuid
 
 # import cv2
 # import matplotlib.pyplot as plt
-
+import numpy
 from scipy.misc import imsave
 
 from kivy.app import App
@@ -17,7 +19,16 @@ from kivy.properties import ObjectProperty, DictProperty, NumericProperty, ListP
 from kivy.uix.widget import Widget
 
 from muscima.io import export_cropobject_list
-from syntax.dependency_parsers import SimpleDeterministicDependencyParser
+import muscima.stafflines
+from muscima.inference import PitchInferenceEngine, OnsetsInferenceEngine, MIDIBuilder, play_midi
+from muscima.inference_engine_constants import InferenceEngineConstants as _CONST
+from muscima.graph import \
+    find_beams_incoherent_with_stems, \
+    find_misdirected_ledger_line_edges, \
+    find_related_staffs
+from object_detection import ObjectDetectionHandler
+from syntax.dependency_parsers import SimpleDeterministicDependencyParser, PairwiseClassificationParser, \
+    PairwiseClfFeatureExtractor
 from utils import compute_connected_components
 from tracker import Tracker
 
@@ -88,6 +99,11 @@ class ObjectGraph(Widget):
         logging.info('Graph: adding edge {0} with label {1}'.format(edge, label))
         a1 = edge[0]
         a2 = edge[1]
+
+        if a1 == a2:
+            logging.warn('Requested adding loop {0}-{1}; cannot add loops!'.format(a1, a2))
+            return
+
         if a1 not in self.vertices:
             raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
                              ''.format(edge, a1))
@@ -109,6 +125,10 @@ class ObjectGraph(Widget):
 
         # First add to edges index
         for a1, a2 in edges:
+            if a1 == a2:
+                logging.warn('Requested adding loop {0}-{1}; cannot add loops!'.format(a1, a2))
+                continue
+
             if a1 not in self.vertices:
                 raise ValueError('Invalid attachment {0}: member {1} not in cropobjects.'
                                  ''.format((a1, a2), a1))
@@ -152,8 +172,23 @@ class ObjectGraph(Widget):
 
     def remove_edge(self, a1, a2):
         """Object a1 will no longer point at object a2."""
-        self._inlinks[a2].remove(a1)
-        self._outlinks[a1].remove(a2)
+        if a2 not in self._inlinks:
+            logging.warn('Edge {0} --> {1}: {1} not in self._inlinks!'
+                         ''.format(a1, a2))
+        elif a1 not in self._inlinks[a2]:
+            logging.warn('Edge {0} --> {1}: not found in inlinks of {1}'
+                         ''.format(a1, a2))
+        else:
+            self._inlinks[a2].remove(a1)
+
+        if a1 not in self._outlinks:
+            logging.warn('Edge {0} --> {1}: {0} not in self._outlinks!!'
+                         ''.format(a1, a2))
+        elif a2 not in self._outlinks[a1]:
+            logging.warn('Edge {0} --> {1}: not found in outlinks of {0}'
+                         ''.format(a1, a2))
+        else:
+            self._outlinks[a1].remove(a2)
         del self.edges[a1, a2]
 
     def remove_obj_from_graph(self, objid):
@@ -316,11 +351,17 @@ class CropObjectAnnotatorModel(Widget):
     graph = ObjectProperty()
 
     parser = ObjectProperty(None, allownone=True)
+    backup_parser = ObjectProperty(None, allownone=True)
     grammar = ObjectProperty(None, allownone=True)
 
     _current_tmp_image_filename = StringProperty(None, allownone=True)
 
     _image_processor = ImageProcessing()
+
+    # Object detection
+    _object_detection_client = ObjectProperty(None, allownone=True)
+
+
 
     def __init__(self, image=None, cropobjects=None, mlclasses=None, **kwargs):
         super(CropObjectAnnotatorModel, self).__init__(**kwargs)
@@ -336,6 +377,45 @@ class CropObjectAnnotatorModel(Widget):
 
         self.graph = ObjectGraph()
         self.sync_cropobjects_to_graph()
+
+        # self._init_object_detection_handler()
+        # ...only run this once the app is running.
+
+    def init_object_detection_handler(self):
+        config = App.get_running_app().config
+
+        port = int(config.get('symbol_detection_client', 'port'))
+        hostname = config.get('symbol_detection_client', 'hostname')
+
+        self._object_detection_client = ObjectDetectionHandler(
+            tmp_dir=App.get_running_app().tmp_dir,
+            port=port,
+            hostname=hostname)
+
+        self._object_detection_client.bind(result=self.process_detection_result)
+
+    def init_parser(self, grammar):
+        config = App.get_running_app().config
+        smart_parsing = (config.get('parsing', 'smart_parsing') == '1')
+        logging.info('Initializing parser: Smart parsing = {0}'.format(smart_parsing))
+        if smart_parsing:
+
+            vectorizer_file = config.get('parsing', 'smart_parsing_vectorizer')
+            with open(vectorizer_file) as hdl:
+                vectorizer = pickle.load(hdl)
+            feature_extractor = PairwiseClfFeatureExtractor(vectorizer=vectorizer)
+
+            model_file = config.get('parsing', 'smart_parsing_model')
+            with open(model_file) as hdl:
+                classifier = pickle.load(hdl)
+
+            self.parser = PairwiseClassificationParser(grammar=grammar,
+                                                       clf=classifier,
+                                                       cropobject_feature_extractor=feature_extractor)
+
+        else:
+            self.parser = SimpleDeterministicDependencyParser(grammar=grammar)
+        self.backup_parser = SimpleDeterministicDependencyParser(grammar=grammar)
 
     def load_image(self, image, compute_cc=False, do_preprocessing=True,
                    update_temp=True):
@@ -434,7 +514,9 @@ class CropObjectAnnotatorModel(Widget):
         # Batch processing is more efficient, since rendering the CropObjectList
         # is tied to any change of self.cropobjects
         self.cropobjects = {c.objid: c for c in cropobjects}
+        # self.ensure_cropobjects_consistent()
         self.sync_cropobjects_to_graph()
+        # self.ensure_consistent()
 
     @Tracker(track_names=[],
              fn_name='model.export_cropobjects_string',
@@ -459,6 +541,23 @@ class CropObjectAnnotatorModel(Widget):
         logging.info('Model: Clearing all {0} cropobjects.'.format(len(self.cropobjects)))
         self.cropobjects = {}
         self.sync_cropobjects_to_graph()
+
+    def clear_relationships(self, label=None, cropobjects=None):
+        """Removes all relationships with the given label. If no label is given
+        (default), removes all relationships."""
+        if cropobjects is None:
+            objids = [objid for objid in self.cropobjects]
+        else:
+            objids = [c.objid for c in cropobjects]
+
+        if label is None:
+            edges = self.graph.edges.keys()
+        else:
+            edges = [(from_objid, to_objid) for from_objid, to_objid in self.graph.edges
+                     if (self.graph.edges[(from_objid, to_objid)] == label) and
+                        ((from_objid in objids) or (to_objid in objids))]
+        self.ensure_remove_edges(edges)
+
 
     def import_classes_definition(self, mlclasses):
         """Overwrites previous mlclasses definition -- there can only be
@@ -502,8 +601,8 @@ class CropObjectAnnotatorModel(Widget):
         :param cropobjects: A list of CropObjects which should be synced.
             If left to ``None``, will sync everything.
         """
-        logging.info('Model: Syncing {0} attachments to CropObjects.'
-                     ''.format(len(self.graph.edges)))
+        logging.debug('Model: Syncing {0} attachments to CropObjects.'
+                       ''.format(len(self.graph.edges)))
 
         if cropobjects is None:
             cropobjects = self.cropobjects.values()
@@ -564,10 +663,12 @@ class CropObjectAnnotatorModel(Widget):
             # It is sufficient to collect outlinks -- the corresponding
             # inlink would just duplicate the edge.
             for o in c.outlinks:
-                attachment_edges.append((c.objid, o))
+                if c.objid != o:
+                    attachment_edges.append((c.objid, o))
             if 'precedence_outlinks' in c.data:
                 for o in c.data['precedence_outlinks']:
-                    precedence_edges.append((c.objid, o))
+                    if c.objid != o:
+                        precedence_edges.append((c.objid, o))
 
         # Add all edges at once.
         self.graph.add_edges(attachment_edges, label='Attachment')
@@ -576,6 +677,40 @@ class CropObjectAnnotatorModel(Widget):
     def ensure_consistent(self):
         """Make sure that the model is in a consistent state.
         (Fires all lazy synchronization routines between model components.)"""
+        # self.ensure_cropobjects_consistent()
+        self.ensure_no_loops()
+        self.sync_graph_to_cropobjects()
+
+    def ensure_cropobjects_consistent(self, cropobjects=None):
+        """Makes sure that the CropObjects are all well-formed.
+        Checks for:
+
+        * Match between objid and uid
+
+        Dispatches ``on_cropobjects`` in order to reflect the in-place
+        updates.
+        """
+        if cropobjects is None:
+            cropobjects = self.cropobjects.values()
+        for c in cropobjects:
+            dataset, doc, num = c._parse_uid(c.uid)
+            if c.objid != num:
+                logging.warn('CropObject consistency check: object with objid {0}'
+                             ' has UID {1}, setting UID to match objid.'
+                             ''.format(c.objid, c.uid))
+                c.set_objid(c.objid)
+        return cropobjects
+
+    def ensure_no_loops(self):
+        """Makes sure that there are no loops in the graph.
+        This is especially important for precedence edges."""
+        to_remove = []
+        for a1, a2 in self.graph.edges:
+            if a1 == a2:
+                if (a2, a1) not in to_remove:
+                    to_remove.append((a1, a2))
+        for a1, a2 in to_remove:
+            self.graph.ensure_remove_edge(a1, a2)
         self.sync_graph_to_cropobjects()
 
     def ensure_remove_edge(self, from_objid, to_objid):
@@ -661,6 +796,13 @@ class CropObjectAnnotatorModel(Widget):
 
         return list(set([c.objid for c in very_small_cropobjects]))
 
+    def find_vertices_with_loops(self):
+        loop_objids = []
+        for objid in self.cropobjects:
+            if (objid, objid) in self.graph.edges:
+                loop_objids.append(objid)
+        return loop_objids
+
     def find_wrong_vertices(self, provide_reasons=False):
         v, i, o, r_v, r_i, r_o = self.find_grammar_errors()
 
@@ -671,18 +813,56 @@ class CropObjectAnnotatorModel(Widget):
                 v.append(objid)
                 r_v[objid] = 'Object {0} is suspiciously small.'.format(objid)
 
+        v_loops = self.find_vertices_with_loops()
+        for objid in v_loops:
+            if objid not in v:
+                v.append(objid)
+                r_v[objid] = 'Object {0} has loops.'.format(objid)
+
         if provide_reasons:
             return v, r_v
         return v
+
+    def find_wrong_edges(self, provide_reasons=False):
+        edges = [e for e in self.graph.edges.keys()
+                 if self.graph.edges[e] == 'Attachment']
+
+        v, i, o, r_v, r_i, r_o = self.find_grammar_errors()
+        incoherent_beam_pairs = find_beams_incoherent_with_stems(self.cropobjects.values())
+        # Switching off misdirected ledger lines: there is something wrong with them
+        misdirected_ledger_lines = find_misdirected_ledger_line_edges(self.cropobjects.values())
+
+        wrong_edges = [(n.objid, b.objid)
+                       for n, b in incoherent_beam_pairs + misdirected_ledger_lines]
+
+        disallowed_symbol_class_pairs = [(f, t) for f, t in edges
+                                         if not self.grammar.validate_edge(self.cropobjects[f].clsname,
+                                                                           self.cropobjects[t].clsname)]
+        wrong_edges += disallowed_symbol_class_pairs
+        return wrong_edges
+
+    def find_related_staffs(self, cropobjects, with_stafflines=True):
+        """Find all staffs that are related to any of the cropobjects
+        in question. Ignores whether these staffs are already within
+        the list of ``cropobjects`` passed to the function.
+
+        Wraps the ``muscima.graph.find_related_staffs()`` function.
+
+        :param with_stafflines: If set, will also return all stafflines
+            and staffspaces related to the discovered staffs.
+        """
+        related_staffs = find_related_staffs(cropobjects,
+                                             self.cropobjects.values(),
+                                             with_stafflines=with_stafflines)
+        return related_staffs
 
     ##########################################################################
     # Keeping the model in a consistent state
     def on_grammar(self, instance, g):
         if g is None:
             return
-
         if self.parser is None:
-            self.parser = SimpleDeterministicDependencyParser(grammar=g)
+            self.init_parser(grammar=g)
         else:
             self.parser.set_grammar(g)
 
@@ -741,6 +921,361 @@ class CropObjectAnnotatorModel(Widget):
         #     logging.info('Plotting annotation, image shape: {0}'.format(annot_img.shape))
         #     plt.imshow(annot_img)
         #     plt.show()
-    very_small_cropobjects = []
 
 
+    ##########################################################################
+    # Image manipulation
+    def rotate_image_left(self):
+        self.image = numpy.rot90(self.image)
+
+    def rotate_image_right(self):
+        self.image = numpy.rot90(self.image)
+
+    ##########################################################################
+    # Object detection interface
+    def call_object_detection(self, bounding_box=None, margin=32,
+                              clsnames=None):
+        """Call object detection through ``self._object_detection_client``.
+
+        Some "improvements" (quick workarounds):
+
+        * A slightly larger bounding box is sent for detection. After receiving
+          objects, those that are located at least partly in the margins are
+          discarded. This helps with boundary artifacts. The size of the margin
+          should roughly correspond to the size of the receptive field of an output
+          pixel.
+
+        :param clsnames: If set to None, will use current class. (In MUSCIMarker,
+            this is configurable through ObjectDetectionTool settings: config
+            class
+        """
+        if bounding_box is None:
+            bounding_box = (0, 0, self.image.shape[0], self.image.shape[1])
+
+        t, l, b, r = bounding_box
+        if ((b - t) == 0) or ((r - l) == 0):
+            logging.info('Object detection: Attempted detection with empty'
+                         ' bounding box: {0}'.format(bounding_box))
+            return
+
+        # Apply margin
+        _t = max(0, t - margin)
+        _l = max(0, l - margin)
+        _b = min(self.image.shape[0], b + margin)
+        _r = min(self.image.shape[1], r + margin)
+
+        real_margin = t - _t, l - _l, _b - b, _r - r
+
+        self._object_detection_client.input_bounding_box = bounding_box
+        self._object_detection_client.input_bounding_box_margin = real_margin
+
+        image_crop = self.image[_t:_b, _l:_r]
+
+        if clsnames is None:
+            clsnames = [App.get_running_app().currently_selected_mlclass_name]
+        if len(clsnames) == 0:
+            logging.warning('Object detection: got called without specifying'
+                            ' clsname and without specifying that the current'
+                            ' clsname should be used.')
+            return
+
+        request = {'image': image_crop,
+                   'clsname': clsnames,
+                   }
+        self._object_detection_client.input = request
+
+
+    def process_detection_result(self, instance, pos):
+        """Incorporates the detection result into the model.
+
+        The detection result arrives as a list of CropObjects.
+        The model has to make sure their ``objid`` and potentially
+        ``doc`` attributes are valid. Docname is handled on export,
+        so it is not a problem here, but the objids of detection
+        results start at 0, so they must be corrected.
+
+        Then, the model needs to shift the CropObjects bottom and right
+        according to the bounding box of the detection input region.
+
+        After ensuring the CropObjects can be added to the model
+        without introducing conflicts,
+        """
+        result_cropobjects = pos
+        logging.info('Got a total of {0} detected CropObjects.'
+                     ''.format(len(result_cropobjects)))
+
+        processed_cropobjects = self._detection_filter_tiny(result_cropobjects)
+        processed_cropobjects = self._detection_filter_contained(result_cropobjects)
+        processed_cropobjects = self._detection_apply_objids(processed_cropobjects)
+        processed_cropobjects = self._detection_apply_shift(processed_cropobjects)
+        processed_cropobjects = self._detection_apply_margin(processed_cropobjects,
+                                                             margin=self._object_detection_client.input_bounding_box_margin,
+                                                             bounding_box=self._object_detection_client.input_bounding_box)
+
+        # Do false positive filtering here (per class)
+
+        for c in processed_cropobjects:
+            self.add_cropobject(c)
+
+    def _detection_apply_margin(self, cropobjects, margin, bounding_box):
+        """Checks if the CropObject aren't within the given margin. Note that this
+        is applied *after* translation back to coordinates w.r.t. image, not w.r.t.
+        detection crop; the bounding box is therefore also w.r.t. image.
+
+        Because the bounding box is recorded *without* the margin, we do not explicitly need
+        it here. We just need to check that all the detected objects fit inside this
+        bounding box.
+        """
+        if margin is None:
+            return cropobjects
+
+        if bounding_box is None:
+            logging.warn('Trying to filter boundary artifacts, but no input bounding box available...')
+            return cropobjects
+
+        def _within_margin(c, m, bbox):
+            t, l, b, r = bbox
+            # mt, ml, mb, mr = m
+            if (c.top < t) \
+                or (c.left < l) \
+                or (c.bottom > b) \
+                or (c.right > r):
+                return False
+            else:
+                return True
+
+        output_cropobjects = [c for c in cropobjects if _within_margin(c, margin, bounding_box)]
+        cropobjects_in_margin = [c for c in cropobjects if c not in output_cropobjects]
+        logging.info('Detection: Bounding box: {0}'.format(bounding_box))
+        logging.info('Detection: Margin: {0}'.format(margin))
+        logging.info('Detection: Filtering out {0} cropobjects found only in the margin.'
+                     ''.format(len(cropobjects_in_margin)))
+        for c in cropobjects_in_margin:
+            logging.info('Detection: \tC. in margin: bbox {0}'.format(c.bounding_box))
+
+        return output_cropobjects
+
+    def _detection_apply_shift(self, cropobjects):
+        it, il, ib, ir = self._object_detection_client.input_bounding_box
+        mt, ml, mb, mr = self._object_detection_client.input_bounding_box_margin
+        for c in cropobjects:
+            c.translate(down=it - mt, right=il - ml)
+        return cropobjects
+
+    def _detection_apply_objids(self, cropobjects):
+        _delta_objid = self.get_next_cropobject_id()
+        _next_objid = _delta_objid
+
+        output_cropobjects = []
+        for c in cropobjects:
+            c.set_objid(_next_objid)
+
+            c.inlinks = [i + _delta_objid for i in c.inlinks]
+            c.outlinks = [o + _delta_objid for o in c.outlinks]
+
+            output_cropobjects.append(c)
+            _next_objid += 1
+
+        return output_cropobjects
+
+    def _detection_filter_tiny(self, cropobjects, min_mask_area=40, min_size=5):
+        """Exceptional treatment:
+
+        * Stafflines: only checks width
+        * Duration dots: special mask sum (only 10)
+
+        :param cropobjects:
+        :param min_mask_area:
+        :param min_size:
+        :return:
+        """
+        # Note that stafflines get special treatment: only checked against width, not height.
+        tiny = [c for c in cropobjects if c.mask.sum() < min_mask_area]
+        logging.info('Detection: Filtering out {0} tiny cropobjects'.format(len(tiny)))
+        narrow = [c for c in cropobjects if c.width < min_size]
+        logging.info('Detection: Filtering out {0} narrow cropobjects'.format(len(narrow)))
+
+        output_stafflines = [c for c in cropobjects
+                             if (c.clsname == _CONST.STAFFLINE_CLSNAME) and (c.width >= min_size)]
+        duration_dots = [c for c in cropobjects
+                         if (c.clsname == 'duration-dot') \
+                            and (c.mask.sum() >= 10)]
+        output = [c for c in cropobjects
+                  if (c.clsname != _CONST.STAFFLINE_CLSNAME) \
+                    and (c.clsname != 'duration-dot')
+                    and (c.mask.sum() >= min_mask_area) \
+                    and (min(c.width, c.height) >= min_size)]
+
+        return output + output_stafflines + duration_dots
+
+    def _detection_filter_contained(self, cropobjects):
+        """Filters out cropobjects that are fully within another object's bounding
+        box, have a Dice of at least 0.95 with the containing object, and are
+        smaller than 0.9 of the container object area.
+
+        Does *not* consider key signatures, time signatures, measure separators.
+        """
+        _cdict = {c.objid: c for c in cropobjects}
+
+        return cropobjects
+
+    ##########################################################################
+    # Staffline building
+    def process_stafflines(self,
+                           build_staffs=False,
+                           build_staffspaces=False,
+                           add_staff_relationships=False):
+        """Merges staffline fragments into stafflines. Can group them into staffs,
+        add staffspaces, and add the various obligatory relationships of other
+        objects to the staff objects. Required before attempting to export MIDI."""
+        if len([c for c in self.cropobjects.values() if c.clsname == 'staff']) > 0:
+            logging.warn('Some stafflines have already been processed. Reprocessing'
+                         ' is not certain to work.')
+            # return
+
+        try:
+            new_cropobjects = muscima.stafflines.merge_staffline_segments(self.cropobjects.values())
+        except ValueError as e:
+            logging.warn('Model: Staffline merge failed:\n\t\t'
+                         '{0}'.format(e.message))
+            return
+
+        try:
+            if build_staffs:
+                staffs = muscima.stafflines.build_staff_cropobjects(new_cropobjects)
+                new_cropobjects = new_cropobjects + staffs
+        except Exception as e:
+            logging.warn('Building staffline cropobjects from merged segments failed:'
+                         ' {0}'.format(e.message))
+            return
+
+        try:
+            if build_staffspaces:
+                staffspaces = muscima.stafflines.build_staffspace_cropobjects(new_cropobjects)
+                new_cropobjects = new_cropobjects + staffspaces
+        except Exception as e:
+            logging.warn('Building staffspace cropobjects from stafflines failed:'
+                         ' {0}'.format(e.message))
+            return
+
+        try:
+            if add_staff_relationships:
+                new_cropobjects = muscima.stafflines.add_staff_relationships(new_cropobjects)
+        except Exception as e:
+            logging.warn('Adding staff relationships failed:'
+                         ' {0}'.format(e.message))
+            return
+
+        self.import_cropobjects(new_cropobjects)
+
+    ##########################################################################
+    # MIDI export
+    def build_midi(self, selected_cropobjects=None,
+                   retain_pitches=True,
+                   retain_durations=True,
+                   retain_onsets=True):
+        """Attempts to export a MIDI file from the current graph. Assumes that
+        all the staff objects and their relations have been correctly established,
+        and that the correct precedence graph is available.
+
+        :param retain_pitches: If set, will record the pitch information
+            in pitched objects.
+
+        :param retain_durations: If set, will record the duration information
+            in objects to which it applies.
+
+        :returns: A single-track ``midiutil.MidiFile.MIDIFile`` object. It can be
+            written to a stream using its ``mf.writeFile()`` method."""
+        pitch_inference_engine = PitchInferenceEngine()
+        time_inference_engine = OnsetsInferenceEngine(cropobjects=self.cropobjects.values())
+
+        try:
+            logging.info('Running pitch inference.')
+            pitches, pitch_names = pitch_inference_engine.infer_pitches(self.cropobjects.values(),
+                                                                        with_names=True)
+        except Exception as e:
+            logging.warning('Model: Pitch inference failed!')
+            logging.exception(traceback.format_exc(e))
+            return
+
+        if retain_pitches:
+            for objid in pitches:
+                c = self.cropobjects[objid]
+                pitch_step, pitch_octave = pitch_names[objid]
+                c.data['midi_pitch_code'] = pitches[objid]
+                c.data['normalized_pitch_step'] = pitch_step
+                c.data['pitch_octave'] = pitch_octave
+
+        try:
+            logging.info('Running durations inference.')
+            durations = time_inference_engine.durations(self.cropobjects.values())
+        except Exception as e:
+            logging.warning('Model: Duration inference failed!')
+            logging.exception(traceback.format_exc(e))
+            return
+
+        if retain_durations:
+            for objid in durations:
+                c = self.cropobjects[objid]
+                c.data['duration_beats'] = durations[objid]
+
+        try:
+            logging.info('Running onsets inference.')
+            onsets = time_inference_engine.onsets(self.cropobjects.values())
+        except Exception as e:
+            logging.warning('Model: Onset inference failed!')
+            logging.exception(traceback.format_exc(e))
+            return
+
+        if retain_onsets:
+            for objid in onsets:
+                c = self.cropobjects[objid]
+                c.data['onset_beats'] = onsets[objid]
+
+        # Process ties
+        durations, onsets = time_inference_engine.process_ties(self.cropobjects.values(),
+                                                               durations, onsets)
+
+        tempo = int(App.get_running_app().config.get('midi', 'default_tempo'))
+
+        if selected_cropobjects is None:
+            selected_cropobjects = self.cropobjects.values()
+        selection_objids = [c.objid for c in selected_cropobjects]
+
+        midi_builder = MIDIBuilder()
+        mf = midi_builder.build_midi(
+            pitches=pitches, durations=durations, onsets=onsets,
+            selection=selection_objids, tempo=tempo)
+
+        return mf
+
+    def infer_midi(self, cropobjects=None, play=True):
+        """Attempts to play the midi file."""
+        if not cropobjects:
+            cropobjects = self.cropobjects.values()
+
+        soundfont = App.get_running_app().config.get('midi', 'soundfont')
+
+        midi = self.build_midi(selected_cropobjects=cropobjects)
+        if play and (midi is not None):
+            play_midi(midi=midi,
+                      tmp_dir=App.get_running_app().tmp_dir,
+                      soundfont=soundfont)
+        else:
+            logging.warning('Exporting MIDI failed, nothing to play!')
+
+    def clear_midi_information(self):
+        """Removes all the information from all CropObjects."""
+        for c in self.cropobjects.values():
+            if c.data is None:
+                continue
+            if 'midi_pitch_code' in c.data:
+                del c.data['midi_pitch_code']
+            if 'normalized_pitch_step' in c.data:
+                del c.data['normalized_pitch_step']
+            if 'pitch_octave' in c.data:
+                del c.data['pitch_octave']
+            if 'duration_beats' in c.data:
+                del c.data['duration_beats']
+            if 'onset_beats' in c.data:
+                del c.data['onset_beats']

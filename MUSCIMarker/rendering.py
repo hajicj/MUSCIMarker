@@ -23,6 +23,7 @@ from kivy.uix.widget import Widget
 
 from cropobject_view import CropObjectView
 import muscima
+import muscima.stafflines
 from muscima.inference_engine_constants import InferenceEngineConstants
 from muscima.cropobject import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
 import tracker as tr
@@ -167,8 +168,8 @@ class CropObjectListView(ListView):
                 raise ValueError('CropObjectListView.populate(): Adapter sorted_keys'
                                  ' out of sync with data.')
             item_view = self.adapter.get_view(c_idx)
-            logging.debug('Populating with view that has color {0}'
-                          ''.format(item_view.selected_color))
+            # logging.debug('Populating with view that has color {0}'
+            #               ''.format(item_view.selected_color))
             # See CropObjectListView key trapping below.
             item_view.bind(on_key_captured=self.set_key_trap)
 
@@ -261,10 +262,19 @@ class CropObjectListView(ListView):
         properly call deselect(), whcih manifested itself as undestructible
         info labels.
         """
+        # logging.warn('CropObjectViewList: sync selection state: {0}'.format(self.adapter.selection))
         for cv in self.rendered_views:
             if cv in self.adapter.selection:
+                # if cv.is_selected:
+                #     logging.warn('CropObjectViewList: Out of sync adapter.selection and view.is_selected: object {0}'
+                #                  ''.format(cv.cropobject.objid))
+                #     continue
                 cv.ensure_selected()
             else:
+                # if not cv.is_selected:
+                #     logging.warn('CropObjectViewList: Out of sync adapter.selection and view.is_selected: object {0}'
+                #                  ''.format(cv.cropobject.objid))
+                #     continue
                 cv.ensure_deselected()
 
     ##########################################################################
@@ -278,25 +288,25 @@ class CropObjectListView(ListView):
     #    is set, the event is captured and doesn't bubble further up.
     # This strategy means one keystroke applies to all selected CropObjects.
     def handle_key_trap(self, *args):
-        logging.info('CropObjectListView: handling key trap in state {0}'
-                     ''.format(self._trap_key))
+        logging.debug('CropObjectListView: handling key trap in state {0}'
+                      ''.format(self._trap_key))
         if self._trap_key:
             self._trap_key = False
-            logging.info('CropObjectListView: trapped key event {0}'
-                         ''.format(args))
+            logging.debug('CropObjectListView: trapped key event {0}'
+                          ''.format(args))
             return True
         return False
 
     def set_key_trap(self, *largs):
-        logging.info('CropObjectListView.set_key_trap(): Got args {0}'
-                     ''.format(largs))
+        logging.debug('CropObjectListView.set_key_trap(): Got args {0}'
+                      ''.format(largs))
         self._trap_key = True
 
     def on_key_down(self, window, key, scancode, codepoint, modifier):
-        logging.info('CropObjectListView.on_key_down(): trap {0}'
-                     ''.format(self._trap_key))
+        logging.debug('CropObjectListView.on_key_down(): trap {0}'
+                      ''.format(self._trap_key))
         if self.handle_key_trap(window, key, scancode, codepoint, modifier):
-            logging.info('CropObjectListView: NOT propagating keypress')
+            logging.debug('CropObjectListView: NOT propagating keypress')
             return True
 
         dispatch_key = keypress_to_dispatch_key(key, scancode, codepoint, modifier)
@@ -374,13 +384,41 @@ class CropObjectListView(ListView):
 
         # P for actual parsing
         if dispatch_key == '112':
-            logging.info('CropObjectListView: handling parse')
-            self.parse_current_selection(unselect_at_end=True)
+            logging.info('CropObjectListView: handling parse with deterministic parser')
+            self.parse_current_selection(unselect_at_end=True, backup=True)
+
+        if dispatch_key == '112+shift':
+            logging.info('CropObjectListView: handling parse with probabilistic parser')
+            self.parse_current_selection(unselect_at_end=True, backup=False)
+
 
         # N for precedence edge inference
         if dispatch_key == '110':
-            logging.info('CropObjectListView: handling precedence parse')
-            self.infer_precedence_for_current_selection(unselect_at_end=True)
+            logging.info('CropObjectListView: handling precedence parse,'
+                         'IS factored by staff')
+            self.infer_precedence_for_current_selection(unselect_at_end=True,
+                                                        factor_by_staff=True)
+        # Shift+N for precedence edge inference
+        if dispatch_key == '110+shift':
+            logging.info('CropObjectListView: handling precedence parse, '
+                         'NOT factored by staff')
+            self.infer_precedence_for_current_selection(unselect_at_end=True,
+                                                        factor_by_staff=False)
+        # Alt+Shift+N for simultaneity edge inference (relies on MIDI being built)
+        if dispatch_key == '110+alt,shift':
+            logging.info('CropObjectListView: handling simultaneity parse')
+            self.infer_simultaneity_for_current_selection(unselect_at_end=True)
+        # Ctrl+Alt+Shift+N for simultaneity edge inference (relies on MIDI being built)
+        if dispatch_key == '110+alt,ctrl,shift':
+            logging.info('CropObjectListView: handling simultaneity parse')
+            self.remove_simultaneity_for_current_selection(unselect_at_end=True)
+
+        # S for merging all stafflines
+        if dispatch_key == '115+shift':
+            logging.info('CropObjectListView: handling staffline merge')
+            self.process_stafflines(build_staffs=True,
+                                    build_staffspaces=True,
+                                    add_staff_relationships=True)
 
         else:
             logging.info('CropObjectListView: propagating keypress')
@@ -391,10 +429,10 @@ class CropObjectListView(ListView):
         return True
 
     def on_key_up(self, window, key, scancode, *args, **kwargs):
-        logging.info('CropObjectListView.on_key_up(): trap {0}'
+        logging.debug('CropObjectListView.on_key_up(): trap {0}'
                      ''.format(self._trap_key))
         if self.handle_key_trap(window, key, scancode):
-            logging.info('CropObjectListView: NOT propagating keypress')
+            logging.debug('CropObjectListView: NOT propagating keypress')
             return True
 
     ##########################################################################
@@ -536,30 +574,39 @@ class CropObjectListView(ListView):
                 },
                 fn_name='CropObjectListView.parse_current_selection',
                 tracker_name='model')
-    def parse_current_selection(self, unselect_at_end=True):
+    def parse_current_selection(self, unselect_at_end=True, backup=True):
         """Adds edges among the current selection according to the model's
-        grammar and parser."""
+        grammar and parser. If nothing is selected, parses everything."""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
-        self._parse_cropobjects(cropobjects)
+        if len(cropobjects) == 0:
+            cropobjects = [s._model_counterpart for s in self.container.children]
+        self._parse_cropobjects(cropobjects, backup=backup)
 
         if unselect_at_end:
             self.unselect_all()
 
-    def _parse_cropobjects(self, cropobjects):
+    def _parse_cropobjects(self, cropobjects, backup=True):
         """Adds edges among the given cropobjects according to the model's
         grammar and parser."""
         logging.info('CropObjectListView.parse_selection(): {0} cropobjects'
                      ''.format(len(cropobjects)))
 
-        parser = self._model.parser
+        if backup:
+            parser = self._model.backup_parser
+        else:
+            parser = self._model.parser
+
         if parser is None:
             logging.info('CropObjectListView.parse_selection(): No parser found!')
             return
 
-        names = [c.clsname for c in cropobjects]
-        edges_idxs = parser.parse(names)
-        edges = [(cropobjects[i].objid, cropobjects[j].objid)
-                 for i, j in edges_idxs]
+        # names = [c.clsname for c in cropobjects]
+        non_staff_cropobjects = [c for c in cropobjects
+                                 if c.clsname not in \
+                                 InferenceEngineConstants.STAFF_CROPOBJECT_CLSNAMES]
+        edges = parser.parse(non_staff_cropobjects)
+        #edges = [(cropobjects[i].objid, cropobjects[j].objid)
+        #         for i, j in edges_idxs]
         logging.info('CropObjectListView.parse_selection(): {0} edges to add'
                      ''.format(len(edges)))
 
@@ -575,21 +622,63 @@ class CropObjectListView(ListView):
                 },
                 fn_name='CropObjectListView.infer_precedence_for_current_selection',
                 tracker_name='model')
-    def infer_precedence_for_current_selection(self, unselect_at_end=True):
+    def infer_precedence_for_current_selection(self,
+                                               unselect_at_end=True,
+                                               factor_by_staff=False):
         """Adds edges among the current selection according to the model's
         grammar and parser."""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
-        self._infer_precedence(cropobjects)
+        if len(cropobjects) == 0:
+            cropobjects = self._model.cropobjects.values()
+
+        # Find staffs also as children of selected objects!
+        # Their staff might be ignored in the selection.
+        related_staffs = self._model.find_related_staffs(cropobjects)
+        _cdict = {c.objid: c for c in cropobjects}
+        new_related_staffs = [s for s in related_staffs if s.objid not in _cdict]
+        logging.info('Infer_precedence_for_current_selection(): found'
+                     ' {0} related staff objects, of which {1} are not in selection.'
+                     ''.format(len(related_staffs), len(new_related_staffs)))
+        cropobjects = cropobjects + new_related_staffs
+        logging.info('Infer_precedence_for_current_selection(): had {0}'
+                     ' objects, with related stafflines: {1} objects'
+                     ''.format(len(_cdict), len(cropobjects)))
+
+        self._infer_precedence(cropobjects, factor_by_staff=factor_by_staff)
 
         if unselect_at_end:
             self.unselect_all()
 
-    def _infer_precedence(self, cropobjects):
+    def _infer_precedence(self, cropobjects, factor_by_staff=False):
 
         _relevant_clsnames = set(list(InferenceEngineConstants.NONGRACE_NOTEHEAD_CLSNAMES)
                                  + list(InferenceEngineConstants.REST_CLSNAMES))
         prec_cropobjects = [c for c in cropobjects
                             if c.clsname in _relevant_clsnames]
+        logging.info('_infer_precedence: {0} total prec. cropobjects'
+                     ''.format(len(prec_cropobjects)))
+
+        # Group the objects according to the staff they are related to
+        # and infer precedence on these subgroups.
+        if factor_by_staff:
+            staffs = [c for c in cropobjects
+                      if c.clsname == InferenceEngineConstants.STAFF_CLSNAME]
+            logging.info('_infer_precedence: got {0} staffs'.format(len(staffs)))
+            staff_objids = {c.objid: i for i, c in enumerate(staffs)}
+            prec_cropobjects_per_staff = [[] for _ in staffs]
+            # All CropObjects relevant for precedence have a relationship
+            # to a staff.
+            for c in prec_cropobjects:
+                for o in c.outlinks:
+                    if o in staff_objids:
+                        prec_cropobjects_per_staff[staff_objids[o]].append(c)
+
+            logging.info('Precedence groups: {0}'
+                         ''.format(prec_cropobjects_per_staff))
+            for prec_cropobjects_group in prec_cropobjects_per_staff:
+                self._infer_precedence(prec_cropobjects_group,
+                                       factor_by_staff=False)
+            return
 
         if len(prec_cropobjects) <= 1:
             logging.info('EdgeListView._infer_precedence: less than 2'
@@ -632,6 +721,52 @@ class CropObjectListView(ListView):
 
         self._model.ensure_add_edges(edges, label='Precedence')
 
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [
+                    lambda v: ('objids', [c.objid for c in v.selected_views]),
+                    lambda v: ('mlclass_names', [c._model_counterpart.clsname
+                                                 for c in v.selected_views])
+                ]
+                },
+                fn_name='CropObjectListView.infer_simultaneity_for_current_selection',
+                tracker_name='model')
+    def infer_simultaneity_for_current_selection(self,
+                                                 unselect_at_end=True):
+        """Adds simultaneity edges between objects that have the same onset.
+        For readability, does not add the complete graph, but just links
+        the objects top-down. (Simultaneity is non-oriented, but this is the
+        way it works for now.)"""
+        cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        if len(cropobjects) == 0:
+            cropobjects = self._model.cropobjects.values()
+
+        objects_with_onset = [c for c in cropobjects
+                              if (c.data is not None) and ('onset_beats' in c.data)]
+        onsets_dict = collections.defaultdict(list)
+        for c in objects_with_onset:
+            onsets_dict[c.data['onset_beats']].append(c)
+
+        edges = []
+        for o in onsets_dict:
+            cgroup = sorted(onsets_dict[o], key=lambda x: (x.top + x.bottom) / 2.)
+            if len(cgroup) > 1:
+                for f, t in zip(cgroup[:-1], cgroup[1:]):
+                    edges.append((f.objid, t.objid))
+
+        self._model.ensure_add_edges(edges, label='Simultaneity')
+
+    def remove_simultaneity_for_current_selection(self,
+                                                  unselect_at_end=True):
+        """Remove simultaneity edges from selection (or all,
+        if nothing is selected).
+        """
+        cropobjects = [s._model_counterpart for s in self.adapter.selection]
+        if len(cropobjects) == 0:
+            cropobjects = self._model.cropobjects.values()
+
+        self._model.clear_relationships(label='Simultaneity',
+                                        cropobjects=cropobjects)
+
     def get_cropobject_view(self, objid):
         """Retrieves the CropObjectView based on the objid. Useful e.g.
         for programmatic selection/deselection of individual objects.
@@ -644,6 +779,22 @@ class CropObjectListView(ListView):
         raise KeyError('CropObjectView with objid {0} not found among rendered'
                        ' CropObjects.'.format(objid))
 
+    @tr.Tracker(track_names=['self'],
+                transformations={'self': [
+                    lambda v: ('objids', [c.objid for c in v.selected_views]),
+                    lambda v: ('mlclass_names', [c._model_counterpart.clsname
+                                                 for c in v.selected_views])
+                ]
+                },
+                fn_name='CropObjectListView.merge_all_stafflines',
+                tracker_name='model')
+    def process_stafflines(self,
+                           build_staffs=False,
+                           build_staffspaces=False,
+                           add_staff_relationships=False):
+        self._model.process_stafflines(build_staffs=build_staffs,
+                                       build_staffspaces=build_staffspaces,
+                                       add_staff_relationships=add_staff_relationships)
 
 ##############################################################################
 
@@ -907,8 +1058,8 @@ class CropObjectRenderer(FloatLayout):
             'selectable_cropobject': rec,
             'rgb': rgb,
         }
-        logging.debug('Render: Converter fired, input object {0}/{1}, with output:\n{2}'
-                      ''.format(row_index, rec, output))
+        # logging.debug('Render: Converter fired, input object {0}/{1}, with output:\n{2}'
+        #               ''.format(row_index, rec, output))
         return output
 
     def clear(self, instance, pos):

@@ -117,7 +117,7 @@ class DependencyGrammar(object):
 
     The basic role of the dependency grammar is to provide the list of rules:
 
-    >>> from muscima.io import parse_mlclass_list
+    >>> from muscima.io import parse_cropobject_class_list
     >>> fpath = os.path.dirname(os.path.dirname(__file__)) + u'/data/grammars/mff-muscima-mlclasses-annot.deprules'
     >>> mlpath = os.path.dirname(os.path.dirname(__file__)) + u'/data/mff-muscima-mlclasses-annot.xml'
     >>> mlclass_dict = {m.clsid: m for m in parse_mlclass_list(mlpath)}
@@ -350,17 +350,17 @@ class DependencyGrammar(object):
         # the edges are marked as wrong (because any of them is the extra
         # edge, and it's easiest to just delete them and start parsing
         # again).
-        logging.info('DependencyGrammar: checking outlink aggregate cardinalities'
-                     '\n{0}'.format(pprint.pformat(outlinks)))
+        logging.debug('DependencyGrammar: checking outlink aggregate cardinalities'
+                      '\n{0}'.format(pprint.pformat(outlinks)))
         for f in outlinks:
             f_clsname = vertices[f]
             if f_clsname not in self.outlink_aggregated_cardinalities:
                 # Given vertex has no aggregate cardinality restrictions
                 continue
             cmin, cmax = self.outlink_aggregated_cardinalities[f_clsname]
-            logging.info('DependencyGrammar: checking outlink cardinality'
-                         ' rule fulfilled for vertex {0} ({1}): should be'
-                         ' within {2} -- {3}'.format(f, vertices[f], cmin, cmax))
+            logging.debug('DependencyGrammar: checking outlink cardinality'
+                          ' rule fulfilled for vertex {0} ({1}): should be'
+                          ' within {2} -- {3}'.format(f, vertices[f], cmin, cmax))
             if not (cmin <= len(outlinks[f]) <= cmax):
                 wrong_vertices.append(f)
                 reasons_v[f] = 'Symbol {0} (class: {1}) has {2} outlinks,' \

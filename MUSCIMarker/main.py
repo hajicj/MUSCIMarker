@@ -58,7 +58,7 @@ def main(args):
     app.run()
 
     _end_time = time.clock()
-    logging.info('MUSCIMan done in {0:.3f} s'.format(_end_time - _start_time))
+    logging.info('MUSCIMarker done in {0:.3f} s'.format(_end_time - _start_time))
 
 
 if __name__ == '__main__':

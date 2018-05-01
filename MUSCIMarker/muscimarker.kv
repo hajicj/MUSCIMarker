@@ -156,6 +156,10 @@
         id: background_lasso_tool
         text: 'Backgr.\nLasso'
 
+    ToolSelectionButton:
+        name: 'symbol_detection_tool'
+        id: symbol_detection_tool
+        text: 'Detect'
 
 
     BoxLayout:
@@ -340,28 +344,35 @@
     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 
 
-    ScatterLayout:
-        id: scatter
+    BoxLayout:
+        id: content
 
-        size: root.size
-        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-        do_rotation: False
-        #scale: 10.0
+        ScatterLayout:
+            id: scatter
 
-        # canvas.before:
-        #    Color:
-        #        # rgba: 0.2, 0.1, 0.1, 1   ### Debugging color
-        #        rgba: 0.1, 0.1, 0.1, 1     ### Production color
-        #    Rectangle:
-        #        self here refers to the widget i.e BoxLayout pos: self.pos
-        #        size: self.size
+            size: root.size
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            do_rotation: False
+            #scale: 10.0
+
+            # canvas.before:
+            #    Color:
+            #        # rgba: 0.2, 0.1, 0.1, 1   ### Debugging color
+            #        rgba: 0.1, 0.1, 0.1, 1     ### Production color
+            #    Rectangle:
+            #        self here refers to the widget i.e BoxLayout pos: self.pos
+            #        size: self.size
 
 
-        Image:
-            id: inspected_image
-            allow_stretch: True
+            Image:
+                id: inspected_image
+                allow_stretch: True
 
-            source: root.source
+                source: root.source
+
+        # Label:
+        #     id: data_label
+        #     text: root.data_text
 
 ##############################################################################
 
@@ -540,6 +551,12 @@
         size_hint: 1.0, 0.1
         text: 'Show Precedence'
         on_release: app.graph_renderer.unmask_all(label='Precedence')
+
+    Button:
+        id: precedence_clear_button
+        size_hint: 1.0, 0.1
+        text: 'Clear Precedence'
+        on_release: app.do_clear_precedence(ask=True)
 
 
     Label:
@@ -737,6 +754,18 @@ MUSCIMarkerLayout:
             ActionButton:
                 text: 'HELP'
                 on_release: app.open_help()
+
+            ActionButton:
+                text: 'PLAY'
+                on_release: app.infer_midi()
+
+            #ActionButton:
+            #    text: 'ROT.CCW'
+            #    on_release: app.rotate_image(clockwise=False)
+            #
+            #ActionButton:
+            #    text: 'ROT.CLW'
+            #    on_release: app.rotate_image(clockwise=True)
 
             ActionButton:
                 text: 'RELOAD IMG'

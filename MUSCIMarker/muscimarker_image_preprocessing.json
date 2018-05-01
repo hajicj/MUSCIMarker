@@ -22,5 +22,12 @@
     "desc": "Normalize the intensity range of the image to 0 - 255.",
     "section": "image_preprocessing",
     "key": "stretch_intensity"
+  },
+
+  { "type": "bool",
+    "title": "Sheet has borders",
+    "desc": "Assumes that the input is a photo with some background, which is deformed by perspective etc.",
+    "section": "image_preprocessing",
+    "key": "warp_registration"
   }
 ]

@@ -24,6 +24,7 @@ from kivy.uix.scatter import Scatter
 from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.spinner import Spinner
 from kivy.uix.togglebutton import ToggleButton
+from muscima.cropobject import split_cropobject_on_connected_components
 
 import tracker as tr
 from utils import InspectionPopup, keypress_to_dispatch_key
@@ -94,8 +95,8 @@ class CropObjectView(SelectableView, ToggleButton):
         :param kwargs:
         :return:
         """
-        logging.debug('Render: Initializing CropObjectView with args: c={0},'
-                      ' rgb={1}, alpha={2}'.format(selectable_cropobject, rgb, alpha))
+        # logging.debug('Render: Initializing CropObjectView with args: c={0},'
+        #               ' rgb={1}, alpha={2}'.format(selectable_cropobject, rgb, alpha))
         super(CropObjectView, self).__init__(**kwargs)
 
         self.text = ''   # We don't want any text showing up
@@ -329,7 +330,7 @@ class CropObjectView(SelectableView, ToggleButton):
             self.inspect()
 
         elif dispatch_key == '120':  # x
-            logging.info('CropObjectView: handling split')
+            logging.info('CropObjectView: handling split to connected components')
             self.split()
 
         else:
@@ -454,7 +455,7 @@ class CropObjectView(SelectableView, ToggleButton):
             self.create_info_label()
 
     def create_info_label(self):
-        logging.debug('CropObjectView.create_info_label() called.')
+        # logging.debug('CropObjectView.create_info_label() called.')
         info_label = Label(text=self.get_info_label_text())
         _info_palette = App.get_running_app()._get_tool_info_palette()
 
@@ -466,7 +467,7 @@ class CropObjectView(SelectableView, ToggleButton):
         self._info_label_shown = True
 
     def destroy_info_label(self, *args, **kwargs):
-        logging.debug('CropObjectView.destroy_info_label() called.')
+        # logging.debug('CropObjectView.destroy_info_label() called.')
         App.get_running_app()._get_tool_info_palette().remove_widget(self.info_label)
         self._info_label_shown = False
         self.info_label = None
@@ -500,8 +501,8 @@ class CropObjectView(SelectableView, ToggleButton):
         c = self._model_counterpart
         text = '({0})  {1}'.format(c.objid, c.clsname)
         if c.data is not None:
-            logging.warn('Creating info label for object {0}:'
-                         ' data {1}'.format(c.uid, c.data))
+            logging.debug('Creating info label for object {0}:'
+                          ' data {1}'.format(c.uid, c.data))
             pitch_text = ''
             if 'pitch_step' in c.data:
                 pitch_text = '{0}'.format(c.data['pitch_step'])
@@ -511,11 +512,17 @@ class CropObjectView(SelectableView, ToggleButton):
                 pitch_text += '{0}'.format(c.data['pitch_octave'])
             if pitch_text:
                 text += ' | {0}'.format(pitch_text)
-            duration_text = None
+
             if 'duration_beats' in c.data:
-                duration_text = '{0:.2f}'.format(c.data['duration_beats'])
-            if duration_text is not None:
-                text += ' | {0}'.format(duration_text)
+                text += ' | {0:.2f}'.format(c.data['duration_beats'])
+            if 'onset_beats' in c.data:
+                text += ' | {0:.3f}'.format(c.data['onset_beats'])
+
+            # duration_text = None
+            # if 'duration_beats' in c.data:
+            #     duration_text = '{0:.2f}'.format(c.data['duration_beats'])
+            # if duration_text is not None:
+            #     text += ' | {0}'.format(duration_text)
         return text
 
     def update_info_label(self, *args):
@@ -672,44 +679,19 @@ class CropObjectView(SelectableView, ToggleButton):
                                           lambda s: ('clsname', s._model_counterpart.clsname)]},
                 fn_name='CropObjectView.split',
                 tracker_name='editing')
-    def split(self, ratio=0.5):
-        """Split the CropObject into two. If it is taller than wide, the split
-        will lead horizontally (so the new CropObjects will be one above the
-        other), if the CropObject is rather wide than tall, the split leads
-        vertically. Both the generated CropObjects will have the original
-        object's ``clsid``.
-
-        :param ratio: Controls how far to the top/right the split will
-            occurr. Keep between 0 and 1.
+    def split(self):
+        """Split the CropObject according to its mask.
         """
-        c = self.cropobject
-        if c.width > c.height:
-            # split along width
-            t1 = t2 = c.x + c.height
-            b1 = b2 = c.x
-            l1 = c.y
-            r1 = l2 = c.y + (c.width * ratio)
-            r2 = c.y + c.width
-            # Make a small gap between the two new objects
-            r1 -= 0.3
-            l2 += 0.3
-        else:
-            # split along height
-            b1 = c.x
-            t1 = b2 = c.x + (c.height * ratio)
-            t2 = c.x + c.height
-            l1 = l2 = c.y
-            r1 = r2 = c.y + c.width
-            t1 -= 0.3
-            b2 += 0.3
-        coords_1 = {'top': t1, 'bottom': b1, 'left': l1, 'right': r1}
-        coords_2 = {'top': t2, 'bottom': b2, 'left': l2, 'right': r2}
-
-        clsname= self.cropobject.clsname
-        App.get_running_app().add_cropobject_from_selection(coords_1, clsname=clsname)
-        App.get_running_app().add_cropobject_from_selection(coords_2, clsname=clsname)
+        _next_objid = self._model.get_next_cropobject_id()
+        new_cropobjects = split_cropobject_on_connected_components(self._model_counterpart,
+                                                                   next_objid=_next_objid)
+        if len(new_cropobjects) == 1:
+            return
 
         self.remove_from_model()
+        for c in new_cropobjects:
+            self._model.add_cropobject(c)
+
 
     ##########################################################################
     # Clone class
@@ -794,8 +776,15 @@ class CropObjectView(SelectableView, ToggleButton):
         scipy.misc.imsave(full_path, combined_crop, )
 
         # Make popup with the crop
-        popup = InspectionPopup(title='Inspecting obj. {0}'.format(self.objid),
-                                source=full_path)
+        data_text = self._model_counterpart.data_display_text()
+        popup = InspectionPopup(
+            data_text=data_text,
+            title='Inspecting obj. {0} | clsname: {1} | bbox: {2}'
+                  ''.format(self.objid,
+                            self._model_counterpart.clsname,
+                            self._model_counterpart.bounding_box)
+                  + '\n\n______________________________________\nDATA\n\n' + data_text,
+            source=full_path)
 
         # Bind to delete the temp file on cancel()
         def __safe_unlink(fname):
@@ -834,10 +823,10 @@ class CropObjectView(SelectableView, ToggleButton):
         Use ensure_deselected() instead."""
         # logging.debug('CropObjectView\t{0}: called deselection'
         #               ''.format(self.cropobject.objid))
-        logging.debug('CropObjectView.deselect: info label shown? {0}'
-                      ''.format(self._info_label_shown))
+        # logging.debug('CropObjectView.deselect: info label shown? {0}'
+        #               ''.format(self._info_label_shown))
         if self._info_label_shown:
-            logging.debug('CropObjectView.deselect: destroying info label.')
+            # logging.debug('CropObjectView.deselect: destroying info label.')
             self.destroy_info_label()
         if self._mlclass_selection_spinner_shown:
             self.destroy_mlclass_selection_spinner()

@@ -82,8 +82,51 @@
     "key": "active_selection"
   },
 
+  { "type": "bool",
+    "title": "Selection: ignore staff objs.",
+    "desc": "The Parse, Obj. and Rel. Select tools will ignore staff objects and relationships to them.",
+    "section": "toolkit",
+    "key": "selection_ignore_staff"
+  },
+
+  { "type": "bool",
+    "title": "Eraser: Split disconnected",
+    "desc": "When using the eraser lasso, objects will be split if their mask becomes disconnected.",
+    "section": "toolkit",
+    "key": "split_on_eraser"
+  },
+
+  { "type": "bool",
+    "title": "Binarization: Retain foreground",
+    "desc": "If this is on, the Region Binarization tool will retain the shade of the foreground pixels.",
+    "section": "toolkit",
+    "key": "binarization_retain_foreground"
+  },
+
+  { "type": "bool",
+    "title": "Detection: use current class?",
+    "desc": "When calling the detector, only ask for the currently selected object class.",
+    "section": "toolkit",
+    "key": "detection_use_current_class"
+  },
+
+  { "type": "string",
+    "title": "Detection: use the given classes",
+    "desc": "When calling the detector, detect these classes (comma-separated, no whitespace).",
+    "section": "toolkit",
+    "key": "detection_classes"
+  },
+
+
   { "type": "title",
     "title": "Automation"
+  },
+
+  { "type": "bool",
+    "title": "Smart Parsing",
+    "desc": "Enables parsing larger groups of symbols, but with significant risk of errors.",
+    "section": "parsing",
+    "key": "smart_parsing"
   },
 
   { "type": "numeric",

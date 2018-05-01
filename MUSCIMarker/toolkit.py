@@ -8,9 +8,11 @@ import os
 
 import numpy
 import time
+from skimage.draw import polygon, line
 
 from kivy.app import App
-from skimage.draw import polygon, line
+from muscima.cropobject import split_cropobject_on_connected_components
+from muscima.inference_engine_constants import InferenceEngineConstants as _CONST
 
 # DEBUG
 # import matplotlib.pyplot as plt
@@ -714,6 +716,9 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
 
 class MaskEraserTool(LassoBoundingBoxSelectTool):
     """Removes the given area from all selected symbols' masks."""
+    def __init__(self, do_split, **kwargs):
+        super(MaskEraserTool, self).__init__(**kwargs)
+        self.do_split = do_split
 
     def on_current_cropobject_model_selection(self, instance, pos):
         """Here, instead of adding a new CropObject as the other lasso
@@ -761,22 +766,32 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
             # and other stuff is handled.
             cropobject_view.remove_from_model()
 
-            # Now add the CropObject back to redraw. Note that this way,
-            # the object's objid stays the same, which is essential for
-            # maintaining intact inlinks and outlinks!
-            self._model.add_cropobject(c)
+            if self.do_split:
+                _next_objid = self._model.get_next_cropobject_id()
+                output_cropobjects = split_cropobject_on_connected_components(c, _next_objid)
+            else:
+                output_cropobjects = [c]
 
-            try:
-                new_view = self.app_ref.cropobject_list_renderer.view.get_cropobject_view(c.objid)
-                new_view.ensure_selected()
-            except KeyError:
-                logging.info('MaskEraser: View for modified CropObject {0} has'
-                             ' not been rendered yet, cannot select it.'
-                             ''.format(c.objid))
+            for c in output_cropobjects:
+                # Now add the CropObject back to redraw. Note that this way,
+                # the object's objid stays the same, which is essential for
+                # maintaining intact inlinks and outlinks!
+                logging.info('MaskEraser: New object data dict: {0}'
+                             ''.format(c.data))
+                self._model.add_cropobject(c)
+
+                try:
+                    new_view = self.app_ref.cropobject_list_renderer.view.get_cropobject_view(c.objid)
+                    new_view.ensure_selected()
+                except KeyError:
+                    logging.info('MaskEraser: View for modified CropObject {0} has'
+                                 ' not been rendered yet, cannot select it.'
+                                 ''.format(c.objid))
 
 
         logging.info('MaskEraser: Forcing redraw.')
         self.app_ref.cropobject_list_renderer.redraw += 1
+        self.app_ref.graph_renderer.redraw += 1
 
         self.editor_widgets['line_tracer'].clear()
 
@@ -798,6 +813,9 @@ class MaskAdditionTool(LassoBoundingBoxSelectTool):
 
             # Redraw:
             cropobject_view.remove_from_model()
+
+            logging.info('MaskEraser: New object data dict: {0}'
+                         ''.format(c.data))
             self._model.add_cropobject(c)
 
             # Try reselecting the selected objects:
@@ -808,6 +826,10 @@ class MaskAdditionTool(LassoBoundingBoxSelectTool):
                 logging.info('MaskEraser: View for modified CropObject {0} has'
                              ' not been rendered yet, cannot select it.'
                              ''.format(c.objid))
+
+        logging.info('MaskAddition: Forcing redraw.')
+        self.app_ref.cropobject_list_renderer.redraw += 1
+        self.app_ref.graph_renderer.redraw += 1
 
         self.editor_widgets['line_tracer'].clear()
 
@@ -1072,7 +1094,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
         if self._active_selection_slow_mode:
             if self._active_selection_slow_mode_counter % self._active_selection_slow_mode_modulo == 0:
                 # Let's try running "experimental selection"
-                logging.info('Active selection: checking in slow mode')
+                # logging.info('Active selection: checking in slow mode')
                 _t_start = time.clock()
                 self.provisional_select_applicable_objects(instance=None,
                                                            points=touch.ud['line'].points)
@@ -1082,13 +1104,13 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
                 # Later on, this may cause noticeable lag in the selection, but
                 # hopefully not so much in the lasso.
                 self._active_selection_slow_mode_modulo = max(1, min(int(time_taken / self._active_selection_target_time_per_event), 30))
-                logging.info('Active selection: time take: {0}, setting modulo to {1}'
+                logging.debug('Active selection: time take: {0}, setting modulo to {1}'
                              ''.format(time_taken, self._active_selection_slow_mode_modulo))
                 self._active_selection_slow_mode_counter = 1
             else:
                 self._active_selection_slow_mode_counter += 1
         else:
-            logging.info('Active selection: checking in normal mode')
+            logging.debug('Active selection: checking in normal mode')
             self.provisional_select_applicable_objects(instance=None,
                                                        points=touch.ud['line'].points)
 
@@ -1108,7 +1130,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
         #    is_slow = False
 
         if self._active_selection_slow_mode != is_slow:
-            logging.info('Active selection: slow mode: changing to {0}'.format(is_slow))
+            logging.debug('Active selection: slow mode: changing to {0}'.format(is_slow))
             self._active_selection_slow_mode_counter = 1
 
         self._active_selection_slow_mode = is_slow
@@ -1142,6 +1164,9 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
 
 class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
     """Select the activated CropObjectViews."""
+    def __init__(self, ignore_staff=False, **kwargs):
+        super(CropObjectViewsSelectTool, self).__init__(**kwargs)
+        self.ignore_staff = ignore_staff
 
     forgetful = BooleanProperty(True)
     '''If True, will always forget prior selection. If False, will
@@ -1171,6 +1196,10 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
         objids = [objid for objid, c in self._model.cropobjects.iteritems()
                   if image_mask_overlaps_cropobject(model_mask, c,
                     use_cropobject_mask=self.use_mask_to_determine_selection)]
+
+        if self.ignore_staff:
+            objids = [objid for objid in objids
+                      if self._model.cropobjects[objid].clsname not in _CONST.STAFF_CROPOBJECT_CLSNAMES]
 
         _t_end = time.clock()
         # logging.info('select_applicable_objects: points and mask took'
@@ -1314,6 +1343,10 @@ class NoteSelectTool(AddSymbolTool):
 
 class RegionBinarizeTool(MUSCIMarkerTool):
     """Binarize the region in the bounding box using Otsu binarization."""
+    def __init__(self, retain_foreground, **kwargs):
+        super(RegionBinarizeTool, self).__init__(**kwargs)
+        self.retain_foreground = retain_foreground
+
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['bbox_tracer'] = BoundingBoxTracer()
@@ -1347,7 +1380,8 @@ class RegionBinarizeTool(MUSCIMarkerTool):
 
         # binarized_crop_threshold = threshold_otsu(crop)
         crop[crop < nnz_crop_threshold] = 0
-        # crop[crop >= binarized_crop_threshold] = 255
+        if not self.retain_foreground:
+            crop[crop >= nnz_crop_threshold] = 255
         output_crop = crop
 
         # sauvola_thresholds = threshold_sauvola(crop)
@@ -1409,7 +1443,7 @@ class BackgroundFillTool(LassoBoundingBoxSelectTool):
     in binarization more smartly than the plain backgrounding lasso.
     It takes the lightest shade in the given area, and within a 200-px
     bounding box (+100/-100), removes everything that is darker than
-    the """
+    the given pixel by at least 8 intensity points. [NOT IMPLEMENTED]"""
     def on_current_cropobject_model_selection(self, instance, pos):
         # Ask the app to build CropObject from the bbox.
         logging.info('BackgroundFillTool: fired on_current_cropobject_model_selection with pos={0}'
@@ -1444,6 +1478,45 @@ class BackgroundFillTool(LassoBoundingBoxSelectTool):
 
 
 ##############################################################################
+# Interface for detection! Highly experimental.
+
+class SymbolDetectionTool(MUSCIMarkerTool):
+    """Runs the detector for the currently selected CropObject class
+    on a selected region.
+
+    Requires having a detection server running on a configured host/port.
+    The detection server is currently not open-source.
+    """
+    def __init__(self, use_current_class, clsnames, **kwargs):
+        super(SymbolDetectionTool, self).__init__(**kwargs)
+        self.use_current_class = use_current_class
+        self.clsnames = clsnames
+
+    def create_editor_widgets(self):
+        editor_widgets = collections.OrderedDict()
+        editor_widgets['bbox_tracer'] = BoundingBoxTracer()
+        editor_widgets['bbox_tracer'].bind(
+            current_finished_bbox=self.run_detection)
+        return editor_widgets
+
+    def run_detection(self, instance, pos):
+        # Get model bbox
+        ed_t, ed_l, ed_b, ed_r = pos['top'], pos['left'], \
+                                 pos['bottom'], pos['right']
+        m_t, m_l, m_b, m_r = self.editor_to_model_bbox(ed_t, ed_l, ed_b, ed_r)
+        m_t, m_l, m_b, m_r = bbox_to_integer_bounds(m_t, m_l, m_b, m_r)
+
+        if self.use_current_class:
+            clsnames = None
+        else:
+            clsnames = self.clsnames
+
+        self.app_ref.annot_model.call_object_detection(bounding_box=(m_t, m_l, m_b, m_r),
+                                                       clsnames=clsnames)
+
+        self.editor_widgets['bbox_tracer'].clear()
+
+##############################################################################
 # This is the toolkit's interface to the UI elements.
 
 tool_dispatch = {
@@ -1461,6 +1534,7 @@ tool_dispatch = {
     'mask_addition_tool': MaskAdditionTool,
     'region_binarize_tool': RegionBinarizeTool,
     'background_lasso_tool': BackgroundLassoTool,
+    'symbol_detection_tool': SymbolDetectionTool,
 }
 
 
@@ -1473,7 +1547,7 @@ def get_tool_kwargs_dispatch(name):
         'connected_select_tool': dict(),
         'lasso_select_tool': dict(),
         'gesture_select_tool': dict(),
-        'region_binarize_tool': dict(),
+        # 'region_binarize_tool': dict(),
         'background_lasso_tool': dict(),
     }
 
@@ -1482,6 +1556,18 @@ def get_tool_kwargs_dispatch(name):
 
     app = App.get_running_app()
     conf = app.config
+
+    if name == 'symbol_detection_tool':
+        _use_ccls = conf.get('toolkit', 'detection_use_current_class')
+        use_ccls = _safe_parse_bool_from_conf(_use_ccls)
+        clsnames = conf.get('toolkit', 'detection_classes').split(',')
+        return {'use_current_class': use_ccls,
+                'clsnames': clsnames}
+
+    if name == 'region_binarize_tool':
+        _retain_fg = conf.get('toolkit', 'binarization_retain_foreground')
+        retain_fg = _safe_parse_bool_from_conf(_retain_fg)
+        return {'retain_foreground': retain_fg}
 
     if name == 'trimmed_lasso_select_tool':
         _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
@@ -1493,7 +1579,10 @@ def get_tool_kwargs_dispatch(name):
     if name == 'mask_eraser_tool':
         _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
         do_helper_line = _safe_parse_bool_from_conf(_dhl_str)
-        return {'do_helper_line': do_helper_line}
+        _splitter_str = conf.get('toolkit', 'split_on_eraser')
+        do_split = _safe_parse_bool_from_conf(_splitter_str)
+        return {'do_helper_line': do_helper_line,
+                'do_split': do_split}
 
     if name == 'mask_addition_tool':
         _dhl_str = conf.get('toolkit', 'trimmed_lasso_helper_line')
@@ -1503,9 +1592,12 @@ def get_tool_kwargs_dispatch(name):
     if name == 'cropobject_views_select_tool':
         _as_str = conf.get('toolkit', 'active_selection')
         active_selection = _safe_parse_bool_from_conf(_as_str)
-        logging.info('Toolkit: got active_selection={0}'
-                     ''.format(active_selection))
-        return {'active_selection': active_selection}
+        _ignore_staff_str = conf.get('toolkit', 'selection_ignore_staff')
+        ignore_staff = _safe_parse_bool_from_conf(_ignore_staff_str)
+        logging.info('Toolkit: got active_selection={0}, ignore_staff={1}'
+                     ''.format(active_selection, ignore_staff))
+        return {'active_selection': active_selection,
+                'ignore_staff': ignore_staff}
 
     if name == 'edge_views_select_tool':
         _as_str = conf.get('toolkit', 'active_selection')
@@ -1520,7 +1612,12 @@ def get_tool_kwargs_dispatch(name):
         active_selection = False
         logging.info('Toolkit: got active_selection={0}'
                      ''.format(active_selection))
-        return {'active_selection': active_selection}
+        _ignore_staff_str = conf.get('toolkit', 'selection_ignore_staff')
+        ignore_staff = _safe_parse_bool_from_conf(_ignore_staff_str)
+        logging.info('Toolkit: got active_selection={0}, ignore_staff={1}'
+                     ''.format(active_selection, ignore_staff))
+        return {'active_selection': active_selection,
+                'ignore_staff': ignore_staff}
 
 
 def _safe_parse_bool_from_conf(conf_str):
