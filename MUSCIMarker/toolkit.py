@@ -355,6 +355,78 @@ class ConnectedSelectTool(AddSymbolTool):
 
         return mask, (cc_t, cc_l, cc_b, cc_r)
 
+###############################################################################
+
+
+class AverageSymbolTool(AddSymbolTool):
+    """This tool uses the average bounding box and mask
+    for a given symbol, computed from all the instances
+    of the given symbol class that are in the current
+    annotation.
+
+    Operates on click, or click & drag: on release, will
+    create the symbol centered around the point where you let go.
+    """
+    _current_bbox_size = -1, -1
+    _current_mask = None
+
+    def compute_average_bbox(self, clsname):
+        cropobjects = [c for c in self._model.cropobjects.values()
+                       if c.clsname == clsname]
+        hs = [c.height for c in cropobjects]
+        h_avg = numpy.mean(hs)
+        ws = [c.width for c in cropobjects]
+        w_avg = numpy.mean(ws)
+        return int(numpy.round(h_avg)) + 1, int(numpy.round(w_avg)) + 1
+
+    def set_average_bbox(self, clsname):
+        self._current_bbox_size = self.compute_average_bbox(clsname)
+
+    def set_average_mask(self):
+        if min(self._current_bbox_size) < 0:
+            self._current_mask = None
+            logging.warning('AverageSymbolTool: Cannot set mask'
+                            ' when no symbol class is selected!')
+            return
+        self._current_mask = numpy.ones(self._current_bbox_size,
+                                        dtype='uint8')
+
+    def set_to_current_class(self):
+        clsname = self.app_ref.currently_selected_mlclass_name
+        self.set_average_bbox(clsname)
+        self.set_average_mask()
+
+    def create_command_widgets(self):
+        return collections.OrderedDict()
+
+    def create_editor_widgets(self):
+        self.set_to_current_class()
+        editor_widgets = collections.OrderedDict()
+        editor_widgets['bbox_tracer'] = LineTracer()
+        editor_widgets['bbox_tracer'].bind(points=self.current_selection_and_mask_from_points)
+        return editor_widgets
+
+    def current_selection_and_mask_from_points(self, instance, pos):
+        e_col, e_row = pos[-2], pos[-1]
+        m_points = self.editor_to_model_points([e_col, e_row])
+        m_row, m_col = m_points[0][0], m_points[0][1]
+        h, w = self._current_bbox_size
+        dh = h // 2
+        dw = w // 2
+        m_t = m_row - dh
+        m_l = m_col - dw
+        # Ensure shape despite integer division
+        m_b = m_row + (dh + (2 * dh - h))
+        m_r = m_col + (dw + (2 * dw - w))
+
+        self.current_cropobject_mask = numpy.ones((m_b - m_t, m_r - m_l),
+                                                  dtype='uint8')
+        self.current_cropobject_model_selection = {'top': m_t,
+                                                   'left': m_l,
+                                                   'bottom': m_b,
+                                                   'right': m_r}
+
+
 
 ###############################################################################
 
@@ -1535,6 +1607,7 @@ tool_dispatch = {
     'region_binarize_tool': RegionBinarizeTool,
     'background_lasso_tool': BackgroundLassoTool,
     'symbol_detection_tool': SymbolDetectionTool,
+    'average_symbol_tool': AverageSymbolTool,
 }
 
 
@@ -1549,6 +1622,7 @@ def get_tool_kwargs_dispatch(name):
         'gesture_select_tool': dict(),
         # 'region_binarize_tool': dict(),
         'background_lasso_tool': dict(),
+        'average_symbol_tool': dict(),
     }
 
     if name in no_kwarg_tools:
