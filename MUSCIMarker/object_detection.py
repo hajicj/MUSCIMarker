@@ -121,11 +121,11 @@ class ObjectDetectionHandler(Widget):
             logging.warn('ObjectDetectionHandler: Could not parse'
                          ' response file {0}'.format(response_fname))
             cropobjects = []
-        finally:
-            # Cleanup files.
-            logging.info('Cleaning up files.')
-            if os.path.isfile(request_fname):
-                os.unlink(request_fname)
+        # finally:
+        #     # Cleanup files.
+        #     logging.info('Cleaning up files.')
+        #     if os.path.isfile(request_fname):
+        #         os.unlink(request_fname)
 
         # Bind output representation to self.result to fire bindings
         #  - Subsequent processing means adding the CropObjects

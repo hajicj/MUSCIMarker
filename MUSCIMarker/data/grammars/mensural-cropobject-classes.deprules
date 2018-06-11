@@ -6,7 +6,7 @@ This is the dependency grammar for the default annotations symbols.
 # Noteheads
 # (no notehead-to-text attachment)
 
-notehead-* | sharp flat natural stem dot
+notehead-* | sharp flat stem dot
 notehead-full | *_flag beam
 
 notehead-* | ornament
@@ -19,17 +19,17 @@ notehead-full{1,} |
 
 | beam{1,} stem{1,}
 | dot{1,}
-| sharp{1,} flat{1,} natural{1,}
+| sharp{1,} flat{1,}
 | *_flag{1,}
 
 
 ##############################################################################
 # Composites
 
-longa* | sharp flat natural stem dot notehead-*
-*brevis | sharp flat natural stem dot notehead-*
-*minimia | sharp flat natural stem dot notehead-*
-coloured_* | sharp flat natural stem dot notehead-*
+longa* | sharp flat stem dot notehead-*
+*brevis | sharp flat stem dot notehead-*
+*minimia | sharp flat stem dot notehead-*
+coloured_* | sharp flat stem dot notehead-*
 
 
 ##############################################################################
@@ -43,14 +43,14 @@ coloured_* | sharp flat natural stem dot notehead-*
 ##############################################################################
 # Notations
 
-ornament | sharp flat natural
+ornament | sharp flat
 | ornament{1,}
 
 
 ##############################################################################
 # Part defaults
 
-key_signature | sharp flat natural
+key_signature | sharp flat
 key_signature{1,} |
 
 time_signature | common_time cut_time proportio_maior proportio_minor
