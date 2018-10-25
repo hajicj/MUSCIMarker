@@ -19,9 +19,9 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pytest h5py scikit-image
   - source activate test-environment
 
-  - add-apt-repository ppa:kivy-team/kivy
-  - apt-get update
-  - apt-get install python3-kivy
+  - sudo add-apt-repository ppa:kivy-team/kivy
+  - sudo apt-get update
+  - sudo apt-get install python3-kivy
   
   # Display the Python version we are running now
   - python --version
