@@ -6,6 +6,10 @@ python:
 - "3.6"
 
 install:
+- add-apt-repository ppa:kivy-team/kivy
+- apt-get update
+- apt-get install python3-kivy
+
 # Display the Python version we are running now
 - python --version
 
