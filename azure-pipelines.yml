@@ -22,7 +22,6 @@ jobs:
       createCustomEnvironment: true
       environmentName: test-environment
       packageSpecs: 'python=3.6'
-      updateConda: true
 
   - task: UsePythonVersion@0
     inputs:
@@ -79,7 +78,6 @@ jobs:
       createCustomEnvironment: true
       environmentName: test-environment
       packageSpecs: 'python=3.6'
-      updateConda: true
 
   - task: UsePythonVersion@0
     inputs:
