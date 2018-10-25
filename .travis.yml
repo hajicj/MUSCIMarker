@@ -19,19 +19,15 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pytest h5py scikit-image
   - source activate test-environment
 
-  - sudo add-apt-repository ppa:kivy-team/kivy -y
-  - sudo apt-get update -q
-  - sudo apt-get install -y python3-kivy
-  
   # Display the Python version we are running now
   - python --version
   
   # install Pillow for processing images
-  - conda install Pillow;
+  - conda install Pillow
   - conda install -c anaconda lxml
   - conda install -c anaconda libxslt
   - conda install -c anaconda libxml2
-  - conda install -c anaconda cython==0.23
+  - conda install -c anaconda cython==0.25.2
 
   # Install additional requirements (Keras and Tensorflow CPU-Version)
   - pip install -r requirements.txt  
@@ -39,14 +35,14 @@ install:
   # List installed packages for debuggin purposes
   - pip list
   
-  # Install Kivy 1.9.1, see https://kivy.org/docs/installation/installation-linux.html#installation-in-a-virtual-environment
+  # Install Kivy 1.10.1, see https://kivy.org/docs/installation/installation-linux.html#installation-in-a-virtual-environment
   - sudo add-apt-repository ppa:kivy-team/kivy -y
   # Ignore errors from the next command
   - sudo apt-get update -q || true 
   
   - sudo apt-get install libegl1-mesa-dev libgles2-mesa-dev -y
-  - sudo apt-get install python-kivy libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev  libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev -y
-  - pip install kivy==1.9.1
+  - sudo apt-get install python3-kivy libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev -y
+  - pip install kivy
 
 script:
   #pytest
