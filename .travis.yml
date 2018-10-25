@@ -7,6 +7,7 @@ python:
 
 install:
   # code below is taken from http://conda.pydata.org/docs/travis.html
+  # Alternatively, take Miniconda3-4.3.31-Linux-x86_64.sh directly for python 3.6
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -25,7 +26,6 @@ install:
   
   # install Pillow for processing images
   - conda install Pillow
-  - conda install -c anaconda lxml
   - conda install -c anaconda libxslt
   - conda install -c anaconda libxml2
   - conda install -c anaconda cython==0.25.2
