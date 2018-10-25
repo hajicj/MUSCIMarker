@@ -18,15 +18,11 @@ install:
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pytest h5py scikit-image
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pytest h5py scikit-image pillow cython
   - source activate test-environment
 
   # Display the Python version we are running now
   - python --version
-  
-  # install Pillow for processing images
-  - conda install Pillow
-  - conda install cython==0.25.2
 
   # Install additional requirements (Keras and Tensorflow CPU-Version)
   - pip install -r requirements.txt  
