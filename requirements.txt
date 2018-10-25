@@ -4,7 +4,6 @@ scipy
 matplotlib
 scikit-image
 scikit-learn
-cython
 lxml
 opencv-python
 future
