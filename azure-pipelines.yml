@@ -37,7 +37,7 @@ jobs:
     displayName: 'Install pip dependencies'
 
   - script: pip install kivy
-      displayName: 'Installing kivy'
+    displayName: 'Installing kivy'
 
   - script: |
       pip install pytest
