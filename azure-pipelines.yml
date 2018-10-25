@@ -16,17 +16,13 @@ jobs:
     maxParallel: 4
 
   steps:
-  # Conda Environment, see https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/package/conda-environment?view=vsts
-  # Create and activate a Conda environment.
+  # Create and activate a Conda environment. See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/package/conda-environment?view=vsts
   - task: CondaEnvironment@1
     inputs:
       createCustomEnvironment: true
       environmentName: test-environment
       packageSpecs: 'python=3.6'
       updateConda: true
-      #installOptions: # Optional
-      #createOptions: # Optional
-      #cleanEnvironment: # Optional
 
   - task: UsePythonVersion@0
     inputs:
@@ -77,6 +73,14 @@ jobs:
     maxParallel: 4
 
   steps:
+  # Create and activate a Conda environment. See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/package/conda-environment?view=vsts
+  - task: CondaEnvironment@1
+    inputs:
+      createCustomEnvironment: true
+      environmentName: test-environment
+      packageSpecs: 'python=3.6'
+      updateConda: true
+
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '$(python.version)'
