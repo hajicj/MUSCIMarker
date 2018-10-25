@@ -21,12 +21,17 @@ jobs:
     inputs:
       createCustomEnvironment: true
       environmentName: test-environment
-      packageSpecs: 'python=3.6 Pillow Cython==0.25.2'
+      packageSpecs: 'python=3.6 numpy scipy matplotlib pytest h5py scikit-image pillow cython'
 
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
+
+  - script: sudo add-apt-repository ppa:kivy-team/kivy -y
+  - script: sudo apt-get update -q || true
+  - script: sudo apt-get install libegl1-mesa-dev libgles2-mesa-dev -y
+  - script: sudo apt-get install python-kivy libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev -y
 
   - script: python -m pip install --upgrade pip && pip install -r requirements.txt
     displayName: 'Install pip dependencies'
@@ -74,14 +79,14 @@ jobs:
     inputs:
       createCustomEnvironment: true
       environmentName: test-environment
-      packageSpecs: 'python=3.6 Pillow Cython==0.25.2'
+      packageSpecs: 'python=3.6 numpy scipy matplotlib pytest h5py scikit-image pillow cython'
 
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
 
-  - script: python -m pip install --upgrade pip && pip install -r requirements.txt
+  - script: python -m pip install --upgrade pip && pip install -r requirements.txt && pip install -r requirements_windows.txt
     displayName: 'Install pip dependencies'
 
   - script: |
