@@ -6,7 +6,7 @@
 jobs:
 
 ####### Test the build on Ubuntu ########
-- job: 'Ubuntu Test'
+- job: 'Ubuntu_Test'
   pool:
     vmImage: 'Ubuntu 16.04'
   strategy:
@@ -52,7 +52,7 @@ jobs:
 
 ####### Publish on Ubuntu ########
 - job: 'Publish'
-  dependsOn: 'Ubuntu Test'
+  dependsOn: 'Ubuntu_Test'
   pool:
     vmImage: 'Ubuntu 16.04'
 
@@ -67,7 +67,7 @@ jobs:
 
 
 ####### Test the build on Windows ########
-- job: 'Windows Test'
+- job: 'Windows_Test'
   pool:
     vmImage: 'vs2017-win2016'
   strategy:
