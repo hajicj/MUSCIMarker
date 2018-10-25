@@ -19,10 +19,10 @@ jobs:
   # Create and activate a Conda environment.
   - task: CondaEnvironment@1
     inputs:
-      #createCustomEnvironment: # Optional
-      #environmentName: # Required when createCustomEnvironment == True
-      packageSpecs: 'python=3.6 Pillow cython==0.25.2' # Optional
-      #updateConda: # Optional
+      createCustomEnvironment: true
+      environmentName: test-environment
+      packageSpecs: 'python=3.6'
+      updateConda: true
       #installOptions: # Optional
       #createOptions: # Optional
       #cleanEnvironment: # Optional
@@ -32,10 +32,11 @@ jobs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
 
-  - script:
+  - script: conda install Pillow cython==0.25.2
+    displayName: 'Install conda dependencies'
 
   - script: python -m pip install --upgrade pip && pip install -r requirements.txt
-    displayName: 'Install dependencies'
+    displayName: 'Install pip dependencies'
 
   - script: |
       pip install pytest
