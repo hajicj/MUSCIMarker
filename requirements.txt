@@ -1,0 +1,17 @@
+docutils
+pygments
+pypiwin32
+kivy.deps.sdl2
+kivy.deps.glew
+kivy.deps.angle
+kivy
+future
+muscima 0.10.0
+
+pytest
+pytest-cov
+future
+
+# Libraries to integrating code-coverage reporting
+python-coveralls
+codecov
