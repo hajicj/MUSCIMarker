@@ -12,10 +12,11 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
+
+  - conda install python=3.6
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
-
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pytest h5py scikit-image
   - source activate test-environment
 
