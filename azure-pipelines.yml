@@ -21,15 +21,12 @@ jobs:
     inputs:
       createCustomEnvironment: true
       environmentName: test-environment
-      packageSpecs: 'python=3.6'
+      packageSpecs: 'python=3.6 Pillow Cython==0.25.2'
 
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
-
-  - script: conda install Pillow cython==0.25.2
-    displayName: 'Install conda dependencies'
 
   - script: python -m pip install --upgrade pip && pip install -r requirements.txt
     displayName: 'Install pip dependencies'
@@ -77,17 +74,14 @@ jobs:
     inputs:
       createCustomEnvironment: true
       environmentName: test-environment
-      packageSpecs: 'python=3.6'
+      packageSpecs: 'python=3.6 Pillow Cython==0.25.2'
 
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
 
-  - script: conda install Pillow cython==0.25.2
-    displayName: 'Install conda dependencies'
-
-  - script: python -m pip install --upgrade pip && pip install -r requirements.txt
+    - script: python -m pip install --upgrade pip && pip install -r requirements.txt
     displayName: 'Install pip dependencies'
 
   - script: |
