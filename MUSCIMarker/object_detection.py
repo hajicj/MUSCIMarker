@@ -1,6 +1,8 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
 
+from builtins import str
+from builtins import object
 import logging
 import os
 import pickle
@@ -51,7 +53,7 @@ class ObjectDetectionHandler(Widget):
 
     current_request = ObjectProperty(None, allownone=True)
 
-    def __init__(self, tmp_dir, port=33555, **kwargs):
+    def __init__(self, tmp_dir, port=33555, hostname="127.0.0.1", **kwargs):
         super(ObjectDetectionHandler, self).__init__(**kwargs)
 
         self.tmp_dir = tmp_dir
@@ -121,11 +123,11 @@ class ObjectDetectionHandler(Widget):
             logging.warn('ObjectDetectionHandler: Could not parse'
                          ' response file {0}'.format(response_fname))
             cropobjects = []
-        finally:
-            # Cleanup files.
-            logging.info('Cleaning up files.')
-            if os.path.isfile(request_fname):
-                os.unlink(request_fname)
+        # finally:
+        #     # Cleanup files.
+        #     logging.info('Cleaning up files.')
+        #     if os.path.isfile(request_fname):
+        #         os.unlink(request_fname)
 
         # Bind output representation to self.result to fire bindings
         #  - Subsequent processing means adding the CropObjects

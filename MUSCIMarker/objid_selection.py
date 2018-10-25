@@ -1,6 +1,7 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
 
+from builtins import map
 import logging
 
 import re
@@ -165,9 +166,9 @@ class ObjidSelectionDialog(Popup):
     ######################################################
     # The objid selection behavior
     def do_objid_selection(self):
-        objids = map(int, re.split('\W+', self.text))
+        objids = list(map(int, re.split('\W+', self.text)))
         view = App.get_running_app().cropobject_list_renderer.view
-        available_objids = frozenset(App.get_running_app().annot_model.cropobjects.keys())
+        available_objids = frozenset(list(App.get_running_app().annot_model.cropobjects.keys()))
         cropobject_views = [view.get_cropobject_view(objid) for objid in objids
                             if objid in available_objids]
         view.unselect_all()

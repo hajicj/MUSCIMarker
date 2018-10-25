@@ -1,32 +1,33 @@
 """This module implements a class that..."""
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function, unicode_literals
 
 import collections
 import copy
 import logging
-import os
+import time
+from builtins import range
+from builtins import zip
 
 import numpy
-import time
-from skimage.draw import polygon, line
-
 from kivy.app import App
-from muscima.cropobject import split_cropobject_on_connected_components
-from muscima.inference_engine_constants import InferenceEngineConstants as _CONST
-
-# DEBUG
-# import matplotlib.pyplot as plt
-
 from kivy.core.window import Window
-from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty, ListProperty, NumericProperty
+from kivy.properties import ObjectProperty, BooleanProperty, ListProperty, NumericProperty
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
+from muscima.cropobject import split_cropobject_on_connected_components
+from muscima.inference_engine_constants import InferenceEngineConstants as _CONST
+from past.utils import old_div
+from skimage.draw import polygon, line
 from skimage.filters import threshold_otsu
 
-from edge_view import EdgeView
 from editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, LineTracer
 from utils import bbox_to_integer_bounds, image_mask_overlaps_cropobject, image_mask_overlaps_model_edge, \
     bbox_intersection
+
+# DEBUG
+# import matplotlib.pyplot as plt
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -64,21 +65,21 @@ class MUSCIMarkerTool(Widget):
         Window.bind(on_key_up=self.on_key_up)
 
     def init_editor_widgets(self):
-        for w in self.editor_widgets.values():
+        for w in list(self.editor_widgets.values()):
             self.editor_widget_ref.add_widget(w)
 
     def init_command_palette(self):
-        for c in self.command_palette_widgets.values():
+        for c in list(self.command_palette_widgets.values()):
             self.command_palette_ref.add_widget(c)
 
     def init_keyboard_shortcuts(self):
-        for k, action in self.keyboard_shortcuts.iteritems():
+        for k, action in self.keyboard_shortcuts.items():
             self.app_ref.keyboard_dispatch[k] = action
 
     def deactivate(self):
-        for w in self.editor_widgets.values():
+        for w in list(self.editor_widgets.values()):
             self.editor_widget_ref.remove_widget(w)
-        for c in self.command_palette_widgets.values():
+        for c in list(self.command_palette_widgets.values()):
             self.command_palette_ref.remove_widget(c)
 
         for k in self.keyboard_shortcuts:
@@ -126,12 +127,12 @@ class MUSCIMarkerTool(Widget):
         m_points = [(int(x), int(y)) for x, y in m_points]
 
         # Let's deal with points on the boundary or outside
-        m_points_x, m_points_y = zip(*m_points)
+        m_points_x, m_points_y = list(zip(*m_points))
         m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
                       for x in m_points_x]
         m_points_y = [max(0, min(y, self.app_ref.image_scaler.model_width - 1))
                       for y in m_points_y]
-        m_points = zip(m_points_x, m_points_y)
+        m_points = list(zip(m_points_x, m_points_y))
 
         return m_points
 
@@ -143,7 +144,7 @@ class MUSCIMarkerTool(Widget):
         _t_mask_creation = time.clock()
 
         # Possible speedup:
-        m_points_x, m_points_y = zip(*m_points)
+        m_points_x, m_points_y = list(zip(*m_points))
         chi = polygon(m_points_x, m_points_y)
 
         _t_polygon = time.clock()
@@ -355,6 +356,78 @@ class ConnectedSelectTool(AddSymbolTool):
 
         return mask, (cc_t, cc_l, cc_b, cc_r)
 
+###############################################################################
+
+
+class AverageSymbolTool(AddSymbolTool):
+    """This tool uses the average bounding box and mask
+    for a given symbol, computed from all the instances
+    of the given symbol class that are in the current
+    annotation.
+
+    Operates on click, or click & drag: on release, will
+    create the symbol centered around the point where you let go.
+    """
+    _current_bbox_size = -1, -1
+    _current_mask = None
+
+    def compute_average_bbox(self, clsname):
+        cropobjects = [c for c in self._model.cropobjects.values()
+                       if c.clsname == clsname]
+        hs = [c.height for c in cropobjects]
+        h_avg = numpy.mean(hs)
+        ws = [c.width for c in cropobjects]
+        w_avg = numpy.mean(ws)
+        return int(numpy.round(h_avg)) + 1, int(numpy.round(w_avg)) + 1
+
+    def set_average_bbox(self, clsname):
+        self._current_bbox_size = self.compute_average_bbox(clsname)
+
+    def set_average_mask(self):
+        if min(self._current_bbox_size) < 0:
+            self._current_mask = None
+            logging.warning('AverageSymbolTool: Cannot set mask'
+                            ' when no symbol class is selected!')
+            return
+        self._current_mask = numpy.ones(self._current_bbox_size,
+                                        dtype='uint8')
+
+    def set_to_current_class(self):
+        clsname = self.app_ref.currently_selected_mlclass_name
+        self.set_average_bbox(clsname)
+        self.set_average_mask()
+
+    def create_command_widgets(self):
+        return collections.OrderedDict()
+
+    def create_editor_widgets(self):
+        self.set_to_current_class()
+        editor_widgets = collections.OrderedDict()
+        editor_widgets['bbox_tracer'] = LineTracer()
+        editor_widgets['bbox_tracer'].bind(points=self.current_selection_and_mask_from_points)
+        return editor_widgets
+
+    def current_selection_and_mask_from_points(self, instance, pos):
+        e_col, e_row = pos[-2], pos[-1]
+        m_points = self.editor_to_model_points([e_col, e_row])
+        m_row, m_col = m_points[0][0], m_points[0][1]
+        h, w = self._current_bbox_size
+        dh = h // 2
+        dw = w // 2
+        m_t = m_row - dh
+        m_l = m_col - dw
+        # Ensure shape despite integer division
+        m_b = m_row + (dh + (2 * dh - h))
+        m_r = m_col + (dw + (2 * dw - w))
+
+        self.current_cropobject_mask = numpy.ones((m_b - m_t, m_r - m_l),
+                                                  dtype='uint8')
+        self.current_cropobject_model_selection = {'top': m_t,
+                                                   'left': m_l,
+                                                   'bottom': m_b,
+                                                   'right': m_r}
+
+
 
 ###############################################################################
 
@@ -423,7 +496,7 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
         point_set_as_tuples = [p for i, p in enumerate(zip(points[:-1], points[1:]))
                                if i % 2 == 0]
         # This is the Kivy --> numpy transposition
-        p_horizontal, p_vertical = zip(*point_set_as_tuples)
+        p_horizontal, p_vertical = list(zip(*point_set_as_tuples))
 
         # Let's deal with points on the boundary or outside
         p_horizontal = [max(0, min(x, self.app_ref.image_scaler.widget_width - 1))
@@ -456,7 +529,7 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
         m_points = [(int(x), int(y)) for x, y in m_points]
         mask = numpy.zeros((self.app_ref.image_scaler.model_height,
                             self.app_ref.image_scaler.model_width), dtype='uint8')
-        m_points_x, m_points_y = zip(*m_points)
+        m_points_x, m_points_y = list(zip(*m_points))
 
         # Let's deal with points on the boundary or outside
         m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
@@ -636,7 +709,7 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
         mask = numpy.zeros((self.app_ref.image_scaler.model_height,
                             self.app_ref.image_scaler.model_width),
                            dtype=image.dtype)
-        m_points_x, m_points_y = zip(*m_points)
+        m_points_x, m_points_y = list(zip(*m_points))
 
         # Let's deal with points on the boundary or outside
         m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
@@ -653,7 +726,7 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
 
         mask *= image
         mask = mask.astype(image.dtype)
-        logging.info('T-Lasso: mask: {0} pxs'.format(mask.sum() / 255))
+        logging.info('T-Lasso: mask: {0} pxs'.format(old_div(mask.sum(), 255)))
 
         # - trim the masked image
         out_t, out_b, out_l, out_r = 1000000, 0, 1000000, 0
@@ -661,20 +734,20 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
         logging.info('T-Lasso: trimming with bbox={0}'.format(m_lasso_int_bbox))
         _trim_start_time = time.clock()
         # Find topmost and bottom-most nonzero row.
-        for i in xrange(img_t, img_b):
+        for i in range(img_t, img_b):
             if mask[i, img_l:img_r].sum() > 0:
                 out_t = i
                 break
-        for j in xrange(img_b, img_t, -1):
+        for j in range(img_b, img_t, -1):
             if mask[j-1, img_l:img_r].sum() > 0:
                 out_b = j
                 break
         # Find leftmost and rightmost nonzero column.
-        for k in xrange(img_l, img_r):
+        for k in range(img_l, img_r):
             if mask[img_t:img_b, k].sum() > 0:
                 out_l = k
                 break
-        for l in xrange(img_r, img_l, -1):
+        for l in range(img_r, img_l, -1):
             if mask[img_t:img_b, l-1].sum() > 0:
                 out_r = l
                 break
@@ -875,7 +948,7 @@ class GestureSelectTool(LassoBoundingBoxSelectTool):
                                 for p in e_points]).astype('uint16')
         # Make them unique
         m_points_uniq = numpy.array([m_points[0]] +
-                                    [m_points[i] for i in xrange(1, len(m_points))
+                                    [m_points[i] for i in range(1, len(m_points))
                                      if (m_points[i] - m_points[i-1]).sum() == 0.0])
 
         logging.info('Gesture: total M-Points: {0}, unique: {1}'
@@ -1103,7 +1176,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
                 # Set new modulo so that the expected time per event is 0.001.
                 # Later on, this may cause noticeable lag in the selection, but
                 # hopefully not so much in the lasso.
-                self._active_selection_slow_mode_modulo = max(1, min(int(time_taken / self._active_selection_target_time_per_event), 30))
+                self._active_selection_slow_mode_modulo = max(1, min(int(old_div(time_taken, self._active_selection_target_time_per_event)), 30))
                 logging.debug('Active selection: time take: {0}, setting modulo to {1}'
                              ''.format(time_taken, self._active_selection_slow_mode_modulo))
                 self._active_selection_slow_mode_counter = 1
@@ -1118,7 +1191,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
         pass
 
     def _process_active_selection_slow_mode(self, points):
-        m_points_x, m_points_y = zip(*points)
+        m_points_x, m_points_y = list(zip(*points))
         xmin, xmax = min(m_points_x), max(m_points_x)
         ymin, ymax = min(m_points_y), max(m_points_y)
 
@@ -1193,7 +1266,7 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
         _t_middle = time.clock()
 
         # Find all CropObjects that overlap
-        objids = [objid for objid, c in self._model.cropobjects.iteritems()
+        objids = [objid for objid, c in self._model.cropobjects.items()
                   if image_mask_overlaps_cropobject(model_mask, c,
                     use_cropobject_mask=self.use_mask_to_determine_selection)]
 
@@ -1265,7 +1338,7 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
             if c_start.objid == 224 and c_end.objid == 225:
                 sx, sy = c_start.middle
                 ex, ey = c_end.middle
-                mx, my = (sx + ex) / 2, (sy + ey) / 2
+                mx, my = old_div((sx + ex), 2), old_div((sy + ey), 2)
                 logging.warn('Edge 224 --> 225: middle points '
                              '{0}, {1} -- mask: {2}'
                              ''.format(c_start.middle, c_end.middle,
@@ -1535,6 +1608,7 @@ tool_dispatch = {
     'region_binarize_tool': RegionBinarizeTool,
     'background_lasso_tool': BackgroundLassoTool,
     'symbol_detection_tool': SymbolDetectionTool,
+    'average_symbol_tool': AverageSymbolTool,
 }
 
 
@@ -1549,6 +1623,7 @@ def get_tool_kwargs_dispatch(name):
         'gesture_select_tool': dict(),
         # 'region_binarize_tool': dict(),
         'background_lasso_tool': dict(),
+        'average_symbol_tool': dict(),
     }
 
     if name in no_kwarg_tools:

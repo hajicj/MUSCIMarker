@@ -1,6 +1,9 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
+from __future__ import division
 
+from builtins import str
+from past.utils import old_div
 import logging
 import os
 import uuid
@@ -123,8 +126,8 @@ class CropObjectView(SelectableView, ToggleButton):
         self.size_hint = (None, None)
         self.pos = self.cropobject.y, self.cropobject.x
 
-        self._height_scaling_factor = self.height / float(self._model_counterpart.height)
-        self._width_scaling_factor = self.width / float(self._model_counterpart.width)
+        self._height_scaling_factor = old_div(self.height, float(self._model_counterpart.height))
+        self._width_scaling_factor = old_div(self.width, float(self._model_counterpart.width))
         # self.pos_hint = {'x': self.cropobject.x, 'y': self.cropobject.y }
         # self.pos_hint = {'x': 0, 'y': 0 }
 
@@ -401,10 +404,10 @@ class CropObjectView(SelectableView, ToggleButton):
             pos=self.pos,
             text='{0}'.format(self.cropobject.clsname),
             font_size=15,
-            values=sorted(self._model.mlclasses_by_name.keys(),
+            values=sorted(list(self._model.mlclasses_by_name.keys()),
                           key=lambda k: self._model.mlclasses_by_name[k].clsid),
-            width=300 / self._editor_scale,
-            height=50 / self._editor_scale,
+            width=old_div(300, self._editor_scale),
+            height=old_div(50, self._editor_scale),
             size_hint=(None, None),
             # is_open=True,
         )
@@ -616,8 +619,8 @@ class CropObjectView(SelectableView, ToggleButton):
     def move_view_fine(self, vertical=0, horizontal=0):
         logging.info('CropObjectView {0}: moving view vertical={1}, horizontal={2}'
                      ''.format(self.cropobject.objid, vertical, horizontal))
-        self.pos = (self.pos[0] + horizontal / self._editor_scale,# / self._width_scaling_factor),
-                    self.pos[1] + vertical / self._editor_scale)# / self._width_scaling_factor))
+        self.pos = (self.pos[0] + old_div(horizontal, self._editor_scale),# / self._width_scaling_factor),
+                    self.pos[1] + old_div(vertical, self._editor_scale))# / self._width_scaling_factor))
 
     @tr.Tracker(track_names=['self', 'vertical', 'horizontal'],
                 transformations={'self': [lambda s: ('objid', s._model_counterpart.objid),
@@ -668,9 +671,9 @@ class CropObjectView(SelectableView, ToggleButton):
         logging.info('CropObjectView {0}: stretching view vertical={1}, horizontal={2}'
                      ''.format(self.cropobject.objid, vertical, horizontal))
         if self.width + horizontal > 0:
-            self.width += horizontal / self._editor_scale# / self._width_scaling_factor)
+            self.width += old_div(horizontal, self._editor_scale)# / self._width_scaling_factor)
         if self.height + vertical > 0:
-            self.height += vertical / self._editor_scale# / self._height_scaling_factor)
+            self.height += old_div(vertical, self._editor_scale)# / self._height_scaling_factor)
 
     ##########################################################################
     # Split
@@ -765,12 +768,12 @@ class CropObjectView(SelectableView, ToggleButton):
         crop = self._model_counterpart.project_to(image).astype('float32')
         t, l, b, r = self._model_counterpart.bounding_box
         background_crop = image[t:b, l:r].astype('float32')
-        combined_crop = (crop / 2.0) + (background_crop / 2.0)
+        combined_crop = (old_div(crop, 2.0)) + (old_div(background_crop, 2.0))
 
         # Save image
         app = App.get_running_app()
         tmp_dir = app.tmp_dir
-        fname = unicode(uuid.uuid4()) + '.png'
+        fname = str(uuid.uuid4()) + '.png'
         full_path = os.path.join(tmp_dir, fname)
 
         scipy.misc.imsave(full_path, combined_crop, )

@@ -1,6 +1,10 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
+from __future__ import division
 
+from builtins import str
+from past.utils import old_div
+from builtins import object
 import codecs
 import logging
 from math import floor, ceil
@@ -479,7 +483,7 @@ def image_mask_overlaps_model_edge(mask, edge_start, edge_end, margin=2):
     return s > 0
 
     # The edge passes through the middle of its bounding box!
-    vert_mid, horz_mid = t + (b - t) / 2.0, l + (r - l) / 2.0
+    vert_mid, horz_mid = t + old_div((b - t), 2.0), l + old_div((r - l), 2.0)
 
     t_mid = max(0, int(floor(vert_mid) - margin))
     b_mid = min(int(ceil(vert_mid) + margin), mask.shape[0])

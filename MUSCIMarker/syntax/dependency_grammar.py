@@ -6,6 +6,8 @@ A Grammar is a set of rules about how objects form relationships.
 """
 from __future__ import print_function, unicode_literals
 
+from builtins import str
+from builtins import object
 import codecs
 import logging
 import os
@@ -199,7 +201,7 @@ class DependencyGrammar(object):
 
     def __init__(self, grammar_filename, mlclasses):
         """Initialize the Grammar: fill in alphabet and parse rules."""
-        self.alphabet = {unicode(m.name): m for m in mlclasses.values()}
+        self.alphabet = {str(m.name): m for m in list(mlclasses.values())}
         # logging.info('DependencyGrammar: got alphabet:\n{0}'
         #              ''.format(pprint.pformat(self.alphabet)))
         self.rules = []
@@ -298,7 +300,7 @@ class DependencyGrammar(object):
         reasons_o = {}
 
         # Check that vertices have labels that are in the alphabet
-        for v, clsname in vertices.iteritems():
+        for v, clsname in vertices.items():
             if clsname not in self.alphabet:
                 wrong_vertices.append(v)
                 reasons_v[v] = 'Symbol {0} not in alphabet: class {1}.' \
@@ -306,7 +308,7 @@ class DependencyGrammar(object):
 
         # Check that all edges are allowed
         for f, t in edges:
-            nf, nt = unicode(vertices[f]), unicode(vertices[t])
+            nf, nt = str(vertices[f]), str(vertices[t])
             if (nf, nt) not in self.rules:
                 logging.warning('Wrong edge: {0} --> {1}, rules:\n{2}'
                                 ''.format(nf, nt, pprint.pformat(self.rules)))
@@ -537,7 +539,7 @@ class DependencyGrammar(object):
 
         :return: token, cmin, cmax
         """
-        l = unicode(l)
+        l = str(l)
         cmin, cmax = 0, self._MAX_CARD
         if '{' not in l:
             token = l
@@ -576,7 +578,7 @@ class DependencyGrammar(object):
         # logging.info('DependencyGrammar._matching_names: token {0}, pref={1}, suff={2}'
         #              ''.format(token, prefix, suffix))
 
-        matching_names = self.alphabet.keys()
+        matching_names = list(self.alphabet.keys())
         if len(prefix) > 0:
             matching_names = [n for n in matching_names if n.startswith(prefix)]
         if len(suffix) > 0:

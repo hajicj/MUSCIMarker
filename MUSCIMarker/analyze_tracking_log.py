@@ -19,6 +19,10 @@ then: args dict, formatted as key=value,key=value
 
 """
 from __future__ import print_function, unicode_literals
+from __future__ import division
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import argparse
 import codecs
 import collections
@@ -52,7 +56,7 @@ def freqdict(l, sort=True):
         out[item] += 1
     if sort:
         s_out = collections.OrderedDict()
-        for k, v in sorted(out.items(), key=operator.itemgetter(1), reverse=True):
+        for k, v in sorted(list(out.items()), key=operator.itemgetter(1), reverse=True):
             s_out[k] = v
         out = s_out
     return out
@@ -163,7 +167,7 @@ def unique_logs(event_logs):
     values are the event lists.
     """
     unique = collections.OrderedDict()
-    for log_file, l in event_logs.iteritems():
+    for log_file, l in event_logs.items():
         if len(l) < 1:
             logger.info('Got an empty log from file {0}'.format(log_file))
             continue
@@ -178,7 +182,7 @@ def unique_logs(event_logs):
                          ''.format(log_file, init_time, len(l), len(unique[init_time])))
         else:
             unique[init_time] = l
-    return unique.values()
+    return list(unique.values())
 
 
 ##############################################################################
@@ -230,7 +234,7 @@ def events_by_time_units(events, seconds_per_unit=60):
     bins = collections.defaultdict(list)
     for e in events:
         t = float(e['-time-'])
-        n_bin = int(t - start_time) / int(seconds_per_unit)
+        n_bin = old_div(int(t - start_time), int(seconds_per_unit))
         bins[n_bin].append(e)
 
     return bins
@@ -243,7 +247,7 @@ def plot_events_by_time(events, type_key='-fn-'):
     fns = [e['-fn-'] for e in events]
     # Assign numbers to tracked fns
     fns_by_freq = {f: len([e for e in fns if e == f]) for f in set(fns)}
-    fn_dict = {f: i for i, f in enumerate(sorted(fns_by_freq.keys(),
+    fn_dict = {f: i for i, f in enumerate(sorted(list(fns_by_freq.keys()),
                                           reverse=True,
                                           key=lambda k: fns_by_freq[k]))}
 
@@ -272,19 +276,19 @@ def format_as_timeflow_csv(events, delimiter='\t'):
         # return '-'.join(reversed(time_human.replace(':', '-').split('__')))
         # time_human = e['-time-human-']
         time = float(e['-time-'])
-        return unicode(int(time) - min_second)
+        return str(int(time) - min_second)
 
     # Collect all events that are in the data.
-    event_fields = freqdict(list(itertools.chain(*[e.keys() for e in events])))
-    output_fields = ['ID', 'Date'] + event_fields.keys()
+    event_fields = freqdict(list(itertools.chain(*[list(e.keys()) for e in events])))
+    output_fields = ['ID', 'Date'] + list(event_fields.keys())
     n_fields = len(output_fields)
 
     field2idx = {f: i+2 for i, f in enumerate(event_fields.keys())}
-    event_table = [['' for _ in xrange(n_fields)] for _ in events]
+    event_table = [['' for _ in range(n_fields)] for _ in events]
     for i, e in enumerate(events):
-        event_table[i][0] = unicode(i)
+        event_table[i][0] = str(i)
         event_table[i][1] = format_date(e)#format_date(e['-time-human-'])
-        for k, v in e.iteritems():
+        for k, v in e.items():
             event_table[i][field2idx[k]] = v
 
     # Add labels to event table to get the complete data
@@ -415,16 +419,16 @@ def main(args):
         freq_by_fn = freqdict([l.get('-fn-', None) for l in log_data])
 
         by_minute = events_by_time_units(log_data)
-        by_minute_freq = {k: len(v) for k, v in by_minute.items()}
+        by_minute_freq = {k: len(v) for k, v in list(by_minute.items())}
         n_minutes = len(by_minute)
 
         print('# minutes worked: {0}'.format(n_minutes))
-        n_hours = n_minutes / 60.0
+        n_hours = old_div(n_minutes, 60.0)
         print('# hours worked: {0:.2f}'.format(n_hours))
         print('CZK@120: {0:.3f}'.format(n_hours * 120))
         print('CZK@150: {0:.3f}'.format(n_hours * 150))
         print('CZK@180: {0:.3f}'.format(n_hours * 180))
-        print('Avg. events per minute: {0}'.format(float(len(log_data)) / n_minutes))
+        print('Avg. events per minute: {0}'.format(old_div(float(len(log_data)), n_minutes)))
 
     if args.count_annotations:
         if args.packages is None:
@@ -449,7 +453,7 @@ def main(args):
         print('Total CropObjects: {0}'.format(n_cropobjects))
         print('Total Relationships: {0}'.format(n_relationships))
         if n_minutes is not None:
-            print('Cropobjects per minute: {0:.2f}'.format(n_cropobjects / float(n_minutes)))
+            print('Cropobjects per minute: {0:.2f}'.format(old_div(n_cropobjects, float(n_minutes))))
 
 
     _end_time = time.clock()

@@ -1,6 +1,7 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
 
+from builtins import object
 import collections
 import logging
 
@@ -155,13 +156,13 @@ class PairwiseClassificationParser(object):
         # To each notehead, assign the closest stem that is not yet taken.
         closest_stem_per_notehead = {objid: min(stems_without_noteheads,
                                             key=lambda x: cropobject_distance(_cdict[x], n))
-                                     for objid, n in noteheads_without_stems.items()}
+                                     for objid, n in list(noteheads_without_stems.items())}
 
         # Filter edges that are too long
         _n_before_filter = len(closest_stem_per_notehead)
         closest_stem_threshold_distance = 80
         closest_stem_per_notehead = {n_objid: s_objid
-                                     for n_objid, s_objid in closest_stem_per_notehead.items()
+                                     for n_objid, s_objid in list(closest_stem_per_notehead.items())
                                      if cropobject_distance(_cdict[n_objid],
                                                             _cdict[s_objid])
                                          < closest_stem_threshold_distance
@@ -199,7 +200,7 @@ class PairwiseClassificationParser(object):
 ##############################################################################
 # Feature extraction
 
-class PairwiseClfFeatureExtractor:
+class PairwiseClfFeatureExtractor(object):
     def __init__(self, vectorizer=None):
         """Initialize the feature extractor.
 

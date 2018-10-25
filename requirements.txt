@@ -1,0 +1,26 @@
+lxml
+scikit-image
+scikit-learn
+scipy
+matplotlib
+numpy
+opencv-python
+docutils
+pygments
+pypiwin32
+kivy.deps.glew
+kivy.deps.angle
+kivy
+future
+muscima
+
+pytest
+pytest-cov
+future
+
+# Libraries to integrating code-coverage reporting
+python-coveralls
+codecov
+
+# Only Windows
+# kivy.deps.sdl2

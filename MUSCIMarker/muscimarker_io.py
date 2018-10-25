@@ -11,6 +11,10 @@ requires a `MUSCImage` instance as an argument.
 """
 from __future__ import print_function, unicode_literals, division
 
+from builtins import str
+from builtins import map
+from builtins import range
+from builtins import object
 import copy
 import logging
 import os
@@ -536,25 +540,25 @@ class CropObject(object):
 
         # How many rows/columns to trim from top, bottom, etc.
         trim_top = -1
-        for i in xrange(self.mask.shape[0]):
+        for i in range(self.mask.shape[0]):
             if self.mask[i,:].sum() != 0:
                 trim_top = i
                 break
 
         trim_left = -1
-        for j in xrange(self.mask.shape[1]):
+        for j in range(self.mask.shape[1]):
             if self.mask[:,j].sum() != 0:
                 trim_left = j
                 break
 
         trim_bottom = -1
-        for k in xrange(self.mask.shape[0]):
+        for k in range(self.mask.shape[0]):
             if self.mask[-(k+1),:].sum() != 0:
                 trim_bottom = k
                 break
 
         trim_right = -1
-        for l in xrange(self.mask.shape[1]):
+        for l in range(self.mask.shape[1]):
             if self.mask[:,-(l+1)].sum() != 0:
                 trim_right = l
                 break
@@ -603,10 +607,10 @@ class CropObject(object):
         lines.append('\t<Mask>{0}</Mask>'.format(mask_string))
 
         if len(self.inlinks) > 0:
-            inlinks_string = ' '.join(map(unicode, self.inlinks))
+            inlinks_string = ' '.join(map(str, self.inlinks))
             lines.append('\t<Inlinks>{0}</Inlinks>'.format(inlinks_string))
         if len(self.outlinks) > 0:
-            outlinks_string = ' '.join(map(unicode, self.outlinks))
+            outlinks_string = ' '.join(map(str, self.outlinks))
             lines.append('\t<Outlinks>{0}</Outlinks>'.format(outlinks_string))
 
         lines.append('</CropObject>')
@@ -691,7 +695,7 @@ class CropObject(object):
         if mask_string == 'None':
             return None
         try:
-            values = map(float, mask_string.split())
+            values = list(map(float, mask_string.split()))
         except ValueError:
             logging.info('CropObject.decode_mask(): Cannot decode mask values:\n{0}'.format(mask_string))
             raise
@@ -712,7 +716,7 @@ class CropObject(object):
         for kv in mask_string.split(' '):
             k_string, v_string = kv.split(':')
             k, v = int(k_string), int(v_string)
-            vs = [k for _ in xrange(v)]
+            vs = [k for _ in range(v)]
             values.extend(vs)
 
         mask = numpy.array(values).reshape(shape)
@@ -906,14 +910,14 @@ def parse_cropobject_list(filename, with_refs=False, tolerate_ref_absence=True,
         if len(i_s) > 0:
             i_s_text = cropobject.findall('Inlinks')[0].text
             if i_s_text is not None:  # Zero-length links
-                inlinks = map(int, i_s_text.split(' '))
+                inlinks = list(map(int, i_s_text.split(' ')))
 
         outlinks = []
         o_s = cropobject.findall('Outlinks')
         if len(o_s) > 0:
             o_s_text = cropobject.findall('Outlinks')[0].text
             if o_s_text is not None:
-                outlinks = map(int, o_s_text.split(' '))
+                outlinks = list(map(int, o_s_text.split(' ')))
 
         #################################
         # Create the object.
@@ -1256,10 +1260,10 @@ def merge_cropobject_lists(*cropobject_lists):
 
     """
     lengths = [len(c) for c in cropobject_lists]
-    shift_by = [0] + [sum(lengths[:i]) for i in xrange(1, len(lengths))]
+    shift_by = [0] + [sum(lengths[:i]) for i in range(1, len(lengths))]
 
     new_lists = []
-    for clist, s in itertools.izip(cropobject_lists, shift_by):
+    for clist, s in zip(cropobject_lists, shift_by):
         new_list = []
         for c in clist:
             new_c = copy.deepcopy(c)
