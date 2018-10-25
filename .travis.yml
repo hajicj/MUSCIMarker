@@ -26,8 +26,6 @@ install:
   
   # install Pillow for processing images
   - conda install Pillow
-  - conda install -c anaconda libxslt
-  - conda install -c anaconda libxml2
   - conda install -c anaconda cython==0.25.2
 
   # Install additional requirements (Keras and Tensorflow CPU-Version)
