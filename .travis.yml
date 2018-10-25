@@ -20,8 +20,8 @@ install:
   - source activate test-environment
 
   - sudo add-apt-repository ppa:kivy-team/kivy -y
-  - sudo apt-get update -y
-  - sudo apt-get install python3-kivy -y
+  - sudo apt-get update -q
+  - sudo apt-get install -y python3-kivy
   
   # Display the Python version we are running now
   - python --version
