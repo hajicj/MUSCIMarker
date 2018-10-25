@@ -5,7 +5,8 @@
 
 jobs:
 
-- job: 'Test'
+####### Test the build on Ubuntu ########
+- job: 'Ubuntu Test'
   pool:
     vmImage: 'Ubuntu 16.04'
   strategy:
@@ -49,8 +50,9 @@ jobs:
       testRunTitle: 'Python $(python.version)'
     condition: succeededOrFailed()
 
+####### Publish on Ubuntu ########
 - job: 'Publish'
-  dependsOn: 'Test'
+  dependsOn: 'Ubuntu Test'
   pool:
     vmImage: 'Ubuntu 16.04'
 
@@ -62,3 +64,37 @@ jobs:
 
   - script: python setup.py sdist
     displayName: 'Build sdist'
+
+
+####### Test the build on Windows ########
+- job: 'Windows Test'
+  pool:
+    vmImage: 'vs2017-win2016'
+  strategy:
+    matrix:
+      Python36:
+        python.version: '3.6'
+    maxParallel: 4
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(python.version)'
+      architecture: 'x64'
+
+  - script: conda install Pillow cython==0.25.2
+    displayName: 'Install conda dependencies'
+
+  - script: python -m pip install --upgrade pip && pip install -r requirements.txt
+    displayName: 'Install pip dependencies'
+
+  - script: |
+      pip install pytest
+      pytest tests --doctest-modules --junitxml=junit/test-results.xml
+    displayName: 'pytest'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '**/test-results.xml'
+      testRunTitle: 'Python $(python.version)'
+    condition: succeededOrFailed()
+
