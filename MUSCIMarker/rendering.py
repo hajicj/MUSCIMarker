@@ -208,7 +208,7 @@ class CropObjectListView(ListView):
         return [cv for cv in self.rendered_views if cv.is_selected]
 
     def broadcast_selection(self, *args, **kwargs):
-        '''Passes the selection on to the App.'''
+        """Passes the selection on to the App."""
         def _do_broadcast_selection(*args, **kwargs):
             App.get_running_app().selected_cropobjects = self.selected_views
         Clock.schedule_once(_do_broadcast_selection)

@@ -94,9 +94,9 @@ class ObjectGraph(Widget):
             self.add_edge(edge, label=label)
 
     def add_edge(self, edge, label='Attachment'):
-        '''Edge is an ``(a1, a2)`` pair such that ``a1`` is the head
+        """Edge is an ``(a1, a2)`` pair such that ``a1`` is the head
         and ``a2`` is the child CropObject. Our (attachment) dependency edges
-        lead from the root down, at least in the model.'''
+        lead from the root down, at least in the model."""
         logging.info('Graph: adding edge {0} with label {1}'.format(edge, label))
         a1 = edge[0]
         a2 = edge[1]

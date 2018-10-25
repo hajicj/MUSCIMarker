@@ -1,3 +1,10 @@
+lxml
+scikit-image
+scikit-learn
+scipy
+matplotlib
+numpy
+opencv-python
 docutils
 pygments
 pypiwin32
@@ -6,7 +13,7 @@ kivy.deps.glew
 kivy.deps.angle
 kivy
 future
-muscima==0.10.0
+muscima
 
 pytest
 pytest-cov
