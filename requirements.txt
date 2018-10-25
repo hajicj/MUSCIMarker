@@ -7,6 +7,7 @@ scikit-learn
 lxml
 opencv-python
 future
+cython
 kivy
 
 # Python requirements for Windows and Linux
