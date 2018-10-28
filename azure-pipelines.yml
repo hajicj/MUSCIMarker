@@ -41,7 +41,8 @@ jobs:
 
   - script: |
       pip install pytest
-      pytest tests --doctest-modules --junitxml=junit/test-results.xml
+      pytest
+      pytest --doctest-modules --junitxml=junit/test-results.xml
     displayName: 'pytest'
 
   - task: PublishTestResults@2
@@ -94,7 +95,8 @@ jobs:
 
   - script: |
       pip install pytest
-      pytest tests --doctest-modules --junitxml=junit/test-results.xml
+      pytest
+      pytest --doctest-modules --junitxml=junit/test-results.xml
     displayName: 'pytest'
 
   - task: PublishTestResults@2
