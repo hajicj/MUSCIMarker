@@ -41,7 +41,7 @@ jobs:
 
   - script: |
       pip install pytest
-      pytest --junitxml=junit/test-results.xml
+      pytest
     displayName: 'pytest'
 
   - task: PublishTestResults@2
@@ -79,10 +79,10 @@ jobs:
 
   - script: pip install kivy
     displayName: 'Installing kivy'
-    
+
   - script: |
       pip install pytest
-      pytest --junitxml=junit/test-results.xml
+      pytest
     displayName: 'pytest'
 
   - task: PublishTestResults@2
