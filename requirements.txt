@@ -16,4 +16,5 @@ muscima
 
 # Libraries to integrating code-coverage reporting
 python-coveralls
+pytest-cov
 codecov
