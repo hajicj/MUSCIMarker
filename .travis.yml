@@ -41,7 +41,7 @@ install:
 
 script:
   #pytest
-  - travis_wait pytest --cov=./ ./
+  - travis_wait pytest
 
 after_success:
   - codecov
