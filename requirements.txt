@@ -18,5 +18,5 @@ muscima
 pytest
 python-coveralls
 pytest-cov
-coverage==4.4.0
-codecov==2.0.15
+coverage
+codecov

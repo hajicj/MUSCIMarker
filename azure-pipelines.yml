@@ -9,25 +9,14 @@ jobs:
 - job: 'Ubuntu_Test'
   pool:
     vmImage: 'Ubuntu 16.04'
-  strategy:
-    matrix:
-      Python36:
-        python.version: '3.6'
-    maxParallel: 4
-
+    
   steps:
   # Create and activate a Conda environment. See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/package/conda-environment?view=vsts
   - task: CondaEnvironment@1
     inputs:
       createCustomEnvironment: true
       environmentName: test-environment
-      packageSpecs: 'python=3.6 numpy scipy matplotlib pytest h5py scikit-image pillow cython'
-
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '$(python.version)'
-      architecture: 'x64'
-
+      packageSpecs: 'python=3.6 numpy scipy matplotlib pytest h5py scikit-image pillow cython coverage'
   - script: sudo add-apt-repository ppa:kivy-team/kivy -y
   - script: sudo apt-get update -q || true
   - script: sudo apt-get install libegl1-mesa-dev libgles2-mesa-dev -y
@@ -37,7 +26,7 @@ jobs:
     displayName: 'Install pip dependencies'
 
   - script: pip install kivy
-    displayName: 'Installing kivy'
+    displayName: 'Install kivy'
 
   - script: pytest
     displayName: 'pytest'
@@ -53,11 +42,6 @@ jobs:
 - job: 'Windows_Test'
   pool:
     vmImage: 'vs2017-win2016'
-  strategy:
-    matrix:
-      Python36:
-        python.version: '3.6'
-    maxParallel: 4
 
   steps:
   # Create and activate a Conda environment. See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/package/conda-environment?view=vsts
@@ -65,18 +49,13 @@ jobs:
     inputs:
       createCustomEnvironment: true
       environmentName: test-environment
-      packageSpecs: 'python=3.6 numpy scipy matplotlib pytest h5py scikit-image pillow cython'
-
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '$(python.version)'
-      architecture: 'x64'
+      packageSpecs: 'python=3.6 numpy scipy matplotlib pytest h5py scikit-image pillow cython coverage'
 
   - script: python -m pip install --upgrade pip && pip install -r requirements.txt && pip install -r requirements_windows.txt
     displayName: 'Install pip dependencies'
 
   - script: pip install kivy
-    displayName: 'Installing kivy'
+    displayName: 'Install kivy'
 
   - script: pytest
     displayName: 'pytest'
