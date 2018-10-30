@@ -27,13 +27,13 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
-from cropobject_view import CropObjectView
+from MUSCIMarker.cropobject_view import CropObjectView
 import muscima
 import muscima.stafflines
 from muscima.inference_engine_constants import InferenceEngineConstants
 from muscima.cropobject import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
-import tracker as tr
-from utils import keypress_to_dispatch_key
+import MUSCIMarker.tracker as tr
+from MUSCIMarker.utils import keypress_to_dispatch_key
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."

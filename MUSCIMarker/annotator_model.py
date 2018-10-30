@@ -27,13 +27,13 @@ from muscima.graph import \
     find_beams_incoherent_with_stems, \
     find_misdirected_ledger_line_edges, \
     find_related_staffs
-from object_detection import ObjectDetectionHandler
-from syntax.dependency_parsers import SimpleDeterministicDependencyParser, PairwiseClassificationParser, \
+from MUSCIMarker.object_detection import ObjectDetectionHandler
+from MUSCIMarker.syntax.dependency_parsers import SimpleDeterministicDependencyParser, PairwiseClassificationParser, \
     PairwiseClfFeatureExtractor
-from utils import compute_connected_components
-from tracker import Tracker
+from MUSCIMarker.utils import compute_connected_components
+from MUSCIMarker.tracker import Tracker
 
-from image_processing import ImageProcessing
+from MUSCIMarker.image_processing import ImageProcessing
 
 
 __version__ = "0.0.1"

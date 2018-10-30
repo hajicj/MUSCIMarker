@@ -10,7 +10,7 @@ from kivy.lang import Builder
 from kivy.properties import StringProperty
 from kivy.uix.popup import Popup
 
-from utils import keypress_to_dispatch_key
+from MUSCIMarker.utils import keypress_to_dispatch_key
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."

@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 """This is a script that..."""
 from __future__ import print_function, unicode_literals
+
 import argparse
-import json
 import logging
-import os
 import time
 
+import kivy
 from kivy.app import App
 from kivy.uix.label import Label
 
-from MUSCIMarkerApp import MUSCIMarkerApp
+from MUSCIMarker.MUSCIMarkerApp import MUSCIMarkerApp
 
-import kivy
 kivy.require('1.9.1')
 
 __version__ = "0.0.1"

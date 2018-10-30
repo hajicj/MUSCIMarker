@@ -1,36 +1,26 @@
 """This module implements a class that..."""
-from __future__ import print_function, unicode_literals
 from __future__ import division
+from __future__ import print_function, unicode_literals
 
-from builtins import str
-from past.utils import old_div
 import logging
 import os
 import uuid
-from time import time
+from builtins import str
 
 import scipy.misc
-
 from kivy.app import App
 from kivy.core.window import Window
-from kivy.clock import Clock
-from kivy.graphics import Mesh
 from kivy.properties import ListProperty, BooleanProperty, NumericProperty
 from kivy.properties import ObjectProperty
-from kivy.uix.behaviors import ButtonBehavior
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.bubble import Bubble
-from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.listview import SelectableView, CompositeListItem
-from kivy.uix.scatter import Scatter
-from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.spinner import Spinner
 from kivy.uix.togglebutton import ToggleButton
 from muscima.cropobject import split_cropobject_on_connected_components
+from past.utils import old_div
 
-import tracker as tr
-from utils import InspectionPopup, keypress_to_dispatch_key
+import MUSCIMarker.tracker as tr
+from MUSCIMarker.utils import InspectionPopup, keypress_to_dispatch_key
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."

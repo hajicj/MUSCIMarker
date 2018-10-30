@@ -30,7 +30,7 @@ class ImageProcessing(object):
                  stretch_intensity=False,
                  warp_registration=False):
 
-        logging.warn('ImageProcessing: Initializing with params'
+        logging.warning('ImageProcessing: Initializing with params'
                      ' do_image_processing={0},'
                      ' auto_invert={1},'
                      ' stretch_intensity={2},'

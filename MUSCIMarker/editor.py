@@ -1,29 +1,22 @@
 """This module implements a class that..."""
-from __future__ import print_function, unicode_literals
 from __future__ import division
-
-from builtins import str
-from builtins import range
-from past.utils import old_div
-import time
+from __future__ import print_function, unicode_literals
 
 import logging
+import time
+from builtins import range
+from builtins import str
 from math import sqrt
 from random import random
 
 import numpy
 from kivy.app import App
-from kivy.graphics import Color, Rectangle, Point, GraphicException, Line
+from kivy.graphics import Color, Rectangle, Line
 from kivy.properties import ListProperty, DictProperty, NumericProperty, ObjectProperty, BooleanProperty
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.label import Label
+from past.utils import old_div
 
-# import cv2
-import skimage.measure
-
-from utils import connected_components2bboxes
-
-import tracker as tr
+import MUSCIMarker.tracker as tr
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."

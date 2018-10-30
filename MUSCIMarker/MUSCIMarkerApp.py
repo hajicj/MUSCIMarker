@@ -221,21 +221,20 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.togglebutton import ToggleButton
-
 from muscima.io import parse_cropobject_list, parse_cropobject_class_list
 from muscima.cropobject import CropObject
-from image_processing import ImageProcessing
-from help import Help
-from objid_selection import ObjidSelectionDialog
-from mlclass_selection import MLClassSelectionDialog
-from syntax.dependency_grammar import DependencyGrammar
-from edge_view import ObjectGraphRenderer
-from rendering import CropObjectRenderer
-from utils import FileNameLoader, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key, \
+from MUSCIMarker.image_processing import ImageProcessing
+from MUSCIMarker.help import Help
+from MUSCIMarker.objid_selection import ObjidSelectionDialog
+from MUSCIMarker.mlclass_selection import MLClassSelectionDialog
+from MUSCIMarker.syntax.dependency_grammar import DependencyGrammar
+from MUSCIMarker.edge_view import ObjectGraphRenderer
+from MUSCIMarker.rendering import CropObjectRenderer
+from MUSCIMarker.utils import FileNameLoader, ImageToModelScaler, ConfirmationDialog, keypress_to_dispatch_key, \
     MessageDialog, OnBindFileSaver, compute_connected_components, filename2docname
-from annotator_model import CropObjectAnnotatorModel
-import toolkit
-import tracker as tr
+from MUSCIMarker.annotator_model import CropObjectAnnotatorModel
+import MUSCIMarker.toolkit
+import MUSCIMarker.tracker as tr
 
 import kivy
 
