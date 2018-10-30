@@ -6,11 +6,13 @@ be cleaner to implement separately.
 The basic way of tracking is just to decorate a function or method
 with a ``@Tracker`` decorator:
 
-
+>>> import doctest
+>>> doctest.ELLIPSIS_MARKER = '-etc-' # Simply ignore the output from this test, by creating a custom ellipsis marker
 >>> @Tracker()
->>> def my_fun(arg1, arg2, kwarg1='something'):
+... def my_fun(arg1, arg2, kwarg1='something'):
 ...     print(arg1, arg2, kwarg1)
->>> my_fun('foo', 'bar', kwarg1='baz')
+>>> my_fun('foo', 'bar', kwarg1='baz') # doctest:+ELLIPSIS
+-etc-
 
 """
 from __future__ import print_function, unicode_literals
