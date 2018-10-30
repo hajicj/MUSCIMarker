@@ -18,3 +18,4 @@ muscima
 python-coveralls
 pytest-cov
 coverage
+codecov
