@@ -40,7 +40,7 @@ jobs:
     displayName: 'Installing kivy'
 
   - script: |
-      pip install pytest codecov
+      pip install pytest coverage codecov
       pytest
     displayName: 'pytest'
 
