@@ -23,8 +23,7 @@ jobs:
   - script: sudo apt-get install python-kivy libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev -y
 
   - script: |
-      python -m pip install --upgrade pip setuptools wheel
-      pip install -r requirements.txt
+      pip install --user -r requirements.txt
     displayName: 'Install dependencies'
 
   - script: pip install kivy
@@ -54,9 +53,8 @@ jobs:
       packageSpecs: 'python=3.6 numpy scipy matplotlib pytest h5py scikit-image pillow cython coverage'
 
   - script: |
-      python -m pip install --upgrade pip setuptools wheel
-      pip install -r requirements.txt
-      pip install -r requirements_windows.txt
+      pip install --user -r requirements.txt
+      pip install --user -r requirements_windows.txt
     displayName: 'Install dependencies'
 
   - script: pip install kivy
