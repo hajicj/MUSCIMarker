@@ -2,6 +2,11 @@
 
 Tool for annotating objects in musical scores.
 
+**MOVED TO:** https://github.com/OMR-Research/MUSCIMarker
+
+All new development takes place there. Please point your remotes to the
+new repo.
+
 Documentation: http://muscimarker.readthedocs.io/en/latest/
 
 ## Requirements
