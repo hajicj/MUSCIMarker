@@ -26,7 +26,7 @@ jobs:
       pip install --user -r requirements.txt
     displayName: 'Install dependencies'
 
-  - script: pip install kivy
+  - script: pip install --user kivy
     displayName: 'Install kivy'
 
   - script: pytest
@@ -57,7 +57,7 @@ jobs:
       pip install --user -r requirements_windows.txt
     displayName: 'Install dependencies'
 
-  - script: pip install kivy
+  - script: pip install --user kivy
     displayName: 'Install kivy'
 
   - script: pytest
