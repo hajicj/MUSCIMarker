@@ -15,7 +15,8 @@ pygments
 muscima
 
 # Libraries to integrating code-coverage reporting
+pytest
 python-coveralls
 pytest-cov
-coverage
-codecov
+coverage==4.4.0
+codecov==2.0.15

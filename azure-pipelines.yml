@@ -39,9 +39,7 @@ jobs:
   - script: pip install kivy
     displayName: 'Installing kivy'
 
-  - script: |
-      pip install pytest codecov
-      pytest
+  - script: pytest
     displayName: 'pytest'
 
   - task: PublishTestResults@2
@@ -80,9 +78,7 @@ jobs:
   - script: pip install kivy
     displayName: 'Installing kivy'
 
-  - script: |
-      pip install pytest
-      pytest
+  - script: pytest
     displayName: 'pytest'
 
   - task: PublishTestResults@2

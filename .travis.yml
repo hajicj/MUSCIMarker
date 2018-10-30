@@ -40,7 +40,6 @@ install:
   - pip install kivy
 
 script:
-  - pip install pytest codecov
   - pytest --cov=./
 
 after_success:
