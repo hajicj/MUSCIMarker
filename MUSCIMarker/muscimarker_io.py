@@ -165,8 +165,8 @@ class CropObject(object):
 
     >>> img = c.render(img)
     >>> import matplotlib.pyplot as plt
-    >>> _ = plt.imshow(img)
-    >>> _ = plt.show()
+    >>> # plt.imshow(img)
+    >>> # plt.show()
 
     However, `CropObject.render()` currently does not support rendering
     the mask.
