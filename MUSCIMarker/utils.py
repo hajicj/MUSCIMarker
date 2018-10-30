@@ -1,6 +1,10 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
+from __future__ import division
 
+from builtins import str
+from past.utils import old_div
+from builtins import object
 import codecs
 import logging
 from math import floor, ceil
@@ -42,13 +46,18 @@ scancode2codepoint = {
 }
 
 ##############################################################################
-
 class KeypressBubblingStopperBehavior(object):
     """When mixed into a Widget, will stop Window keypress events
     from bubbling through the given Widget. However, you must provide
     the binding explicitly.
 
     >>> # Assuming class MyWidgetWithStopper(KeypressBubblingStopperBehavior, Widget):
+    >>> class MyWidgetWithStopper(Widget):
+    ...     def on_key_down(self):
+    ...         pass
+    ...     def on_key_up(self):
+    ...         pass
+    ...
     >>> w = MyWidgetWithStopper()
     >>> Window.bind(on_key_down=w.on_key_down)
     >>> Window.bind(on_key_up=w.on_key_up)
@@ -61,6 +70,7 @@ class KeypressBubblingStopperBehavior(object):
     two methods over and over.
     """
     def on_key_down(self, window, key, scancode, codepoint, modifier):
+
         logging.info('KeypressBubblingStopper: stopping key_down {0}'
                      ''.format((key, scancode, codepoint, modifier)))
         return True
@@ -479,7 +489,7 @@ def image_mask_overlaps_model_edge(mask, edge_start, edge_end, margin=2):
     return s > 0
 
     # The edge passes through the middle of its bounding box!
-    vert_mid, horz_mid = t + (b - t) / 2.0, l + (r - l) / 2.0
+    vert_mid, horz_mid = t + old_div((b - t), 2.0), l + old_div((r - l), 2.0)
 
     t_mid = max(0, int(floor(vert_mid) - margin))
     b_mid = min(int(ceil(vert_mid) + margin), mask.shape[0])

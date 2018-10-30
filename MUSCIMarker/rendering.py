@@ -1,6 +1,12 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
+from __future__ import division
 
+from builtins import map
+from builtins import zip
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import collections
 import copy
 import logging
@@ -21,13 +27,13 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
-from cropobject_view import CropObjectView
+from MUSCIMarker.cropobject_view import CropObjectView
 import muscima
 import muscima.stafflines
 from muscima.inference_engine_constants import InferenceEngineConstants
 from muscima.cropobject import cropobjects_merge_bbox, cropobjects_merge_mask, cropobjects_merge_links
-import tracker as tr
-from utils import keypress_to_dispatch_key
+import MUSCIMarker.tracker as tr
+from MUSCIMarker.utils import keypress_to_dispatch_key
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -128,7 +134,7 @@ class CropObjectListView(ListView):
                      ''.format(len(widgets_for_removal)))
 
         # Remove widgets for removal.
-        for w_objid, w in widgets_for_removal.iteritems():
+        for w_objid, w in widgets_for_removal.items():
             # Deactivate bindings, to prevent widget immortality
             w.remove_bindings()
             # Also remove widget from adapter cache.
@@ -151,7 +157,7 @@ class CropObjectListView(ListView):
         # These are drawn from the adapter data, which are at this point
         # out of sync with the container widgets (CropObjectViews).
         cropobjects_to_add = {}
-        for c_objid, c in self.adapter.data.iteritems():
+        for c_objid, c in self.adapter.data.items():
             if c_objid not in widgets_rendered:
                 cropobjects_to_add[c_objid] = c
 
@@ -159,7 +165,7 @@ class CropObjectListView(ListView):
                      ''.format(len(cropobjects_to_add)))
 
         # Add cropobjects to add.
-        for c_objid, c in cropobjects_to_add.iteritems():
+        for c_objid, c in cropobjects_to_add.items():
             c_idx = self._adapter_key2index(c_objid)
             # Because the cropobjects_to_add are derived from current adapter data,
             # the corresponding keys should definitely be there. But just in case,
@@ -202,7 +208,7 @@ class CropObjectListView(ListView):
         return [cv for cv in self.rendered_views if cv.is_selected]
 
     def broadcast_selection(self, *args, **kwargs):
-        '''Passes the selection on to the App.'''
+        """Passes the selection on to the App."""
         def _do_broadcast_selection(*args, **kwargs):
             App.get_running_app().selected_cropobjects = self.selected_views
         Clock.schedule_once(_do_broadcast_selection)
@@ -629,7 +635,7 @@ class CropObjectListView(ListView):
         grammar and parser."""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
         if len(cropobjects) == 0:
-            cropobjects = self._model.cropobjects.values()
+            cropobjects = list(self._model.cropobjects.values())
 
         # Find staffs also as children of selected objects!
         # Their staff might be ignored in the selection.
@@ -696,7 +702,7 @@ class CropObjectListView(ListView):
 
         _prec_equiv_objids = []
         _stemmed_noteheads_objids = []
-        for _stem_objid, _stem_notehead_objids in _stems_to_noteheads_map.items():
+        for _stem_objid, _stem_notehead_objids in list(_stems_to_noteheads_map.items()):
             _stemmed_noteheads_objids = _stemmed_noteheads_objids \
                                         + _stem_notehead_objids
             _prec_equiv_objids.append(_stem_notehead_objids)
@@ -712,7 +718,7 @@ class CropObjectListView(ListView):
                                    key=lambda eo: min([o.left for o in eo]))
 
         edges = []
-        for i in xrange(len(sorted_equiv_objs) - 1):
+        for i in range(len(sorted_equiv_objs) - 1):
             fr_objs = sorted_equiv_objs[i]
             to_objs = sorted_equiv_objs[i+1]
             for f in fr_objs:
@@ -738,7 +744,7 @@ class CropObjectListView(ListView):
         way it works for now.)"""
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
         if len(cropobjects) == 0:
-            cropobjects = self._model.cropobjects.values()
+            cropobjects = list(self._model.cropobjects.values())
 
         objects_with_onset = [c for c in cropobjects
                               if (c.data is not None) and ('onset_beats' in c.data)]
@@ -748,7 +754,7 @@ class CropObjectListView(ListView):
 
         edges = []
         for o in onsets_dict:
-            cgroup = sorted(onsets_dict[o], key=lambda x: (x.top + x.bottom) / 2.)
+            cgroup = sorted(onsets_dict[o], key=lambda x: old_div((x.top + x.bottom), 2.))
             if len(cgroup) > 1:
                 for f, t in zip(cgroup[:-1], cgroup[1:]):
                     edges.append((f.objid, t.objid))
@@ -762,7 +768,7 @@ class CropObjectListView(ListView):
         """
         cropobjects = [s._model_counterpart for s in self.adapter.selection]
         if len(cropobjects) == 0:
-            cropobjects = self._model.cropobjects.values()
+            cropobjects = list(self._model.cropobjects.values())
 
         self._model.clear_relationships(label='Simultaneity',
                                         cropobjects=cropobjects)
@@ -879,9 +885,9 @@ class CropObjectRenderer(FloatLayout):
         Window.bind(on_key_up=self.view.on_key_up)
 
         self.model_image_height = annot_model.image.shape[0]
-        self.height_ratio_in = float(editor_widget.height) / annot_model.image.shape[0]
+        self.height_ratio_in = old_div(float(editor_widget.height), annot_model.image.shape[0])
         self.model_image_width = annot_model.image.shape[1]
-        self.width_ratio_in = float(editor_widget.width) / annot_model.image.shape[1]
+        self.width_ratio_in = old_div(float(editor_widget.width), annot_model.image.shape[1])
 
         annot_model.bind(image=self.update_image_size)
 
@@ -905,7 +911,7 @@ class CropObjectRenderer(FloatLayout):
         if self.cropobject_keys_mask is None:
             self.view.adapter.data = self.selectable_cropobjects
         else:
-            self.view.adapter.data = {objid: c for objid, c in self.selectable_cropobjects.iteritems()
+            self.view.adapter.data = {objid: c for objid, c in self.selectable_cropobjects.items()
                                       if self.cropobject_keys_mask[objid]}
             logging.info('Render: After masking: {0} of {1} cropobjects remaining.'
                          ''.format(len(self.view.adapter.data), len(self.selectable_cropobjects)))
@@ -917,20 +923,20 @@ class CropObjectRenderer(FloatLayout):
     def update_image_size(self, instance, pos):
         prev_editor_height = self.height_ratio_in * self.model_image_height
         self.model_image_height = pos.shape[0]
-        self.height_ratio_in = prev_editor_height / self.model_image_height
+        self.height_ratio_in = old_div(prev_editor_height, self.model_image_height)
 
         prev_editor_width = self.width_ratio_in * self.model_image_width
         self.model_image_width = pos.shape[1]
-        self.width_ratio_in = prev_editor_width / self.model_image_width
+        self.width_ratio_in = old_div(prev_editor_width, self.model_image_width)
 
     def on_height_ratio_in(self, instance, pos):
         _n_items_changed = 0
         if self.height_ratio_in == 0:
             return
-        for objid, c in self.selectable_cropobjects.iteritems():
+        for objid, c in self.selectable_cropobjects.items():
             orig_c = copy.deepcopy(c)
-            c.height *= self.height_ratio_in / self.old_height_ratio_in
-            c.x *= self.height_ratio_in / self.old_height_ratio_in
+            c.height *= old_div(self.height_ratio_in, self.old_height_ratio_in)
+            c.x *= old_div(self.height_ratio_in, self.old_height_ratio_in)
             self.selectable_cropobjects[objid] = c
             if _n_items_changed < 0:
                 logging.info('Render: resizing\n{0}\nto\n{1}'
@@ -938,7 +944,7 @@ class CropObjectRenderer(FloatLayout):
                                        ' | '.join(str(c).replace('\t', '').split('\n')[1:-1])))
             _n_items_changed += 1
         logging.info('Render: Redraw from on_height_ratio_in: ratio {0}, changed {1} items'
-                     ''.format(self.height_ratio_in / self.old_height_ratio_in,
+                     ''.format(old_div(self.height_ratio_in, self.old_height_ratio_in),
                                _n_items_changed))
         self.old_height_ratio_in = self.height_ratio_in
         self.redraw += 1
@@ -947,10 +953,10 @@ class CropObjectRenderer(FloatLayout):
         _n_items_changed = 0
         if self.width_ratio_in == 0:
             return
-        for objid, c in self.selectable_cropobjects.iteritems():
+        for objid, c in self.selectable_cropobjects.items():
             orig_c = copy.deepcopy(c)
-            c.width *= self.width_ratio_in / self.old_width_ratio_in
-            c.y *= self.width_ratio_in / self.old_width_ratio_in
+            c.width *= old_div(self.width_ratio_in, self.old_width_ratio_in)
+            c.y *= old_div(self.width_ratio_in, self.old_width_ratio_in)
             self.selectable_cropobjects[objid] = c
             if _n_items_changed < 0:
                 logging.info('Render: resizing\n{0}\nto\n{1}'
@@ -958,18 +964,18 @@ class CropObjectRenderer(FloatLayout):
                                        ' | '.join(str(c).replace('\t', '').split('\n')[1:-1])))
             _n_items_changed += 1
         logging.info('Render: Redraw from on_width_ratio_in: ratio {0}, changed {1} items'
-                     ''.format(self.width_ratio_in / self.old_width_ratio_in,
+                     ''.format(old_div(self.width_ratio_in, self.old_width_ratio_in),
                                _n_items_changed))
         self.old_width_ratio_in = self.width_ratio_in
         self.redraw += 1
 
     def editor_height_changed(self, instance, pos):
         logging.info('Render: Editor height changed to {0}'.format(pos))
-        self.height_ratio_in = float(pos) / self.model_image_height
+        self.height_ratio_in = old_div(float(pos), self.model_image_height)
 
     def editor_width_changed(self, instance, pos):
         logging.info('Render: Editor width changed to {0}'.format(pos))
-        self.width_ratio_in = float(pos) / self.model_image_width
+        self.width_ratio_in = old_div(float(pos), self.model_image_width)
 
     def update_cropobject_data(self, instance, pos):
         """Fired on change in the current CropObject list: make sure
@@ -1018,7 +1024,7 @@ class CropObjectRenderer(FloatLayout):
             # self.selectable_cropobjects[objid].y = self.height - pos[objid].y
             self.cropobject_keys_mask[objid] = True
 
-        self.cropobject_keys = map(str, self.selectable_cropobjects.keys())
+        self.cropobject_keys = list(map(str, list(self.selectable_cropobjects.keys())))
 
         # The adapter data doesn't change automagically
         # when the DictProperty it was bound to changes.
@@ -1048,7 +1054,7 @@ class CropObjectRenderer(FloatLayout):
         also a CropObject, although the position params X and Y have been
         switched around."""
         if max(self.mlclasses_colors[rec.clsname]) > 1.0:
-            rgb = tuple([float(x) / 255.0 for x in self.mlclasses_colors[rec.clsname]])
+            rgb = tuple([old_div(float(x), 255.0) for x in self.mlclasses_colors[rec.clsname]])
         else:
             rgb = tuple([float(x) for x in self.mlclasses_colors[rec.clsname]])
         output = {

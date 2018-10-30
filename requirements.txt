@@ -1,0 +1,22 @@
+# Install these requirements using conda/pip install ...
+numpy
+scipy
+matplotlib
+scikit-image
+scikit-learn
+lxml
+opencv-python
+future
+cython
+
+# Python requirements for Windows and Linux
+docutils
+pygments
+muscima
+
+# Libraries to integrating code-coverage reporting
+pytest
+python-coveralls
+pytest-cov
+coverage
+codecov

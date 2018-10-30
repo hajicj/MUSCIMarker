@@ -1,0 +1,71 @@
+# Python package
+# Create and test a Python package on multiple Python versions.
+# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+jobs:
+
+####### Test the build on Ubuntu ########
+- job: 'Ubuntu_Test'
+  pool:
+    vmImage: 'Ubuntu 16.04'
+
+  steps:
+  # Create and activate a Conda environment. See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/package/conda-environment?view=vsts
+  - task: CondaEnvironment@1
+    inputs:
+      createCustomEnvironment: true
+      environmentName: test-environment
+      packageSpecs: 'python=3.6 numpy scipy matplotlib pytest h5py scikit-image pillow cython coverage'
+  - script: sudo add-apt-repository ppa:kivy-team/kivy -y
+  - script: sudo apt-get update -q || true
+  - script: sudo apt-get install libegl1-mesa-dev libgles2-mesa-dev -y
+  - script: sudo apt-get install python-kivy libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev -y
+
+  - script: |
+      pip install --user -r requirements.txt
+    displayName: 'Install dependencies'
+
+  - script: pip install --user kivy
+    displayName: 'Install kivy'
+
+  - script: pytest
+    displayName: 'pytest'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '**/test-results.xml'
+      testRunTitle: 'Python $(python.version)'
+    condition: succeededOrFailed()
+
+
+####### Test the build on Windows ########
+- job: 'Windows_Test'
+  pool:
+    vmImage: 'vs2017-win2016'
+
+  steps:
+  # Create and activate a Conda environment. See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/package/conda-environment?view=vsts
+  - task: CondaEnvironment@1
+    inputs:
+      createCustomEnvironment: true
+      environmentName: test-environment
+      packageSpecs: 'python=3.6 numpy scipy matplotlib pytest h5py scikit-image pillow cython coverage'
+
+  - script: |
+      pip install --user -r requirements.txt
+      pip install --user -r requirements_windows.txt
+    displayName: 'Install dependencies'
+
+  - script: pip install --user kivy
+    displayName: 'Install kivy'
+
+  - script: pytest
+    displayName: 'pytest'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '**/test-results.xml'
+      testRunTitle: 'Python $(python.version)'
+    condition: succeededOrFailed()
+

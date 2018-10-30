@@ -1,25 +1,22 @@
 """This module implements a class that..."""
+from __future__ import division
 from __future__ import print_function, unicode_literals
 
-import time
-
 import logging
+import time
+from builtins import range
+from builtins import str
 from math import sqrt
 from random import random
 
 import numpy
 from kivy.app import App
-from kivy.graphics import Color, Rectangle, Point, GraphicException, Line
+from kivy.graphics import Color, Rectangle, Line
 from kivy.properties import ListProperty, DictProperty, NumericProperty, ObjectProperty, BooleanProperty
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.label import Label
+from past.utils import old_div
 
-# import cv2
-import skimage.measure
-
-from utils import connected_components2bboxes
-
-import tracker as tr
+import MUSCIMarker.tracker as tr
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -37,9 +34,9 @@ def calculate_points(x1, y1, x2, y2, steps=5):
     if dist < steps:
         return None
     o = []
-    m = dist / steps
+    m = old_div(dist, steps)
     for i in range(1, int(m)):
-        mi = i / m
+        mi = old_div(i, m)
         lastx = x1 + dx * mi
         lasty = y1 + dy * mi
         o.extend([lastx, lasty])
@@ -198,20 +195,20 @@ class TrimmedBoundingBoxTracer(BoundingBoxTracer):
         image = app.annot_model.image
         # Find topmost and bottom-most nonzero row.
         if image[img_t:img_b, img_l:img_r].sum() > 0:
-            for i in xrange(img_t, img_b):
+            for i in range(img_t, img_b):
                 if image[i, img_l:img_r].sum() > 0:
                     out_t = i
                     break
-            for j in xrange(img_b, img_t, -1):
+            for j in range(img_b, img_t, -1):
                 if image[j-1, img_l:img_r].sum() > 0:
                     out_b = j
                     break
             # Find leftmost and rightmost nonzero column.
-            for k in xrange(img_l, img_r):
+            for k in range(img_l, img_r):
                 if image[img_t:img_b, k].sum() > 0:
                     out_l = k
                     break
-            for l in xrange(img_r, img_l, -1):
+            for l in range(img_r, img_l, -1):
                 if image[img_t:img_b, l-1].sum() > 0:
                     out_r = l
                     break
@@ -446,8 +443,8 @@ class LineTracer(FloatLayout):
                 r, g, b = self.line_color
                 _scale = self._estimate_scale()
                 # Aesthetics...
-                _dash_offset = (20 / _scale) # * (3./4.)
-                _dash_length = (20 / _scale) * (3./2.)
+                _dash_offset = (old_div(20, _scale)) # * (3./4.)
+                _dash_length = (old_div(20, _scale)) * (old_div(3.,2.))
                 # logging.info('LineTracer._render_helper: scale {0},'
                 #              ' dash_offset {1}, dash_length {2}'
                 #              ''.format(_scale, _dash_offset, _dash_length))
@@ -467,7 +464,7 @@ class LineTracer(FloatLayout):
         window_x = window_ax - window_zx
         window_y = window_ay - window_zy
 
-        est_scale = (window_x / x + window_y / y) / 2.0
+        est_scale = old_div((old_div(window_x, x) + old_div(window_y, y)), 2.0)
         return est_scale
 
 
@@ -485,7 +482,7 @@ class LineTracer(FloatLayout):
     def _endpoints_beyond_threshold(self, points):
         dist_sq = self._endpoint_sq_distance(points)
         scale = 1.0# App.get_running_app()._get_editor_scatter_container_widget().scale
-        return dist_sq > ((self.helper_line_threshold / scale) ** 2)
+        return dist_sq > ((old_div(self.helper_line_threshold, scale)) ** 2)
 
     def on_touch_up(self, touch):
         if touch.grab_current is not self:

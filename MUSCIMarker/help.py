@@ -131,7 +131,7 @@ class Help(Popup):
                            height='{0}dp'.format(12 * len(group) + 24))
             k_lines = []
             v_lines = []
-            for k, v in group.items():
+            for k, v in list(group.items()):
                 k_lines.append(k)
                 v_lines.append(v)
 

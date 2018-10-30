@@ -1,6 +1,7 @@
 """This module implements a class that..."""
 from __future__ import print_function, unicode_literals
 
+from builtins import range
 import logging
 
 from kivy.app import App
@@ -9,7 +10,7 @@ from kivy.lang import Builder
 from kivy.properties import StringProperty
 from kivy.uix.popup import Popup
 
-from utils import keypress_to_dispatch_key
+from MUSCIMarker.utils import keypress_to_dispatch_key
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
@@ -204,7 +205,7 @@ class MLClassSelectionDialog(Popup):
     @property
     def available_clsnames(self):
         mlclasses_by_name = App.get_running_app().annot_model.mlclasses_by_name
-        clsnames = mlclasses_by_name.keys()
+        clsnames = list(mlclasses_by_name.keys())
         sorted_clsnames = sorted(clsnames, key=lambda n: mlclasses_by_name[n].clsid)
         return sorted_clsnames
 
@@ -222,7 +223,7 @@ class MLClassSelectionDialog(Popup):
 
         pref = ''
         shortest_name_length = min([len(n) for n in names])
-        for i in xrange(shortest_name_length):
+        for i in range(shortest_name_length):
             pref = names[0][:i+1]
             for n in names[1:]:
                 if n[:i+1] != pref:   # Unequal at i-th letter

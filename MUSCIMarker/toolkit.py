@@ -1,37 +1,34 @@
 """This module implements a class that..."""
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function, unicode_literals
 
 import collections
 import copy
 import logging
-import os
+import time
+from builtins import range
+from builtins import zip
 
 import numpy
-import time
-from skimage.draw import polygon, line
-
 from kivy.app import App
-from muscima.cropobject import split_cropobject_on_connected_components
-from muscima.inference_engine_constants import InferenceEngineConstants as _CONST
-
-# DEBUG
-# import matplotlib.pyplot as plt
-
 from kivy.core.window import Window
-from kivy.properties import ObjectProperty, DictProperty, BooleanProperty, StringProperty, ListProperty, NumericProperty
+from kivy.properties import ObjectProperty, BooleanProperty, ListProperty, NumericProperty
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
+from muscima.cropobject import split_cropobject_on_connected_components
+from muscima.inference_engine_constants import InferenceEngineConstants as _CONST
+from past.utils import old_div
+from skimage.draw import polygon, line
 from skimage.filters import threshold_otsu
 
-from edge_view import EdgeView
-from editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, LineTracer
-from utils import bbox_to_integer_bounds, image_mask_overlaps_cropobject, image_mask_overlaps_model_edge, \
+from MUSCIMarker.editor import BoundingBoxTracer, ConnectedComponentBoundingBoxTracer, TrimmedBoundingBoxTracer, \
+    LineTracer
+from MUSCIMarker.utils import bbox_to_integer_bounds, image_mask_overlaps_cropobject, image_mask_overlaps_model_edge, \
     bbox_intersection
 
 __version__ = "0.0.1"
 __author__ = "Jan Hajic jr."
-
-
 
 
 class MUSCIMarkerTool(Widget):
@@ -49,6 +46,7 @@ class MUSCIMarkerTool(Widget):
     that created it. This way, it can translate user actions into model operations:
     e.g. the ManualSelectTool can call an "add CropObject" controller method.
     """
+
     def __init__(self, app, editor_widget, command_widget, **kwargs):
         super(MUSCIMarkerTool, self).__init__(**kwargs)
 
@@ -64,21 +62,21 @@ class MUSCIMarkerTool(Widget):
         Window.bind(on_key_up=self.on_key_up)
 
     def init_editor_widgets(self):
-        for w in self.editor_widgets.values():
+        for w in list(self.editor_widgets.values()):
             self.editor_widget_ref.add_widget(w)
 
     def init_command_palette(self):
-        for c in self.command_palette_widgets.values():
+        for c in list(self.command_palette_widgets.values()):
             self.command_palette_ref.add_widget(c)
 
     def init_keyboard_shortcuts(self):
-        for k, action in self.keyboard_shortcuts.iteritems():
+        for k, action in self.keyboard_shortcuts.items():
             self.app_ref.keyboard_dispatch[k] = action
 
     def deactivate(self):
-        for w in self.editor_widgets.values():
+        for w in list(self.editor_widgets.values()):
             self.editor_widget_ref.remove_widget(w)
-        for c in self.command_palette_widgets.values():
+        for c in list(self.command_palette_widgets.values()):
             self.command_palette_ref.remove_widget(c)
 
         for k in self.keyboard_shortcuts:
@@ -126,12 +124,12 @@ class MUSCIMarkerTool(Widget):
         m_points = [(int(x), int(y)) for x, y in m_points]
 
         # Let's deal with points on the boundary or outside
-        m_points_x, m_points_y = zip(*m_points)
+        m_points_x, m_points_y = list(zip(*m_points))
         m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
                       for x in m_points_x]
         m_points_y = [max(0, min(y, self.app_ref.image_scaler.model_width - 1))
                       for y in m_points_y]
-        m_points = zip(m_points_x, m_points_y)
+        m_points = list(zip(m_points_x, m_points_y))
 
         return m_points
 
@@ -143,7 +141,7 @@ class MUSCIMarkerTool(Widget):
         _t_mask_creation = time.clock()
 
         # Possible speedup:
-        m_points_x, m_points_y = zip(*m_points)
+        m_points_x, m_points_y = list(zip(*m_points))
         chi = polygon(m_points_x, m_points_y)
 
         _t_polygon = time.clock()
@@ -168,17 +166,18 @@ class MUSCIMarkerTool(Widget):
     def _model_image(self):
         return self._model.image
 
+
 ###############################################################################
 
 
 class ViewingTool(MUSCIMarkerTool):
     pass
 
+
 ###############################################################################
 
 
 class AddSymbolTool(MUSCIMarkerTool):
-
     current_cropobject_selection = ObjectProperty(None)
     current_cropobject_model_selection = ObjectProperty(None)
     current_cropobject_mask = ObjectProperty(None)
@@ -232,9 +231,8 @@ class AddSymbolTool(MUSCIMarkerTool):
         self.current_cropobject_selection = pos
 
     def current_selection_and_mask_from_bbox_tracer(self, instance, pos):
-
         # Clear the last mask
-        #self.current_cropobject_mask = None
+        # self.current_cropobject_mask = None
         # ...should not be necessary
 
         # Get mask
@@ -260,12 +258,10 @@ class AddSymbolTool(MUSCIMarkerTool):
         # self.current_selection_from_bbox_tracer(instance=instance, pos=pos)
 
 
-
 ###############################################################################
 
 
 class ConnectedSelectTool(AddSymbolTool):
-
     current_cropobject_selection = ObjectProperty(None)
 
     # Caches.
@@ -282,7 +278,7 @@ class ConnectedSelectTool(AddSymbolTool):
     def current_selection_and_mask_from_bbox_tracer(self, instance, pos):
 
         # Clear the last mask
-        #self.current_cropobject_mask = None
+        # self.current_cropobject_mask = None
         # ...should not be necessary
 
         # Get mask
@@ -335,10 +331,10 @@ class ConnectedSelectTool(AddSymbolTool):
         selected_bboxes = numpy.array([self._bboxes[l] for l in selected_labels])
 
         # Get the combined bbox
-        cc_t = min(selected_bboxes[:,0])
-        cc_l = min(selected_bboxes[:,1])
-        cc_b = max(selected_bboxes[:,2])
-        cc_r = max(selected_bboxes[:,3])
+        cc_t = min(selected_bboxes[:, 0])
+        cc_l = min(selected_bboxes[:, 1])
+        cc_b = max(selected_bboxes[:, 2])
+        cc_r = max(selected_bboxes[:, 3])
 
         # Mask:
         #   - crop the labels to this box
@@ -354,6 +350,7 @@ class ConnectedSelectTool(AddSymbolTool):
             mask[lcrop == l] = 1
 
         return mask, (cc_t, cc_l, cc_b, cc_r)
+
 
 ###############################################################################
 
@@ -427,12 +424,10 @@ class AverageSymbolTool(AddSymbolTool):
                                                    'right': m_r}
 
 
-
 ###############################################################################
 
 
 class TrimmedSelectTool(AddSymbolTool):
-
     current_cropobject_selection = ObjectProperty(None)
 
     def create_editor_widgets(self):
@@ -480,7 +475,6 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
                                                          command_widget=command_widget,
                                                          **kwargs)
 
-
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
@@ -495,11 +489,11 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
         point_set_as_tuples = [p for i, p in enumerate(zip(points[:-1], points[1:]))
                                if i % 2 == 0]
         # This is the Kivy --> numpy transposition
-        p_horizontal, p_vertical = zip(*point_set_as_tuples)
+        p_horizontal, p_vertical = list(zip(*point_set_as_tuples))
 
         # Let's deal with points on the boundary or outside
         p_horizontal = [max(0, min(x, self.app_ref.image_scaler.widget_width - 1))
-                      for x in p_horizontal]
+                        for x in p_horizontal]
         p_vertical = [max(0, min(y, self.app_ref.image_scaler.widget_height - 1))
                       for y in p_vertical]
 
@@ -528,7 +522,7 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
         m_points = [(int(x), int(y)) for x, y in m_points]
         mask = numpy.zeros((self.app_ref.image_scaler.model_height,
                             self.app_ref.image_scaler.model_width), dtype='uint8')
-        m_points_x, m_points_y = zip(*m_points)
+        m_points_x, m_points_y = list(zip(*m_points))
 
         # Let's deal with points on the boundary or outside
         m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
@@ -668,7 +662,6 @@ class LassoBoundingBoxSelectTool(MUSCIMarkerTool):
 ###############################################################################
 
 class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
-
     current_cropobject_selection = ObjectProperty(None)
     current_cropobject_mask = ObjectProperty(None)
 
@@ -708,7 +701,7 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
         mask = numpy.zeros((self.app_ref.image_scaler.model_height,
                             self.app_ref.image_scaler.model_width),
                            dtype=image.dtype)
-        m_points_x, m_points_y = zip(*m_points)
+        m_points_x, m_points_y = list(zip(*m_points))
 
         # Let's deal with points on the boundary or outside
         m_points_x = [max(0, min(x, self.app_ref.image_scaler.model_height - 1))
@@ -725,7 +718,7 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
 
         mask *= image
         mask = mask.astype(image.dtype)
-        logging.info('T-Lasso: mask: {0} pxs'.format(mask.sum() / 255))
+        logging.info('T-Lasso: mask: {0} pxs'.format(old_div(mask.sum(), 255)))
 
         # - trim the masked image
         out_t, out_b, out_l, out_r = 1000000, 0, 1000000, 0
@@ -733,21 +726,21 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
         logging.info('T-Lasso: trimming with bbox={0}'.format(m_lasso_int_bbox))
         _trim_start_time = time.clock()
         # Find topmost and bottom-most nonzero row.
-        for i in xrange(img_t, img_b):
+        for i in range(img_t, img_b):
             if mask[i, img_l:img_r].sum() > 0:
                 out_t = i
                 break
-        for j in xrange(img_b, img_t, -1):
-            if mask[j-1, img_l:img_r].sum() > 0:
+        for j in range(img_b, img_t, -1):
+            if mask[j - 1, img_l:img_r].sum() > 0:
                 out_b = j
                 break
         # Find leftmost and rightmost nonzero column.
-        for k in xrange(img_l, img_r):
+        for k in range(img_l, img_r):
             if mask[img_t:img_b, k].sum() > 0:
                 out_l = k
                 break
-        for l in xrange(img_r, img_l, -1):
-            if mask[img_t:img_b, l-1].sum() > 0:
+        for l in range(img_r, img_l, -1):
+            if mask[img_t:img_b, l - 1].sum() > 0:
                 out_r = l
                 break
         _trim_end_time = time.clock()
@@ -783,11 +776,13 @@ class TrimmedLassoBoundingBoxSelectTool(LassoBoundingBoxSelectTool):
                   'right': ed_r}
         return output
 
+
 ###############################################################################
 
 
 class MaskEraserTool(LassoBoundingBoxSelectTool):
     """Removes the given area from all selected symbols' masks."""
+
     def __init__(self, do_split, **kwargs):
         super(MaskEraserTool, self).__init__(**kwargs)
         self.do_split = do_split
@@ -859,7 +854,6 @@ class MaskEraserTool(LassoBoundingBoxSelectTool):
                     logging.info('MaskEraser: View for modified CropObject {0} has'
                                  ' not been rendered yet, cannot select it.'
                                  ''.format(c.objid))
-
 
         logging.info('MaskEraser: Forcing redraw.')
         self.app_ref.cropobject_list_renderer.redraw += 1
@@ -947,8 +941,8 @@ class GestureSelectTool(LassoBoundingBoxSelectTool):
                                 for p in e_points]).astype('uint16')
         # Make them unique
         m_points_uniq = numpy.array([m_points[0]] +
-                                    [m_points[i] for i in xrange(1, len(m_points))
-                                     if (m_points[i] - m_points[i-1]).sum() == 0.0])
+                                    [m_points[i] for i in range(1, len(m_points))
+                                     if (m_points[i] - m_points[i - 1]).sum() == 0.0])
 
         logging.info('Gesture: total M-Points: {0}, unique: {1}'
                      ''.format(len(m_points), len(m_points_uniq)))
@@ -1088,7 +1082,6 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
                                                              command_widget=command_widget,
                                                              **kwargs)
 
-
     def create_editor_widgets(self):
         editor_widgets = collections.OrderedDict()
         editor_widgets['line_tracer'] = LineTracer()
@@ -1175,9 +1168,10 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
                 # Set new modulo so that the expected time per event is 0.001.
                 # Later on, this may cause noticeable lag in the selection, but
                 # hopefully not so much in the lasso.
-                self._active_selection_slow_mode_modulo = max(1, min(int(time_taken / self._active_selection_target_time_per_event), 30))
+                self._active_selection_slow_mode_modulo = max(1, min(
+                    int(old_div(time_taken, self._active_selection_target_time_per_event)), 30))
                 logging.debug('Active selection: time take: {0}, setting modulo to {1}'
-                             ''.format(time_taken, self._active_selection_slow_mode_modulo))
+                              ''.format(time_taken, self._active_selection_slow_mode_modulo))
                 self._active_selection_slow_mode_counter = 1
             else:
                 self._active_selection_slow_mode_counter += 1
@@ -1190,7 +1184,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
         pass
 
     def _process_active_selection_slow_mode(self, points):
-        m_points_x, m_points_y = zip(*points)
+        m_points_x, m_points_y = list(zip(*points))
         xmin, xmax = min(m_points_x), max(m_points_x)
         ymin, ymax = min(m_points_y), max(m_points_y)
 
@@ -1198,7 +1192,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
         #               ' ({0}, {1}), ({2}, {3})'
         #               ''.format(xmin, xmax, ymin, ymax))
         is_slow = True
-        #if (xmax - xmin) * (ymax - ymin) < self._active_selection_slow_mode_threshold:
+        # if (xmax - xmin) * (ymax - ymin) < self._active_selection_slow_mode_threshold:
         #    is_slow = False
 
         if self._active_selection_slow_mode != is_slow:
@@ -1206,7 +1200,6 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
             self._active_selection_slow_mode_counter = 1
 
         self._active_selection_slow_mode = is_slow
-
 
     ##########################################################################
     # Computing the selection from a set of points
@@ -1236,6 +1229,7 @@ class BaseListItemViewsOperationTool(MUSCIMarkerTool):
 
 class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
     """Select the activated CropObjectViews."""
+
     def __init__(self, ignore_staff=False, **kwargs):
         super(CropObjectViewsSelectTool, self).__init__(**kwargs)
         self.ignore_staff = ignore_staff
@@ -1265,9 +1259,9 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
         _t_middle = time.clock()
 
         # Find all CropObjects that overlap
-        objids = [objid for objid, c in self._model.cropobjects.iteritems()
+        objids = [objid for objid, c in self._model.cropobjects.items()
                   if image_mask_overlaps_cropobject(model_mask, c,
-                    use_cropobject_mask=self.use_mask_to_determine_selection)]
+                                                    use_cropobject_mask=self.use_mask_to_determine_selection)]
 
         if self.ignore_staff:
             objids = [objid for objid in objids
@@ -1292,7 +1286,7 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
 
         # Mark their views as selected
         applicable_views = [v for v in self.available_views
-                             if v.objid in objids]
+                            if v.objid in objids]
         logging.info('select_applicable_objects: found {0} objects'
                      ''.format(len(applicable_views)))
         for c in applicable_views:
@@ -1300,15 +1294,15 @@ class CropObjectViewsSelectTool(BaseListItemViewsOperationTool):
 
     def apply_operation(self, item_view):
         if not item_view.is_selected:
-            #item_view.select()
+            # item_view.select()
             item_view.dispatch('on_release')
 
     @property
     def list_view(self):
         return self.app_ref.cropobject_list_renderer.view
 
-    #@property
-    #def available_views(self):
+    # @property
+    # def available_views(self):
     #    return self.list_view.rendered_views
 
     def _filter_polygon_points_to_relevant_for_selection(self, m_points):
@@ -1337,7 +1331,7 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
             if c_start.objid == 224 and c_end.objid == 225:
                 sx, sy = c_start.middle
                 ex, ey = c_end.middle
-                mx, my = (sx + ex) / 2, (sy + ey) / 2
+                mx, my = old_div((sx + ex), 2), old_div((sy + ey), 2)
                 logging.warn('Edge 224 --> 225: middle points '
                              '{0}, {1} -- mask: {2}'
                              ''.format(c_start.middle, c_end.middle,
@@ -1348,7 +1342,6 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
                                               c_start.middle,
                                               c_end.middle):
                 objid_pairs.append((e.start_objid, e.end_objid))
-
 
         # Find all CropObjects that overlap
         # objids = [objid for objid, c in self._model.cropobjects.iteritems()
@@ -1364,7 +1357,6 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
         for c in applicable_views:
             self.apply_operation(c)
 
-
     def apply_operation(self, item_view):
         if not item_view.is_selected:
             item_view.dispatch('on_release')
@@ -1373,8 +1365,8 @@ class EdgeViewsSelectTool(BaseListItemViewsOperationTool):
     def list_view(self):
         return self.app_ref.graph_renderer.view
 
-    #@property
-    #def available_views(self):
+    # @property
+    # def available_views(self):
     #    return self.list_view.rendered_views
 
 
@@ -1384,7 +1376,6 @@ class CropObjectViewsParseTool(CropObjectViewsSelectTool):
         super(CropObjectViewsParseTool, self).select_applicable_objects(instance, points,
                                                                         do_clear_tracer=do_clear_tracer)
         self.list_view.parse_current_selection()
-
 
 
 ###############################################################################
@@ -1415,6 +1406,7 @@ class NoteSelectTool(AddSymbolTool):
 
 class RegionBinarizeTool(MUSCIMarkerTool):
     """Binarize the region in the bounding box using Otsu binarization."""
+
     def __init__(self, retain_foreground, **kwargs):
         super(RegionBinarizeTool, self).__init__(**kwargs)
         self.retain_foreground = retain_foreground
@@ -1479,6 +1471,7 @@ class RegionBinarizeTool(MUSCIMarkerTool):
 
 class BackgroundLassoTool(LassoBoundingBoxSelectTool):
     """Set the selected area as image background."""
+
     def on_current_cropobject_model_selection(self, instance, pos):
         # Ask the app to build CropObject from the bbox.
         logging.info('BackgroundLassoTool: fired on_current_cropobject_model_selection with pos={0}'
@@ -1516,6 +1509,7 @@ class BackgroundFillTool(LassoBoundingBoxSelectTool):
     It takes the lightest shade in the given area, and within a 200-px
     bounding box (+100/-100), removes everything that is darker than
     the given pixel by at least 8 intensity points. [NOT IMPLEMENTED]"""
+
     def on_current_cropobject_model_selection(self, instance, pos):
         # Ask the app to build CropObject from the bbox.
         logging.info('BackgroundFillTool: fired on_current_cropobject_model_selection with pos={0}'
@@ -1559,6 +1553,7 @@ class SymbolDetectionTool(MUSCIMarkerTool):
     Requires having a detection server running on a configured host/port.
     The detection server is currently not open-source.
     """
+
     def __init__(self, use_current_class, clsnames, **kwargs):
         super(SymbolDetectionTool, self).__init__(**kwargs)
         self.use_current_class = use_current_class
@@ -1588,6 +1583,7 @@ class SymbolDetectionTool(MUSCIMarkerTool):
 
         self.editor_widgets['bbox_tracer'].clear()
 
+
 ##############################################################################
 # This is the toolkit's interface to the UI elements.
 
@@ -1596,7 +1592,7 @@ tool_dispatch = {
     'add_symbol_tool': AddSymbolTool,
     'trimmed_select_tool': TrimmedSelectTool,
     'connected_select_tool': ConnectedSelectTool,
-    'lasso_select_tool':  LassoBoundingBoxSelectTool,
+    'lasso_select_tool': LassoBoundingBoxSelectTool,
     'trimmed_lasso_select_tool': TrimmedLassoBoundingBoxSelectTool,
     'gesture_select_tool': GestureSelectTool,
     'cropobject_views_select_tool': CropObjectViewsSelectTool,
@@ -1612,7 +1608,6 @@ tool_dispatch = {
 
 
 def get_tool_kwargs_dispatch(name):
-
     no_kwarg_tools = {
         'viewing_tool': dict(),
         'add_symbol_tool': dict(),

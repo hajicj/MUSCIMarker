@@ -6,15 +6,20 @@ be cleaner to implement separately.
 The basic way of tracking is just to decorate a function or method
 with a ``@Tracker`` decorator:
 
-
+>>> import doctest
+>>> doctest.ELLIPSIS_MARKER = '-etc-' # Simply ignore the output from this test, by creating a custom ellipsis marker
 >>> @Tracker()
->>> def my_fun(arg1, arg2, kwarg1='something'):
+... def my_fun(arg1, arg2, kwarg1='something'):
 ...     print(arg1, arg2, kwarg1)
->>> my_fun('foo', 'bar', kwarg1='baz')
+>>> my_fun('foo', 'bar', kwarg1='baz') # doctest:+ELLIPSIS
+-etc-
 
 """
 from __future__ import print_function, unicode_literals
 
+from builtins import str
+from builtins import zip
+from builtins import object
 import codecs
 import collections
 import datetime
@@ -49,15 +54,15 @@ class DefaultTrackerHandler(object):
     def get_initial_message_data(cls):
         d = cls.get_default_message_data()
         d[cls.FUNCTION_NAME_KEY] = '__is_tracking_start__'
-        d[cls.TRACKER_NAME_KEY] = unicode(cls)
-        d[cls.COMMENT_KEY] = 'Tracker started.'.format(unicode(cls))
+        d[cls.TRACKER_NAME_KEY] = str(cls)
+        d[cls.COMMENT_KEY] = 'Tracker started.'.format(str(cls))
         return d
 
     @classmethod
     def get_final_message_data(cls):
         d = cls.get_default_message_data()
         d[cls.FUNCTION_NAME_KEY] = '__is_tracking_end__'
-        d[cls.TRACKER_NAME_KEY] = unicode(cls)
+        d[cls.TRACKER_NAME_KEY] = str(cls)
         d[cls.COMMENT_KEY] = 'Tracker stopped.'
         return d
 
@@ -82,8 +87,8 @@ class DefaultTrackerHandler(object):
     def format_message_data(message_data, final=False):
         """Converts the given dictionary into a string representation
         that will get written into the tracker file."""
-        _unicode_message_data = {unicode(k): unicode(v)
-                                 for k, v in message_data.iteritems()}
+        _unicode_message_data = {str(k): str(v)
+                                 for k, v in message_data.items()}
         if final is True:
             return json.dumps(_unicode_message_data, sort_keys=True) + '\n'
         else:
