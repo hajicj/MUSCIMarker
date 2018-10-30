@@ -158,7 +158,8 @@ Tracking is implemented through decorators in the `tracker.py` module::
 
 >>> import MUSCIMarker.tracker as tr
 >>> @tr.Tracker(track_names=['foo', 'bar'])
->>> def do_something(foo='foo', bar='bar', baz='baz'): print(foo, bar, baz)
+... def do_something(foo='foo', bar='bar', baz='baz'):
+...     print(foo, bar, baz)
 
 Now, calling `do_something` will produce a tracking event that captures
 the values of the `foo` and `bar` arguments.
